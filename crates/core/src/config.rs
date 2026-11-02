@@ -21,6 +21,7 @@ pub struct Config {
     pub layouts: Vec<Layout>,
     pub active_layout: String,
     pub hotkeys: Hotkeys,
+    pub vr: VrConfig,
     pub fuel: FuelConfig,
     pub tyres: TyreConfig,
     pub battle: BattleConfig,
@@ -113,6 +114,7 @@ impl Default for Config {
                 o("standings", "standings", 40, 40, 560, 320),
                 o("trackmap", "trackmap", 1500, 40, 340, 340),
                 o("inputs", "inputs", 760, 860, 420, 120),
+                OverlayInstance { enabled: false, ..o("inputGraph", "inputGraph", 760, 740, 360, 110) },
                 o("fuel", "fuel", 1540, 420, 300, 230),
                 o("battle", "battle", 1200, 860, 360, 150),
                 o("session", "session", 510, 10, 900, 52),
@@ -129,6 +131,7 @@ impl Default for Config {
             layouts: vec![],
             active_layout: String::new(),
             hotkeys: Hotkeys::default(),
+            vr: VrConfig::default(),
             fuel: FuelConfig::default(),
             tyres: TyreConfig::default(),
             battle: BattleConfig::default(),
@@ -207,6 +210,8 @@ pub struct Hotkeys {
     pub layouts: std::collections::BTreeMap<String, String>,
     /// Overlay id → hotkey that shows / hides that overlay.
     pub overlays: std::collections::BTreeMap<String, String>,
+    /// Recentre VR (the seated position the overlays fixed in the car are placed from).
+    pub vr_recenter: String,
 }
 
 impl Default for Hotkeys {
@@ -217,7 +222,26 @@ impl Default for Hotkeys {
             next_layout: String::new(),
             layouts: Default::default(),
             overlays: Default::default(),
+            vr_recenter: String::new(),
         }
+    }
+}
+
+/// VR: the overlays shown in the headset as SteamVR overlays (desktop app on Windows).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct VrConfig {
+    pub enabled: bool,
+    /// Overlays placed "as on my screen" sit on an imaginary screen this far in front of the
+    /// seated position (m), this wide (m), raised or lowered by `height` (m).
+    pub distance: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+impl Default for VrConfig {
+    fn default() -> Self {
+        Self { enabled: false, distance: 0.9, width: 1.2, height: -0.05 }
     }
 }
 
@@ -521,7 +545,7 @@ impl Config {
     /// they appear in the overlay list and the hotkeys straight away.
     pub fn add_new_kinds(&mut self) {
         let defaults = Config::default().overlays;
-        for kind in ["safety", "delta"] {
+        for kind in ["safety", "delta", "inputGraph"] {
             if self.overlays.iter().any(|o| o.kind == kind) {
                 continue;
             }
@@ -684,8 +708,8 @@ mod tests {
         let mut c = Config { overlays: vec![OverlayInstance { id: "safety".into(), kind: "relative".into(), ..Default::default() }], ..Default::default() };
         c.add_new_kinds();
         let added: Vec<_> = c.overlays.iter().skip(1).map(|o| (o.id.as_str(), o.kind.as_str(), o.enabled)).collect();
-        assert_eq!(added, vec![("safety-2", "safety", false), ("delta", "delta", false)]);
+        assert_eq!(added, vec![("safety-2", "safety", false), ("delta", "delta", false), ("inputGraph", "inputGraph", false)]);
         c.add_new_kinds();
-        assert_eq!(c.overlays.len(), 3);
+        assert_eq!(c.overlays.len(), 4);
     }
 }

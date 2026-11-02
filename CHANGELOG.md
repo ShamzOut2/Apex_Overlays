@@ -4,6 +4,12 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 0.8.0
+
+### New features
+- **VR (SteamVR)**: General → VR shows your overlays in the headset, looking and updating exactly as on your screen. Each overlay's new VR tab chooses whether it shows in VR, whether it is fixed in the car or follows your head, and where it goes: as on your screen (your monitor's layout on an imaginary screen in front of you, whose distance, size and height you set) or at a position, angle and size you set, with its own opacity. A "Recentre VR" hotkey resets the seated position. Needs SteamVR running; OpenXR without SteamVR comes later
+- **Input graph overlay**: the scrolling throttle / brake / clutch trace on its own, so you can place and size it anywhere. Switch off "Input trace graph" in Driver inputs to split it from the pedal bars, wheel, gear and speed. It has the same trace options and colours, and is added (switched off) to existing setups
+
 ## 0.7.2
 
 ### New features

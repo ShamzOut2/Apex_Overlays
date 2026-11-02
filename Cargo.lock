@@ -49,7 +49,7 @@ checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
 name = "apex-core"
-version = "0.7.2"
+version = "0.8.0"
 dependencies = [
  "apex-irsdk",
  "axum",
@@ -67,14 +67,14 @@ dependencies = [
 
 [[package]]
 name = "apex-irsdk"
-version = "0.7.2"
+version = "0.8.0"
 dependencies = [
  "windows-sys 0.59.0",
 ]
 
 [[package]]
 name = "apex-overlays-desktop"
-version = "0.7.2"
+version = "0.8.0"
 dependencies = [
  "apex-core",
  "log",
@@ -86,11 +86,12 @@ dependencies = [
  "tauri-plugin-updater",
  "tauri-runtime",
  "tokio",
+ "windows",
 ]
 
 [[package]]
 name = "apex-overlays-server"
-version = "0.7.2"
+version = "0.8.0"
 dependencies = [
  "apex-core",
  "log",

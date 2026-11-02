@@ -103,6 +103,38 @@ export const COMMON: SettingDef[] = [
   { key: 'hideWhenNotDriving', label: 'Hide unless I am in the car', type: 'bool', default: false, group: 'Visibility' },
   { key: 'hideInPits', label: 'Hide while on pit road', type: 'bool', default: false, group: 'Visibility' },
   { key: 'raceOnly', label: 'Only show in race sessions', type: 'bool', default: false, group: 'Visibility' },
+  // VR (desktop app with SteamVR): where this overlay goes in the headset.
+  { key: 'vrShow', label: 'Show in VR', type: 'bool', default: true, group: 'VR', help: 'When VR is on (General → VR)' },
+  {
+    key: 'vrAnchor',
+    label: 'In VR it is',
+    type: 'select',
+    default: 'world',
+    options: [
+      ['world', 'Fixed in the car (stays put as you look around)'],
+      ['head', 'Following my head (always in the same place in view)'],
+    ],
+    group: 'VR',
+  },
+  {
+    key: 'vrPlace',
+    label: 'Placed',
+    type: 'select',
+    default: 'screen',
+    options: [
+      ['screen', 'As on my screen'],
+      ['custom', 'Where I set below'],
+    ],
+    group: 'VR',
+    help: 'As on my screen: the layout of your monitor on an imaginary screen in front of you (its distance and size are under General → VR)',
+  },
+  { key: 'vrX', label: 'Left / right', type: 'number', default: 0, min: -2, max: 2, step: 0.01, unit: 'm', group: 'VR', help: 'Custom placement: + is to the right' },
+  { key: 'vrY', label: 'Down / up', type: 'number', default: 0, min: -2, max: 2, step: 0.01, unit: 'm', group: 'VR', help: 'Custom placement: + is up' },
+  { key: 'vrDistance', label: 'Distance in front', type: 'number', default: 0.9, min: 0.1, max: 5, step: 0.01, unit: 'm', group: 'VR' },
+  { key: 'vrYaw', label: 'Turn left / right', type: 'number', default: 0, min: -180, max: 180, step: 1, unit: '°', group: 'VR', help: 'Custom placement: turn it to face you when it is off to one side' },
+  { key: 'vrPitch', label: 'Tilt', type: 'number', default: 0, min: -90, max: 90, step: 1, unit: '°', group: 'VR' },
+  { key: 'vrWidth', label: 'Width', type: 'number', default: 0.3, min: 0.02, max: 3, step: 0.01, unit: 'm', group: 'VR', help: 'Custom placement: its size in the headset (the height follows)' },
+  { key: 'vrOpacity', label: 'Opacity in VR', type: 'number', default: 100, min: 5, max: 100, step: 1, unit: '%', group: 'VR' },
   { key: 'customCss', label: 'Custom CSS', type: 'text', multiline: true, default: '', placeholder: '.row.player { outline: 1px solid gold; }', group: 'Advanced' },
 ];
 

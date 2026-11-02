@@ -493,6 +493,8 @@ export interface Config {
   units: 'auto' | 'metric' | 'imperial';
   theme: Record<string, unknown>;
   overlays: OverlayInstance[];
+  /** VR (desktop app with SteamVR). */
+  vr: { enabled: boolean; distance: number; width: number; height: number };
   hotkeys: {
     toggleEdit: string;
     toggleVisibility: string;
@@ -502,6 +504,8 @@ export interface Config {
     layouts: Record<string, string>;
     /** Overlay id → hotkey that shows / hides it. */
     overlays: Record<string, string>;
+    /** Recentre VR (SteamVR's seated position). */
+    vrRecenter: string;
   };
   /** Saved arrangements of overlays, and the one in use. */
   layouts: SavedLayout[];
@@ -691,6 +695,13 @@ export interface Safety {
   overtakes: Overtake[];
 }
 
+/** VR status from the desktop app (`vr` topic). */
+export interface VrState {
+  status: 'off' | 'waiting' | 'on' | 'error';
+  message: string;
+  overlays: number;
+}
+
 export interface TopicMap {
   session: Session;
   player: Player;
@@ -708,6 +719,7 @@ export interface TopicMap {
   safety: Safety;
   delta: DeltaRefs;
   monitor: Monitor;
+  vr: VrState;
   garage61: Garage61;
   status: Status;
   config: Config;

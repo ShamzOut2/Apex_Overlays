@@ -152,11 +152,13 @@ document.addEventListener('click', (e) => {
 const TAB_ALIAS: Record<string, string> = { Elements: 'What to show', Fields: 'What to show', Readouts: 'What to show', Style: 'Look', Format: 'Look', Warnings: 'Alerts', Options: 'Settings' };
 const SIZE_TAB = 'Size & visibility';
 const ADVANCED_TAB = 'Advanced';
-const tabOf = (s: SettingDef, common: boolean) => (common ? (s.group === 'Advanced' ? ADVANCED_TAB : SIZE_TAB) : (TAB_ALIAS[s.group ?? 'Options'] ?? s.group ?? 'Settings'));
+const VR_TAB = 'VR';
+const tabOf = (s: SettingDef, common: boolean) =>
+  common ? (s.group === 'Advanced' ? ADVANCED_TAB : s.group === 'VR' ? VR_TAB : SIZE_TAB) : (TAB_ALIAS[s.group ?? 'Options'] ?? s.group ?? 'Settings');
 
 /** What to show and how it is laid out first; looks and behaviour after; window options last. */
 const FIRST = ['Reference lap', 'What to show', 'Layout', 'Columns', 'Header'];
-const LAST = ['Look', 'Colours', 'Alerts', 'Behaviour', SIZE_TAB, ADVANCED_TAB];
+const LAST = ['Look', 'Colours', 'Alerts', 'Behaviour', SIZE_TAB, VR_TAB, ADVANCED_TAB];
 const tabRank = (t: string) => (FIRST.includes(t) ? FIRST.indexOf(t) - 100 : LAST.includes(t) ? LAST.indexOf(t) + 100 : 0);
 
 /** Editor state that survives the page being redrawn. */
@@ -1166,6 +1168,7 @@ function hotkeysCard(): HTMLElement {
     group(
       'Layouts',
       row('Next layout', () => hk.nextLayout ?? '', (v) => (hk.nextLayout = v), 'Cycles through your saved layouts'),
+      row('Recentre VR', () => hk.vrRecenter ?? '', (v) => (hk.vrRecenter = v), 'Resets SteamVR’s seated position, which the overlays fixed in the car are placed from'),
       ...layouts.map((l) =>
         row(
           `Switch to “${l.name}”`,
@@ -1223,6 +1226,43 @@ function drawMonitor() {
 listen((t) => {
   if (t === 'monitor' && monitorView.tiles.size && document.contains([...monitorView.tiles.values()][0])) drawMonitor();
 });
+
+/** VR (SteamVR overlays, desktop app on Windows). */
+function vrCard(): HTMLElement {
+  const cfg = state.config!;
+  cfg.vr ??= { enabled: false, distance: 0.9, width: 1.2, height: -0.05 };
+  const c = card('VR');
+  c.append(
+    h(
+      'p',
+      'dim',
+      'Shows your overlays in the headset as SteamVR overlays, looking and updating exactly as on your screen. Start SteamVR (and iRacing in VR); each overlay’s VR tab says whether it shows in VR, whether it is fixed in the car or follows your head, and where it goes.',
+    ),
+    form(
+      [
+        { key: 'enabled', label: 'Show overlays in VR (SteamVR)', type: 'bool', default: false },
+        { key: 'distance', label: 'Screen layout: distance in front', type: 'number', default: 0.9, min: 0.2, max: 5, step: 0.05, unit: 'm', help: 'Overlays placed “as on my screen” sit on an imaginary screen this far away' },
+        { key: 'width', label: 'Screen layout: width', type: 'number', default: 1.2, min: 0.2, max: 6, step: 0.05, unit: 'm' },
+        { key: 'height', label: 'Screen layout: raise / lower', type: 'number', default: -0.05, min: -2, max: 2, step: 0.01, unit: 'm' },
+      ],
+      cfg.vr as unknown as Record<string, unknown>,
+      (k, v) => {
+        (cfg.vr as unknown as Record<string, unknown>)[k] = v;
+        save();
+      },
+    ),
+  );
+  const v = state.vr;
+  const line: Record<string, string> = {
+    off: 'Off.',
+    waiting: `Waiting for SteamVR${v?.message ? ` — ${v.message}` : ''}.`,
+    on: `In VR: ${v?.overlays ?? 0} overlay${v?.overlays === 1 ? '' : 's'} showing.`,
+    error: `VR is not working: ${v?.message ?? ''}`,
+  };
+  c.append(h('div', `notice${v?.status === 'on' ? ' good' : ''}`, v ? (line[v.status] ?? v.status) : 'VR works in the Apex Overlays desktop app on Windows, with SteamVR.'));
+  c.append(h('p', 'dim small', 'Set a “Recentre VR” hotkey under Hotkeys to reset the seated position. OpenXR without SteamVR is not supported yet.'));
+  return c;
+}
 
 function monitoringCard(): HTMLElement {
   const cfg = state.config!;
@@ -1365,6 +1405,7 @@ const generalPage: Page = {
         ),
       ),
       hotkeysCard(),
+      vrCard(),
       monitoringCard(),
       updatesCard(),
       cornersCard(() => this.render(el)),
