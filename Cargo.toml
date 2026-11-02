@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
-members = ["crates/irsdk", "crates/core", "apps/server", "apps/desktop"]
+members = ["crates/irsdk", "crates/core", "crates/xr-shared", "apps/server", "apps/desktop", "apps/xr-layer"]
 # The desktop app needs the Windows WebView2 toolchain; build it with `cargo build -p apex-overlays-desktop`.
-default-members = ["crates/irsdk", "crates/core", "apps/server"]
+default-members = ["crates/irsdk", "crates/core", "crates/xr-shared", "apps/server"]
 
 [workspace.package]
 version = "0.8.0"
@@ -12,6 +12,7 @@ license = "MIT"
 [workspace.dependencies]
 apex-irsdk = { path = "crates/irsdk" }
 apex-core = { path = "crates/core" }
+apex-xr-shared = { path = "crates/xr-shared" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "net"] }
@@ -23,3 +24,9 @@ lto = "thin"
 codegen-units = 1
 strip = true
 panic = "abort"
+
+# The OpenXR layer runs inside iRacing: built with this profile, a panic in it is caught and
+# the frame passed on unchanged instead of aborting the game.
+[profile.layer]
+inherits = "release"
+panic = "unwind"

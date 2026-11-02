@@ -494,7 +494,7 @@ export interface Config {
   theme: Record<string, unknown>;
   overlays: OverlayInstance[];
   /** VR (desktop app with SteamVR). */
-  vr: { enabled: boolean; distance: number; width: number; height: number };
+  vr: { enabled: boolean; mode: 'steamvr' | 'openxr'; distance: number; width: number; height: number };
   hotkeys: {
     toggleEdit: string;
     toggleVisibility: string;

@@ -77,6 +77,7 @@ name = "apex-overlays-desktop"
 version = "0.8.0"
 dependencies = [
  "apex-core",
+ "apex-xr-shared",
  "log",
  "serde_json",
  "tauri",
@@ -96,6 +97,19 @@ dependencies = [
  "apex-core",
  "log",
 ]
+
+[[package]]
+name = "apex-xr-layer"
+version = "0.8.0"
+dependencies = [
+ "apex-xr-shared",
+ "openxr-sys",
+ "windows",
+]
+
+[[package]]
+name = "apex-xr-shared"
+version = "0.8.0"
 
 [[package]]
 name = "async-broadcast"
@@ -2703,6 +2717,15 @@ dependencies = [
  "libc",
  "pkg-config",
  "vcpkg",
+]
+
+[[package]]
+name = "openxr-sys"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "febb5d50cee7b964b69d5b7a810ed9620fc64f41382ffefe05434754c7a48877"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

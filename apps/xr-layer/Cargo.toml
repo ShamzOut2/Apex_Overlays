@@ -1,0 +1,24 @@
+[package]
+name = "apex-xr-layer"
+description = "Apex Overlays OpenXR API layer: draws the overlays inside OpenXR games (iRacing) without SteamVR"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "apex_xr_layer"
+crate-type = ["cdylib"]
+
+[dependencies]
+apex-xr-shared.workspace = true
+openxr-sys = "0.14"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Direct3D",
+    "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_Dxgi",
+    "Win32_Graphics_Dxgi_Common",
+    "Win32_System_Memory",
+] }

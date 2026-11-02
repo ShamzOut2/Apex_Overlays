@@ -32,6 +32,8 @@ jobs:
           npm run build
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - name: Build the OpenXR layer (embedded in the desktop app)
+        run: cargo build --profile layer -p apex-xr-layer
       - name: Build desktop app and installer
         working-directory: apps/desktop
         shell: pwsh

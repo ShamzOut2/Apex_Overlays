@@ -70,7 +70,7 @@ mod tests {
 
     #[test]
     fn screen_layout_maps_onto_the_vr_screen() {
-        let vr = VrConfig { enabled: true, distance: 1.0, width: 1.2, height: 0.0 };
+        let vr = VrConfig { enabled: true, distance: 1.0, width: 1.2, height: 0.0, ..Default::default() };
         let o = OverlayInstance { settings: serde_json::json!({}), ..Default::default() };
         // A 480x270 overlay in the middle of a 1920x1080 screen: centred, a quarter as wide.
         let p = placement(&o, &vr, (1920.0, 1080.0), (720.0, 405.0, 480.0, 270.0));

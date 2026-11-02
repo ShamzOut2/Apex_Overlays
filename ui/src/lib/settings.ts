@@ -134,7 +134,7 @@ export const COMMON: SettingDef[] = [
   { key: 'vrYaw', label: 'Turn left / right', type: 'number', default: 0, min: -180, max: 180, step: 1, unit: '°', group: 'VR', help: 'Custom placement: turn it to face you when it is off to one side' },
   { key: 'vrPitch', label: 'Tilt', type: 'number', default: 0, min: -90, max: 90, step: 1, unit: '°', group: 'VR' },
   { key: 'vrWidth', label: 'Width', type: 'number', default: 0.3, min: 0.02, max: 3, step: 0.01, unit: 'm', group: 'VR', help: 'Custom placement: its size in the headset (the height follows)' },
-  { key: 'vrOpacity', label: 'Opacity in VR', type: 'number', default: 100, min: 5, max: 100, step: 1, unit: '%', group: 'VR' },
+  { key: 'vrOpacity', label: 'Opacity in VR', type: 'number', default: 100, min: 5, max: 100, step: 1, unit: '%', group: 'VR', help: 'SteamVR overlays only for now' },
   { key: 'customCss', label: 'Custom CSS', type: 'text', multiline: true, default: '', placeholder: '.row.player { outline: 1px solid gold; }', group: 'Advanced' },
 ];
 
