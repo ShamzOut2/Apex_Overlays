@@ -5,6 +5,8 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod vr;
+
 use apex_core::config::{Config, ConfigStore};
 use apex_core::hub::{HostEvent, Hub};
 use std::collections::{HashMap, HashSet};
@@ -40,6 +42,8 @@ struct Core {
     group_drag: Mutex<Option<GroupDrag>>,
     /// Update found by the last check, ready to install.
     update: tokio::sync::Mutex<Option<tauri_plugin_updater::Update>>,
+    /// Overlay id -> its window's native handle, for VR capture (Windows).
+    hwnds: Mutex<HashMap<String, isize>>,
 }
 
 struct GroupDrag {
@@ -134,6 +138,7 @@ fn reconcile(app: &AppHandle) {
     let edit = core.hub.edit_mode.load(Ordering::Relaxed);
     let visible = core.hub.visible.load(Ordering::Relaxed);
     let mut wanted = Vec::new();
+    let mut hwnds = HashMap::new();
     for o in cfg.overlays.iter().filter(|o| o.enabled) {
         let label = label_for(&o.id);
         wanted.push(label.clone());
@@ -177,6 +182,10 @@ fn reconcile(app: &AppHandle) {
                 }
             }
         };
+        #[cfg(windows)]
+        if let Ok(h) = win.hwnd() {
+            hwnds.insert(o.id.clone(), h.0 as isize);
+        }
         let clickable = edit || core.interactive.lock().unwrap().contains(&label);
         let _ = win.set_ignore_cursor_events(!clickable);
         let _ = if visible || edit { win.show() } else { win.hide() };
@@ -186,6 +195,7 @@ fn reconcile(app: &AppHandle) {
             let _ = w.close();
         }
     }
+    *core.hwnds.lock().unwrap() = hwnds;
 }
 
 fn sync_geometry(w: &WebviewWindow, x: i32, y: i32, width: u32, height: u32) {
@@ -413,6 +423,7 @@ enum HotkeyAction {
     NextLayout,
     Layout(String),
     Overlay(String),
+    VrRecenter,
 }
 
 /// The hotkeys in use and what they do (blank ones and ones for missing layouts / overlays left out).
@@ -422,6 +433,7 @@ fn hotkey_bindings(c: &Config) -> Vec<(String, HotkeyAction)> {
         (k.toggle_edit.clone(), HotkeyAction::ToggleEdit),
         (k.toggle_visibility.clone(), HotkeyAction::ToggleVisible),
         (k.next_layout.clone(), HotkeyAction::NextLayout),
+        (k.vr_recenter.clone(), HotkeyAction::VrRecenter),
     ];
     for l in &c.layouts {
         if let Some(key) = k.layouts.get(&l.id) {
@@ -461,6 +473,7 @@ fn register_hotkeys(app: &AppHandle) {
                     c.apply_layout(id);
                 }),
                 HotkeyAction::Overlay(id) => config.update(|c| c.toggle_overlay(id)),
+                HotkeyAction::VrRecenter => vr::RECENTER.store(true, Ordering::Relaxed),
             }
         });
         if let Err(e) = result {
@@ -513,6 +526,7 @@ fn main() {
             interactive: Mutex::new(HashSet::new()),
             group_drag: Mutex::new(None),
             update: tokio::sync::Mutex::new(None),
+            hwnds: Mutex::new(HashMap::new()),
         })
         .setup(|app| {
             let handle = app.handle().clone();
@@ -528,6 +542,7 @@ fn main() {
                 });
             }
             reconcile(&handle);
+            vr::spawn(handle.clone());
             // Start with the settings window unless launched to the tray (e.g. at Windows start-up).
             if !std::env::args().any(|a| a == "--tray") {
                 show_settings(&handle);

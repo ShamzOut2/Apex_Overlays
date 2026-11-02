@@ -20,6 +20,7 @@ pub mod server;
 pub mod source;
 pub mod svgmap;
 pub mod topics;
+pub mod vr;
 
 use config::ConfigStore;
 use engine::Engine;

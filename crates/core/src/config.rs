@@ -21,6 +21,7 @@ pub struct Config {
     pub layouts: Vec<Layout>,
     pub active_layout: String,
     pub hotkeys: Hotkeys,
+    pub vr: VrConfig,
     pub fuel: FuelConfig,
     pub tyres: TyreConfig,
     pub battle: BattleConfig,
@@ -130,6 +131,7 @@ impl Default for Config {
             layouts: vec![],
             active_layout: String::new(),
             hotkeys: Hotkeys::default(),
+            vr: VrConfig::default(),
             fuel: FuelConfig::default(),
             tyres: TyreConfig::default(),
             battle: BattleConfig::default(),
@@ -208,6 +210,8 @@ pub struct Hotkeys {
     pub layouts: std::collections::BTreeMap<String, String>,
     /// Overlay id → hotkey that shows / hides that overlay.
     pub overlays: std::collections::BTreeMap<String, String>,
+    /// Recentre VR (the seated position the overlays fixed in the car are placed from).
+    pub vr_recenter: String,
 }
 
 impl Default for Hotkeys {
@@ -218,7 +222,26 @@ impl Default for Hotkeys {
             next_layout: String::new(),
             layouts: Default::default(),
             overlays: Default::default(),
+            vr_recenter: String::new(),
         }
+    }
+}
+
+/// VR: the overlays shown in the headset as SteamVR overlays (desktop app on Windows).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct VrConfig {
+    pub enabled: bool,
+    /// Overlays placed "as on my screen" sit on an imaginary screen this far in front of the
+    /// seated position (m), this wide (m), raised or lowered by `height` (m).
+    pub distance: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+impl Default for VrConfig {
+    fn default() -> Self {
+        Self { enabled: false, distance: 0.9, width: 1.2, height: -0.05 }
     }
 }
 

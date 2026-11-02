@@ -86,6 +86,7 @@ dependencies = [
  "tauri-plugin-updater",
  "tauri-runtime",
  "tokio",
+ "windows",
 ]
 
 [[package]]

@@ -25,3 +25,10 @@ The logos themselves are trademarks of their respective owners and are shown onl
 ## Class badges
 `ui/static/assets/classes/badges.json` holds the iRacing class badges designed for Apex Overlays by the project owner,
 stored as one SVG template per class plus the badge colour palette.
+
+## OpenVR (SteamVR overlays)
+
+`apps/desktop/vr/openvr_api.dll` is Valve's OpenVR API library from
+https://github.com/ValveSoftware/openvr (`bin/win64`), used by the desktop app to show
+overlays in VR. It is distributed under the BSD 3-Clause licence in
+`apps/desktop/vr/OPENVR_LICENSE.txt` (Copyright (c) 2015, Valve Corporation).
