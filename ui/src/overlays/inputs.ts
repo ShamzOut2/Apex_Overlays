@@ -1,7 +1,8 @@
-import { fitCanvas, h, show, style, text, toggle } from '../lib/dom';
+import { h, show, style, text, toggle } from '../lib/dom';
 import * as f from '../lib/format';
 import type { OverlayDef } from '../lib/overlay';
 import type { CarInfo, Player } from '../lib/types';
+import { inputTrace, TRACE_SETTINGS } from './inputTrace';
 
 const WHEEL_SVG = `<svg viewBox="-50 -50 100 100"><circle r="42" fill="none" stroke="currentColor" stroke-width="9"/><path d="M-40 4 H-12 L-6 14 H6 L12 4 H40" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/><path d="M0 14 V40" stroke="currentColor" stroke-width="8"/><rect x="-3" y="-50" width="6" height="12" fill="var(--accent)"/></svg>`;
 
@@ -35,7 +36,14 @@ export const inputs: OverlayDef = {
     { key: 'shiftMidColor', label: 'Middle lights', type: 'color', default: '#ffd400', group: 'Shift lights' },
     { key: 'shiftHighColor', label: 'Last lights', type: 'color', default: '#ff3b3b', group: 'Shift lights' },
     { key: 'shiftFlashColor', label: 'Shift now (flash)', type: 'color', default: '#4da3ff', group: 'Shift lights' },
-    { key: 'showTrace', label: 'Input trace graph', type: 'bool', default: true, group: 'Elements' },
+    {
+      key: 'showTrace',
+      label: 'Input trace graph',
+      type: 'bool',
+      default: true,
+      group: 'Elements',
+      help: 'To place the graph on its own, switch this off and turn on the Input graph overlay',
+    },
     { key: 'showBars', label: 'Pedal bars', type: 'bool', default: true, group: 'Elements' },
     { key: 'showClutch', label: 'Clutch', type: 'bool', default: true, group: 'Elements' },
     { key: 'showWheel', label: 'Steering wheel', type: 'bool', default: true, group: 'Elements' },
@@ -50,11 +58,7 @@ export const inputs: OverlayDef = {
       group: 'Elements',
     },
     { key: 'valueColored', label: 'Colour values like their bar', type: 'bool', default: true, group: 'Elements' },
-    { key: 'traceSeconds', label: 'Trace length', type: 'number', default: 6, min: 1, max: 30, unit: 's', group: 'Trace' },
-    { key: 'traceWidth', label: 'Trace line width', type: 'number', default: 2, min: 0.5, max: 6, step: 0.5, unit: 'px', group: 'Trace' },
-    { key: 'traceSteering', label: 'Show steering in trace', type: 'bool', default: false, group: 'Trace' },
-    { key: 'traceFill', label: 'Fill under throttle/brake', type: 'bool', default: true, group: 'Trace' },
-    { key: 'absHighlight', label: 'Colour the brake trace and bar while ABS is active', type: 'bool', default: true, group: 'Trace' },
+    ...TRACE_SETTINGS,
     { key: 'throttleColor', label: 'Throttle', type: 'color', default: '#3ddc84', group: 'Colours' },
     { key: 'brakeColor', label: 'Brake', type: 'color', default: '#ff4d4d', group: 'Colours' },
     { key: 'clutchColor', label: 'Clutch', type: 'color', default: '#4da3ff', group: 'Colours' },
@@ -187,70 +191,7 @@ export const inputs: OverlayDef = {
       });
     };
 
-    const n = Math.round((s.traceSeconds as number) * 60);
-    const thr = new Float32Array(n);
-    const brk = new Float32Array(n);
-    const clt = new Float32Array(n);
-    const ste = new Float32Array(n);
-    const abs = new Uint8Array(n);
-    let head = 0;
-    const g = canvas.getContext('2d')!;
-
-    const series = (arr: Float32Array, color: string, fill: boolean, absArr?: Uint8Array) => {
-      const w = canvas.width;
-      const hh = canvas.height;
-      const pad = 2 * (window.devicePixelRatio || 1);
-      const y = (v: number) => hh - pad - v * (hh - pad * 2);
-      const x = (i: number) => (i / (n - 1)) * w;
-      g.beginPath();
-      for (let i = 0; i < n; i++) {
-        const v = arr[(head + i) % n];
-        if (i === 0) g.moveTo(x(i), y(v));
-        else g.lineTo(x(i), y(v));
-      }
-      g.strokeStyle = color;
-      g.lineWidth = (s.traceWidth as number) * (window.devicePixelRatio || 1);
-      g.stroke();
-      if (fill) {
-        g.lineTo(w, hh);
-        g.lineTo(0, hh);
-        g.closePath();
-        g.globalAlpha = 0.15;
-        g.fillStyle = color;
-        g.fill();
-        g.globalAlpha = 1;
-      }
-      if (absArr && s.absHighlight) {
-        // Each stretch with ABS working: the line thicker and the area under it filled in the
-        // ABS colour, from where it kicked in to where it stopped.
-        const absColor = s.absColor as string;
-        const width = (s.traceWidth as number) * (window.devicePixelRatio || 1) * 1.7;
-        for (let i = 0; i < n; i++) {
-          if (!absArr[(head + i) % n]) continue;
-          const start = i;
-          while (i + 1 < n && absArr[(head + i + 1) % n]) i++;
-          const end = i;
-          const from = Math.max(0, start - 1);
-          g.beginPath();
-          for (let k = from; k <= end; k++) {
-            const v = arr[(head + k) % n];
-            if (k === from) g.moveTo(x(k), y(v));
-            else g.lineTo(x(k), y(v));
-          }
-          g.strokeStyle = absColor;
-          g.lineWidth = width;
-          g.lineJoin = 'round';
-          g.stroke();
-          g.lineTo(x(end), hh);
-          g.lineTo(x(from), hh);
-          g.closePath();
-          g.globalAlpha = 0.4;
-          g.fillStyle = absColor;
-          g.fill();
-          g.globalAlpha = 1;
-        }
-      }
-    };
+    const trace = inputTrace(canvas, s, () => !!s.showClutch);
 
     return {
       update(topic, data) {
@@ -263,12 +204,6 @@ export const inputs: OverlayDef = {
         if (topic !== 'player') return;
         const p = data as Player;
         drawLights(p);
-        thr[head] = p.throttle;
-        brk[head] = p.brake;
-        clt[head] = p.clutch;
-        ste[head] = p.steeringMax ? 0.5 - p.steering / p.steeringMax / 2 : 0.5;
-        abs[head] = p.abs ? 1 : 0;
-        head = (head + 1) % n;
 
         const bar = (b: { fill: HTMLElement; val: HTMLElement }, v: number) => {
           style(b.fill, 'transform', `scaleY(${v.toFixed(3)})`);
@@ -283,14 +218,7 @@ export const inputs: OverlayDef = {
         text(spd, `${Math.round(f.speed(p.speed, ctx.units))}`);
         spd.dataset.unit = f.speedUnit(ctx.units);
 
-        if (s.showTrace) {
-          fitCanvas(canvas);
-          g.clearRect(0, 0, canvas.width, canvas.height);
-          if (s.traceSteering) series(ste, s.steeringColor as string, false);
-          if (s.showClutch) series(clt, s.clutchColor as string, false);
-          series(thr, s.throttleColor as string, s.traceFill as boolean);
-          series(brk, s.brakeColor as string, s.traceFill as boolean, abs);
-        }
+        if (s.showTrace) trace.push(p);
       },
     };
   },

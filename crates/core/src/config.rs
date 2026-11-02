@@ -113,6 +113,7 @@ impl Default for Config {
                 o("standings", "standings", 40, 40, 560, 320),
                 o("trackmap", "trackmap", 1500, 40, 340, 340),
                 o("inputs", "inputs", 760, 860, 420, 120),
+                OverlayInstance { enabled: false, ..o("inputGraph", "inputGraph", 760, 740, 360, 110) },
                 o("fuel", "fuel", 1540, 420, 300, 230),
                 o("battle", "battle", 1200, 860, 360, 150),
                 o("session", "session", 510, 10, 900, 52),
@@ -521,7 +522,7 @@ impl Config {
     /// they appear in the overlay list and the hotkeys straight away.
     pub fn add_new_kinds(&mut self) {
         let defaults = Config::default().overlays;
-        for kind in ["safety", "delta"] {
+        for kind in ["safety", "delta", "inputGraph"] {
             if self.overlays.iter().any(|o| o.kind == kind) {
                 continue;
             }
@@ -684,8 +685,8 @@ mod tests {
         let mut c = Config { overlays: vec![OverlayInstance { id: "safety".into(), kind: "relative".into(), ..Default::default() }], ..Default::default() };
         c.add_new_kinds();
         let added: Vec<_> = c.overlays.iter().skip(1).map(|o| (o.id.as_str(), o.kind.as_str(), o.enabled)).collect();
-        assert_eq!(added, vec![("safety-2", "safety", false), ("delta", "delta", false)]);
+        assert_eq!(added, vec![("safety-2", "safety", false), ("delta", "delta", false), ("inputGraph", "inputGraph", false)]);
         c.add_new_kinds();
-        assert_eq!(c.overlays.len(), 3);
+        assert_eq!(c.overlays.len(), 4);
     }
 }

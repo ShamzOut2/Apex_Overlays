@@ -4,6 +4,11 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### New features
+- **Input graph overlay**: the scrolling throttle / brake / clutch trace on its own, so you can place and size it anywhere. Switch off "Input trace graph" in Driver inputs to split it from the pedal bars, wheel, gear and speed. It has the same trace options and colours, and is added (switched off) to existing setups
+
 ## 0.7.2
 
 ### New features
