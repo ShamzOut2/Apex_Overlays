@@ -1230,7 +1230,7 @@ listen((t) => {
 /** VR (SteamVR overlays, desktop app on Windows). */
 function vrCard(): HTMLElement {
   const cfg = state.config!;
-  cfg.vr ??= { enabled: false, mode: 'steamvr', distance: 0.9, width: 1.2, height: -0.05 };
+  cfg.vr ??= { enabled: false, mode: 'steamvr', distance: 0.9, width: 1.2, height: -0.05, offset: 0 };
   cfg.vr.mode ??= 'steamvr';
   const c = card('VR');
   c.append(
@@ -1256,6 +1256,7 @@ function vrCard(): HTMLElement {
         { key: 'distance', label: 'Screen layout: distance in front', type: 'number', default: 0.9, min: 0.2, max: 5, step: 0.05, unit: 'm', help: 'Overlays placed “as on my screen” sit on an imaginary screen this far away' },
         { key: 'width', label: 'Screen layout: width', type: 'number', default: 1.2, min: 0.2, max: 6, step: 0.05, unit: 'm' },
         { key: 'height', label: 'Screen layout: raise / lower', type: 'number', default: -0.05, min: -2, max: 2, step: 0.01, unit: 'm' },
+        { key: 'offset', label: 'Screen layout: move left / right', type: 'number', default: 0, min: -2, max: 2, step: 0.01, unit: 'm', help: '+ moves every overlay placed “as on my screen” to the right' },
       ],
       cfg.vr as unknown as Record<string, unknown>,
       (k, v) => {

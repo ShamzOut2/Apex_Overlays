@@ -62,12 +62,21 @@ impl Shared {
     }
 }
 
-/// Quaternion for a turn of `yaw` about the vertical axis, then a tilt of `pitch` (degrees).
-pub fn orientation(yaw_deg: f32, pitch_deg: f32) -> [f32; 4] {
-    let (y, p) = (yaw_deg.to_radians() / 2.0, pitch_deg.to_radians() / 2.0);
-    let (sy, cy, sp, cp) = (y.sin(), y.cos(), p.sin(), p.cos());
-    // q = q_yaw(about Y) * q_pitch(about X)
-    [cy * sp, sy * cp, -sy * sp, cy * cp]
+/// Quaternion (x, y, z, w) for a turn of `yaw` about the vertical axis, then a tilt of
+/// `pitch`, then a roll in the panel's own plane (degrees).
+pub fn orientation(yaw_deg: f32, pitch_deg: f32, roll_deg: f32) -> [f32; 4] {
+    let half = |d: f32| ((d.to_radians() / 2.0).sin(), (d.to_radians() / 2.0).cos());
+    let ((sy, cy), (sp, cp), (sr, cr)) = (half(yaw_deg), half(pitch_deg), half(roll_deg));
+    let mul = |a: [f32; 4], b: [f32; 4]| {
+        [
+            a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
+            a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
+            a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
+            a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2],
+        ]
+    };
+    // q = q_yaw(about Y) * q_pitch(about X) * q_roll(about Z)
+    mul(mul([0.0, sy, 0.0, cy], [sp, 0.0, 0.0, cp]), [0.0, 0.0, sr, cr])
 }
 
 #[cfg(test)]
@@ -86,18 +95,20 @@ mod tests {
     #[test]
     fn orientation_matches_yaw_then_pitch() {
         // Yaw 90°: the panel's facing direction (+z) turns to +x.
-        let r = rotate(orientation(90.0, 0.0), [0.0, 0.0, 1.0]);
+        let r = rotate(orientation(90.0, 0.0, 0.0), [0.0, 0.0, 1.0]);
         assert!((r[0] - 1.0).abs() < 1e-5 && r[1].abs() < 1e-5 && r[2].abs() < 1e-5, "{r:?}");
         // Pitch 90°: +z turns to -y (tilted to face down).
-        let r = rotate(orientation(0.0, 90.0), [0.0, 0.0, 1.0]);
+        let r = rotate(orientation(0.0, 90.0, 0.0), [0.0, 0.0, 1.0]);
         assert!(r[0].abs() < 1e-5 && (r[1] + 1.0).abs() < 1e-5 && r[2].abs() < 1e-5, "{r:?}");
-        // Same as the SteamVR matrix (apex_core::vr::transform): yaw 30°, pitch 20° on +x.
-        let (y, p) = (30f32.to_radians(), 20f32.to_radians());
+        // Same as the SteamVR matrix (apex_core::vr::transform): yaw 30°, pitch 20°, roll 15°.
+        let (y, p, z) = (30f32.to_radians(), 20f32.to_radians(), 15f32.to_radians());
         let m = [[y.cos(), y.sin() * p.sin(), y.sin() * p.cos()], [0.0, p.cos(), -p.sin()], [-y.sin(), y.cos() * p.sin(), y.cos() * p.cos()]];
+        let r = |i: usize| [m[i][0] * z.cos() + m[i][1] * z.sin(), -m[i][0] * z.sin() + m[i][1] * z.cos(), m[i][2]];
+        let full = [r(0), r(1), r(2)];
         for v in [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]] {
-            let r = rotate(orientation(30.0, 20.0), v);
-            let e = [0, 1, 2].map(|i| m[i][0] * v[0] + m[i][1] * v[1] + m[i][2] * v[2]);
-            assert!((0..3).all(|i| (r[i] - e[i]).abs() < 1e-5), "{v:?}: {r:?} vs {e:?}");
+            let got = rotate(orientation(30.0, 20.0, 15.0), v);
+            let e = [0, 1, 2].map(|i| full[i][0] * v[0] + full[i][1] * v[1] + full[i][2] * v[2]);
+            assert!((0..3).all(|i| (got[i] - e[i]).abs() < 1e-5), "{v:?}: {got:?} vs {e:?}");
         }
     }
 

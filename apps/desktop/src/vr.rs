@@ -656,7 +656,7 @@ mod imp {
                         frame: c.frame,
                         head: p.head as u32,
                         pos: p.pos,
-                        orient: xs::orientation(p.yaw, p.pitch),
+                        orient: xs::orientation(p.yaw, p.pitch, p.roll),
                         size: [p.width, p.width * *h as f32 / (*w).max(1) as f32],
                         key: key(&o.id),
                     });

@@ -9,6 +9,10 @@ Each version groups its changes under `### New features`, `### Improvements` and
 ### New features
 - **VR with OpenXR, no SteamVR needed**: General → VR → How → "OpenXR, inside iRacing". Your overlays are drawn inside iRacing's own OpenXR VR (Quest Link, Virtual Desktop, Pimax, Varjo, WMR and other OpenXR runtimes), with the same per-overlay VR placement (fixed in the car or following your head, as on your screen or where you set). The first time, Windows asks for permission to register Apex Overlays' OpenXR layer; restart iRacing after turning it on. "Recentre VR" places the overlays fixed in the car from where your head is
 
+### Improvements
+- VR: move the whole screen layout left or right (General → VR → "Screen layout: move left / right"), alongside raise / lower
+- VR: each overlay's rotation (turn, tilt and a new roll) now works however it is placed, including "as on my screen", in SteamVR and OpenXR
+
 ## 0.8.0
 
 ### New features
