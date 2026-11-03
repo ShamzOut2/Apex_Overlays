@@ -1263,7 +1263,7 @@ function vrCard(): HTMLElement {
             ['steamvr', 'SteamVR overlays (SteamVR running)'],
             ['openxr', 'OpenXR, inside iRacing (any headset, no SteamVR needed)'],
           ],
-          help: 'OpenXR: iRacing in its OpenXR VR mode with any OpenXR runtime (Quest Link, Virtual Desktop, Pimax, Varjo, WMR…). The first time, Windows asks for permission to register Apex Overlays’ OpenXR layer; restart iRacing after turning it on',
+          help: 'OpenXR: iRacing in its OpenXR VR mode with any OpenXR runtime (Quest Link, Virtual Desktop, Pimax, Varjo, WMR…), alongside other OpenXR layers such as NextLevelXR or OpenXR Toolkit (Direct3D 11 and 12). The first time, Windows asks for permission to register Apex Overlays’ OpenXR layer; restart iRacing after turning it on',
         },
         { key: 'distance', label: 'Screen layout: distance in front', type: 'number', default: 0.9, min: 0.2, max: 5, step: 0.05, unit: 'm', help: 'Overlays placed “as on my screen” sit on an imaginary screen this far away' },
         { key: 'width', label: 'Screen layout: width', type: 'number', default: 1.2, min: 0.2, max: 6, step: 0.05, unit: 'm' },
@@ -1290,6 +1290,11 @@ function vrCard(): HTMLElement {
       'p',
       'dim small',
       'Set a “Recentre VR” hotkey under Hotkeys: with SteamVR it resets the seated position; with OpenXR it places the overlays fixed in the car from where your head is when you press it.',
+    ),
+    h(
+      'p',
+      'dim small',
+      'Using another OpenXR layer (NextLevelXR, OpenXR Toolkit, OpenKneeboard)? They work together. If the overlays do not show or get cropped, change the order of the layers with the free “OpenXR API Layers GUI” tool: move “XR_APILAYER_APEX_overlays” to the other end of the list.',
     ),
   );
   return c;
