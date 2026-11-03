@@ -49,7 +49,7 @@ export const flags: OverlayDef = {
       ],
       group: 'Look',
     },
-    { key: 'ledSize', label: 'LED size', type: 'number', default: 7, min: 3, max: 20, unit: 'px', group: 'Look' },
+    { key: 'ledSize', when: (v) => v.style === 'led', label: 'LED size', type: 'number', default: 7, min: 3, max: 20, unit: 'px', group: 'Look' },
     { key: 'showLabel', label: 'Flag name', type: 'bool', default: true, group: 'Look' },
     { key: 'showDetail', label: 'What it means', type: 'bool', default: false, group: 'Look' },
     { key: 'blink', label: 'Flash waving flags', type: 'bool', default: true, group: 'Look' },

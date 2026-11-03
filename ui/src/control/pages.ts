@@ -4,7 +4,7 @@ import { commonFor, merge, type SettingDef } from '../lib/settings';
 import { applyUiTheme, PRESETS, THEME } from '../lib/theme';
 import type { OverlayInstance, SavedLayout } from '../lib/types';
 import { byKind, OVERLAYS } from '../overlays/registry';
-import { CHOICES, field, form } from './form';
+import { CHOICES, field, form, relevance } from './form';
 import { hotkeyInput } from './hotkey';
 import { releaseNotes } from './releaseNotes';
 import { STATS } from '../lib/monitorStats';
@@ -157,7 +157,7 @@ const tabOf = (s: SettingDef, common: boolean) =>
   common ? (s.group === 'Advanced' ? ADVANCED_TAB : s.group === 'VR' ? VR_TAB : SIZE_TAB) : (TAB_ALIAS[s.group ?? 'Options'] ?? s.group ?? 'Settings');
 
 /** What to show and how it is laid out first; looks and behaviour after; window options last. */
-const FIRST = ['Reference lap', 'What to show', 'Layout', 'Columns', 'Header'];
+const FIRST = ['Reference lap', 'What to show', 'Layout', 'Columns', 'Column style', 'Header'];
 const LAST = ['Look', 'Colours', 'Alerts', 'Behaviour', SIZE_TAB, VR_TAB, ADVANCED_TAB];
 const tabRank = (t: string) => (FIRST.includes(t) ? FIRST.indexOf(t) - 100 : LAST.includes(t) ? LAST.indexOf(t) + 100 : 0);
 
@@ -260,11 +260,14 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
   if (!tabs.includes(tab)) tab = tabs[0];
 
   const changed = (t: string) => entries.some((e) => e.tab === t && e.s.key in o.settings && JSON.stringify(o.settings[e.s.key]) !== JSON.stringify(e.s.default));
+  // Settings that only apply with other choices are shown or hidden as those change.
+  let relevant = () => {};
   const onChange = (k: string, v: unknown) => {
     values[k] = v;
     o.settings = { ...o.settings, [k]: v };
     save();
     drawTabs();
+    relevant();
   };
 
   const search = h('input', 'search');
@@ -337,13 +340,22 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
       for (const t of tabs) {
         const inTab = hits.filter((e) => e.tab === t);
         if (!inTab.length) continue;
+        // Searching finds every setting, including ones that only apply with other choices.
         parts.push(h('h3', '', t), ...inTab.map((e) => field(e.s, values, onChange)));
       }
+      relevant = () => {};
       panel.replaceChildren(...(parts.length ? parts : [h('p', 'dim', `No setting matches “${ui.query}”.`)]));
       return;
     }
-    const rows = entries.filter((e) => e.tab === tab).map((e) => field(e.s, values, onChange));
-    panel.replaceChildren(...rows, ...(tab === SIZE_TAB ? [sizeExtras()] : []));
+    const rows: [SettingDef, HTMLElement][] = entries.filter((e) => e.tab === tab).map((e) => [e.s, field(e.s, values, onChange)]);
+    const none = h('p', 'dim', 'Nothing here applies with your current choices (for example the columns shown, or a feature switched off).');
+    const apply = relevance(rows, values);
+    relevant = () => {
+      apply();
+      none.hidden = rows.some((r) => !r[1].hidden);
+    };
+    relevant();
+    panel.replaceChildren(...rows.map((r) => r[1]), none, ...(tab === SIZE_TAB ? [sizeExtras()] : []));
   };
 
   search.oninput = () => {

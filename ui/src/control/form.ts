@@ -86,7 +86,7 @@ function columnsControl(s: Extract<SettingDef, { type: 'columns' }>, value: Colu
       const remove = h('button', 'mini subtle', '✕');
       up.title = 'Move left';
       down.title = 'Move right';
-      remove.title = 'Hide this column';
+      remove.title = 'Remove';
       up.disabled = i === 0;
       down.disabled = i === shown.length - 1;
       up.onclick = move(-1);
@@ -109,7 +109,7 @@ function columnsControl(s: Extract<SettingDef, { type: 'columns' }>, value: Colu
       clear();
       if (dragged != null) place(dragged, null, true);
     });
-    if (!shown.length) list.append(h('p', 'dim small', 'No columns shown — add some below.'));
+    if (!shown.length) list.append(h('p', 'dim small', 'Nothing shown — add some below.'));
     const hidden = cols.filter((c) => !c.on);
     const chips = h('div', 'col-chips');
     for (const c of hidden) {
@@ -125,7 +125,7 @@ function columnsControl(s: Extract<SettingDef, { type: 'columns' }>, value: Colu
     box.replaceChildren(
       h('div', 'col-add dim small', 'Shown, in order — drag to rearrange'),
       list,
-      ...(hidden.length ? [h('div', 'col-add dim small', 'Add a column — click, or drag it into place'), chips] : []),
+      ...(hidden.length ? [h('div', 'col-add dim small', 'Add more — click one, or drag it into place'), chips] : []),
     );
   };
   draw();
@@ -268,10 +268,28 @@ export function field(s: SettingDef, values: Values, onChange: OnChange): HTMLEl
   return row;
 }
 
+/** Fields that depend on other settings: show them only while those make them apply. */
+export function relevance(fields: [SettingDef, HTMLElement][], values: Values) {
+  const apply = () => {
+    for (const [s, el] of fields) {
+      const on = !s.when || s.when(values);
+      if (el.hidden === on) el.hidden = !on;
+    }
+  };
+  apply();
+  return apply;
+}
+
 /** A form with one fieldset per settings group. */
 export function form(schema: SettingDef[], values: Values, onChange: OnChange): HTMLElement {
   const el = h('div', 'form');
   const groups = new Map<string, HTMLElement>();
+  const fields: [SettingDef, HTMLElement][] = [];
+  let update = () => {};
+  const changed: OnChange = (k, v) => {
+    onChange(k, v);
+    update();
+  };
   for (const s of schema) {
     const g = s.group ?? 'Options';
     let fs = groups.get(g);
@@ -281,7 +299,10 @@ export function form(schema: SettingDef[], values: Values, onChange: OnChange): 
       groups.set(g, fs);
       el.append(fs);
     }
-    fs.append(field(s, values, onChange));
+    const f = field(s, values, changed);
+    fields.push([s, f]);
+    fs.append(f);
   }
+  update = relevance(fields, values);
   return el;
 }

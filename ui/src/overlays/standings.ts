@@ -57,7 +57,7 @@ export const standings: OverlayDef = {
   settings: [
     { key: 'mode', label: 'Show', type: 'select', default: 'multiclass', options: [['multiclass', 'All classes'], ['myClass', 'My class only'], ['overall', 'Single overall list']], group: 'Layout' },
     { key: 'maxRows', label: 'Rows in my class', type: 'number', default: 10, min: 1, max: 64, group: 'Layout' },
-    { key: 'otherClassRows', label: 'Rows in other classes', type: 'number', default: 3, min: 0, max: 64, group: 'Layout' },
+    { key: 'otherClassRows', when: (v) => (v.mode ?? 'multiclass') === 'multiclass', label: 'Rows in other classes', type: 'number', default: 3, min: 0, max: 64, group: 'Layout' },
     { key: 'topRows', label: 'Always show top', type: 'number', default: 3, min: 0, max: 20, group: 'Layout', help: 'The rest of the rows follow the car you are watching' },
     { key: 'columns', label: 'Columns', type: 'columns', ...columns(COLS, ['pos', 'number', 'flag', 'name', 'irating', 'gap', 'interval', 'lastLap', 'bestLap']), group: 'Columns' },
     { key: 'nameStyle', label: 'Name format', type: 'select', default: 'full', options: NAME_STYLES, group: 'Columns' },
@@ -66,7 +66,7 @@ export const standings: OverlayDef = {
     ...headerSettings(['time', 'lap', 'cars']),
     { key: 'showClassHeader', label: 'Show class headers', type: 'bool', default: true, group: 'Header' },
     {
-      key: 'classLogo',
+      key: 'classLogo', when: (v) => v.showClassHeader !== false,
       label: 'Class badge in class headers',
       type: 'select',
       default: 'only',
@@ -79,7 +79,7 @@ export const standings: OverlayDef = {
       help: 'Badges are built in for iRacing’s classes (GT3, LMP2, TCR, …). Your own images in the data folder under logos/ (e.g. class-gt3.png) take priority',
     },
     { key: 'showColumnTitles', label: 'Show column titles', type: 'bool', default: true, group: 'Header' },
-    { key: 'columnTitlesEveryClass', label: 'Repeat column titles for every class', type: 'bool', default: false, group: 'Header' },
+    { key: 'columnTitlesEveryClass', when: (v) => v.showColumnTitles !== false && (v.mode ?? 'multiclass') === 'multiclass', label: 'Repeat column titles for every class', type: 'bool', default: false, group: 'Header' },
     { key: 'dimPitCars', label: 'Dim cars in the pits', type: 'bool', default: true, group: 'Colours' },
     { key: 'dimDisconnected', label: 'Dim disconnected cars', type: 'bool', default: true, group: 'Colours' },
   ],

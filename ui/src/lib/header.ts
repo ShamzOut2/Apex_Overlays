@@ -10,7 +10,7 @@ export function headerSettings(on: string[]): SettingDef[] {
   return [
     { key: 'showHeader', label: 'Show header', type: 'bool', default: true, group: 'Header' },
     {
-      key: 'headerTitle',
+      key: 'headerTitle', when: (v) => v.showHeader !== false,
       label: 'Header title',
       type: 'select',
       default: 'overlay',
@@ -24,12 +24,12 @@ export function headerSettings(on: string[]): SettingDef[] {
       ],
       group: 'Header',
     },
-    { key: 'headerCustomTitle', label: 'Custom title', type: 'text', default: '', placeholder: 'My League · Round 3', group: 'Header' },
-    { key: 'sessionBadge', label: 'Session type badge (Practice, Qualifying, Race…)', type: 'bool', default: true, group: 'Header' },
-    { key: 'headerFields', label: 'Session details in the header', type: 'columns', ...headerFields(on), group: 'Header' },
-    { key: 'headerSeparator', label: 'Separator', type: 'text', default: '  ·  ', group: 'Header' },
+    { key: 'headerCustomTitle', when: (v) => v.showHeader !== false && v.headerTitle === 'custom', label: 'Custom title', type: 'text', default: '', placeholder: 'My League · Round 3', group: 'Header' },
+    { key: 'sessionBadge', when: (v) => v.showHeader !== false, label: 'Session type badge (Practice, Qualifying, Race…)', type: 'bool', default: true, group: 'Header' },
+    { key: 'headerFields', when: (v) => v.showHeader !== false, label: 'Session details in the header', type: 'columns', ...headerFields(on), group: 'Header' },
+    { key: 'headerSeparator', when: (v) => v.showHeader !== false, label: 'Separator', type: 'text', default: '  ·  ', group: 'Header' },
     {
-      key: 'timedLaps',
+      key: 'timedLaps', when: (v) => v.showHeader !== false,
       label: 'Lap count in timed races',
       type: 'select',
       default: 'infinity',
