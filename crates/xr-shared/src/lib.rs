@@ -1,6 +1,7 @@
 //! What the Apex Overlays app and its OpenXR API layer (running inside iRacing) share: a
 //! named block of memory listing the overlay panels to draw. The pixels themselves are in
-//! Direct3D 11 textures the app shares by handle (with a keyed mutex, key 0).
+//! Direct3D 11 textures the app shares by name (NT handles, with a keyed mutex, key 0), which
+//! Direct3D 11 and Direct3D 12 sessions (through D3D11-on-12) can both open.
 //!
 //! The app writes the block as a seqlock: `seq` is odd while it writes and bumped again
 //! when done, so a reader that sees the same even `seq` before and after copying has a
@@ -9,7 +10,7 @@
 /// Name of the shared memory (per Windows session).
 pub const NAME: &str = "Local\\ApexOverlaysOpenXR";
 pub const MAGIC: u32 = 0x5258_5041; // "APXR"
-pub const VERSION: u32 = 1;
+pub const VERSION: u32 = 2;
 pub const MAX_PANELS: usize = 32;
 /// Panels older than this (ms since the app last wrote) are not drawn: the app has closed.
 pub const STALE_MS: u64 = 2000;
@@ -17,7 +18,8 @@ pub const STALE_MS: u64 = 2000;
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Panel {
-    /// Shared texture handle (legacy, from IDXGIResource::GetSharedHandle) and its size.
+    /// Which shared texture (see [`texture_name`]; changes when the texture is remade) and
+    /// its size.
     pub texture: u64,
     pub width: u32,
     pub height: u32,
@@ -60,6 +62,11 @@ impl Shared {
     pub fn panels(&self) -> &[Panel] {
         &self.panels[..(self.count as usize).min(MAX_PANELS)]
     }
+}
+
+/// Name of the shared texture with id `texture` (opened with OpenSharedResourceByName).
+pub fn texture_name(texture: u64) -> String {
+    format!("Local\\ApexOverlaysTexture{texture}")
 }
 
 /// Quaternion (x, y, z, w) for a turn of `yaw` about the vertical axis, then a tilt of

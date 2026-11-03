@@ -4,6 +4,11 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 0.9.1
+
+### Improvements
+- VR with OpenXR: works with NextLevelXR and other OpenXR layers. The overlays are now drawn in Direct3D 12 sessions as well as Direct3D 11 (NextLevelXR supports both), and the overlay images are shared in a way both can open. If the overlays do not show or get cropped with another layer, the VR card explains how to change the order of the layers
+
 ## 0.9.0
 
 ### New features

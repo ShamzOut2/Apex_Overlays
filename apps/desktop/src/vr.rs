@@ -39,10 +39,11 @@ mod imp {
     use windows::Win32::Graphics::Direct3D::D3D_DRIVER_TYPE_HARDWARE;
     use windows::Win32::Graphics::Direct3D11::{
         D3D11CreateDevice, ID3D11Device, ID3D11DeviceContext, ID3D11Texture2D, D3D11_BIND_SHADER_RESOURCE, D3D11_BOX, D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-        D3D11_RESOURCE_MISC_SHARED, D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX, D3D11_SDK_VERSION, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT,
+        D3D11_RESOURCE_MISC_SHARED, D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX, D3D11_RESOURCE_MISC_SHARED_NTHANDLE, D3D11_SDK_VERSION, D3D11_TEXTURE2D_DESC,
+        D3D11_USAGE_DEFAULT,
     };
     use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_SAMPLE_DESC};
-    use windows::Win32::Graphics::Dxgi::{IDXGIDevice, IDXGIKeyedMutex, IDXGIResource};
+    use windows::Win32::Graphics::Dxgi::{IDXGIDevice, IDXGIKeyedMutex, IDXGIResource1, DXGI_SHARED_RESOURCE_READ, DXGI_SHARED_RESOURCE_WRITE};
     use windows::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW};
     use windows::Win32::System::WinRT::Direct3D11::{CreateDirect3D11DeviceFromDXGIDevice, IDirect3DDxgiInterfaceAccess};
     use windows::Win32::System::WinRT::Graphics::Capture::IGraphicsCaptureItemInterop;
@@ -252,9 +253,11 @@ mod imp {
         session: GraphicsCaptureSession,
         size: SizeInt32,
         tex: Option<(ID3D11Texture2D, i32, i32)>,
-        /// For the OpenXR layer: the texture is shared with a keyed mutex (key 0), by handle.
+        /// For the OpenXR layer: the texture is shared by name (see `apex_xr_shared::texture_name`)
+        /// with a keyed mutex (key 0). `handle` is its id (0 = none), `nt` keeps the name alive.
         keyed: bool,
         handle: u64,
+        nt: Option<windows::Win32::Foundation::HANDLE>,
         /// Frames copied so far.
         frame: u32,
     }
@@ -270,7 +273,7 @@ mod imp {
             // Windows 11: no yellow "being captured" border around the overlay.
             let _ = session.SetIsBorderRequired(false);
             session.StartCapture()?;
-            Ok(Self { hwnd, pool, session, size, tex: None, keyed, handle: 0, frame: 0 })
+            Ok(Self { hwnd, pool, session, size, tex: None, keyed, handle: 0, nt: None, frame: 0 })
         }
 
         /// The newest frame, copied into this capture's own texture (None if nothing new).
@@ -295,14 +298,29 @@ mod imp {
                     Usage: D3D11_USAGE_DEFAULT,
                     BindFlags: D3D11_BIND_SHADER_RESOURCE.0 as u32,
                     CPUAccessFlags: 0,
-                    MiscFlags: if self.keyed { D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX.0 } else { D3D11_RESOURCE_MISC_SHARED.0 } as u32,
+                    MiscFlags: if self.keyed {
+                        D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX.0 | D3D11_RESOURCE_MISC_SHARED_NTHANDLE.0
+                    } else {
+                        D3D11_RESOURCE_MISC_SHARED.0
+                    } as u32,
                 };
                 let mut t = None;
                 unsafe { g.device.CreateTexture2D(&desc, None, Some(&mut t))? };
-                self.handle = match (&t, self.keyed) {
-                    (Some(t), true) => unsafe { t.cast::<IDXGIResource>()?.GetSharedHandle()? }.0 as u64,
-                    _ => 0,
-                };
+                if let Some(old) = self.nt.take() {
+                    unsafe {
+                        let _ = windows::Win32::Foundation::CloseHandle(old);
+                    }
+                }
+                self.handle = 0;
+                if let (Some(t), true) = (&t, self.keyed) {
+                    // A new name for every texture, so the layer opens the new one.
+                    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+                    let id = ((std::process::id() as u64) << 32) | NEXT.fetch_add(1, Ordering::Relaxed);
+                    let name = HSTRING::from(apex_xr_shared::texture_name(id));
+                    let access = DXGI_SHARED_RESOURCE_READ.0 | DXGI_SHARED_RESOURCE_WRITE.0;
+                    self.nt = Some(unsafe { t.cast::<IDXGIResource1>()?.CreateSharedHandle(None, access, &name)? });
+                    self.handle = id;
+                }
                 self.tex = t.map(|t| (t, w, h));
             }
             let Some((tex, _, _)) = self.tex.as_ref() else { return Ok(None) };
@@ -333,6 +351,11 @@ mod imp {
 
     impl Drop for Capture {
         fn drop(&mut self) {
+            if let Some(h) = self.nt.take() {
+                unsafe {
+                    let _ = windows::Win32::Foundation::CloseHandle(h);
+                }
+            }
             let _ = self.session.Close();
             let _ = self.pool.Close();
         }

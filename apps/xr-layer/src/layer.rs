@@ -3,14 +3,20 @@ use openxr_sys as xr;
 use openxr_sys::pfn;
 use openxr_sys::Handle;
 use std::collections::HashMap;
-use std::ffi::{c_char, c_void, CStr};
+use std::ffi::{c_char, CStr};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::Mutex;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use windows::core::IUnknown;
 use windows::core::{Interface, HSTRING};
 use windows::Win32::Foundation::{CloseHandle, HANDLE};
-use windows::Win32::Graphics::Direct3D11::{ID3D11Device, ID3D11DeviceContext, ID3D11Texture2D};
-use windows::Win32::Graphics::Dxgi::IDXGIKeyedMutex;
+use windows::Win32::Graphics::Direct3D11::ID3D11Device1;
+use windows::Win32::Graphics::Direct3D11::{
+    ID3D11Device, ID3D11DeviceContext, ID3D11Resource, ID3D11Texture2D, D3D11_BIND_RENDER_TARGET, D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+};
+use windows::Win32::Graphics::Direct3D11on12::{D3D11On12CreateDevice, ID3D11On12Device, D3D11_RESOURCE_FLAGS};
+use windows::Win32::Graphics::Direct3D12::D3D12_RESOURCE_STATE_RENDER_TARGET;
+use windows::Win32::Graphics::Dxgi::{IDXGIKeyedMutex, DXGI_SHARED_RESOURCE_READ, DXGI_SHARED_RESOURCE_WRITE};
 use windows::Win32::System::Memory::{MapViewOfFile, OpenFileMappingW, UnmapViewOfFile, FILE_MAP_READ, MEMORY_MAPPED_VIEW_ADDRESS};
 
 const LAYER_NAME: &str = "XR_APILAYER_APEX_overlays";
@@ -114,8 +120,12 @@ struct PanelState {
 
 struct SessionState {
     session: xr::Session,
+    /// Direct3D 11 device and context: the game's own, or, for a Direct3D 12 session, a
+    /// D3D11-on-12 device on the game's command queue (`on12`), so the shared textures are
+    /// copied the same way in both.
     device: ID3D11Device,
     context: ID3D11DeviceContext,
+    on12: Option<ID3D11On12Device>,
     local: xr::Space,
     view: xr::Space,
     format: Option<i64>,
@@ -303,19 +313,49 @@ unsafe extern "system" fn create_session(instance: xr::Instance, info: *const xr
     r
 }
 
-/// Remember a Direct3D 11 session and make the spaces panels are placed in.
+/// Destroy a panel's swapchain (its wrapped images first: they hold the D3D12 resources).
+unsafe fn release(next: Next, p: PanelState) {
+    let swapchain = p.swapchain;
+    drop(p);
+    unsafe { (next.destroy_swapchain)(swapchain) };
+}
+
+/// Remember a Direct3D 11 or 12 session and make the spaces panels are placed in.
 unsafe fn start_session(next: Next, info: *const xr::SessionCreateInfo, session: xr::Session) {
     let mut p = unsafe { (*info).next } as *const xr::BaseInStructure;
     let mut device = None;
+    let mut on12 = None;
     while !p.is_null() {
-        if unsafe { (*p).ty } == xr::StructureType::GRAPHICS_BINDING_D3D11_KHR {
+        let ty = unsafe { (*p).ty };
+        if ty == xr::StructureType::GRAPHICS_BINDING_D3D11_KHR {
             let raw = unsafe { (*(p as *const xr::GraphicsBindingD3D11KHR)).device };
             device = unsafe { ID3D11Device::from_raw_borrowed(&raw) }.cloned();
+            log("Apex Overlays layer: Direct3D 11 session");
+        } else if ty == xr::StructureType::GRAPHICS_BINDING_D3D12_KHR {
+            // Direct3D 12 (the game's, or another layer's such as NextLevelXR): a D3D11-on-12
+            // device on the same command queue.
+            let b = unsafe { &*(p as *const xr::GraphicsBindingD3D12KHR) };
+            let (raw_device, raw_queue) = (b.device, b.queue);
+            let d12 = unsafe { IUnknown::from_raw_borrowed(&raw_device) }.cloned();
+            let queue = unsafe { IUnknown::from_raw_borrowed(&raw_queue) }.cloned();
+            if let (Some(d12), Some(queue)) = (d12, queue) {
+                let mut dev = None;
+                let made =
+                    unsafe { D3D11On12CreateDevice(&d12, D3D11_CREATE_DEVICE_BGRA_SUPPORT.0, None, Some(&[Some(queue)]), 0, Some(&mut dev), None, None) };
+                match (made, dev) {
+                    (Ok(()), Some(d)) => {
+                        on12 = d.cast::<ID3D11On12Device>().ok();
+                        device = Some(d);
+                        log("Apex Overlays layer: Direct3D 12 session (through D3D11-on-12)");
+                    }
+                    (r, _) => log(&format!("Apex Overlays layer: Direct3D 12 session but D3D11-on-12 failed ({r:?}); overlays off")),
+                }
+            }
         }
         p = unsafe { (*p).next };
     }
     let Some(device) = device else {
-        log("Apex Overlays layer: not a Direct3D 11 session; overlays off");
+        log("Apex Overlays layer: not a Direct3D 11 or 12 session; overlays off");
         return;
     };
     let Ok(context) = (unsafe { device.GetImmediateContext() }) else { return };
@@ -352,6 +392,7 @@ unsafe fn start_session(next: Next, info: *const xr::SessionCreateInfo, session:
                 session,
                 device,
                 context,
+                on12,
                 local,
                 view,
                 format,
@@ -375,7 +416,7 @@ unsafe extern "system" fn destroy_session(session: xr::Session) -> xr::Result {
                 let s = st.sessions.remove(i);
                 unsafe {
                     for (_, p) in s.panels {
-                        (next.destroy_swapchain)(p.swapchain);
+                        release(next, p);
                     }
                     (next.destroy_space)(s.local);
                     (next.destroy_space)(s.view);
@@ -456,7 +497,7 @@ unsafe fn build(next: Next, st: &mut SessionState, info: &xr::FrameEndInfo) -> u
     let gone: Vec<u64> = st.panels.keys().copied().filter(|k| !panels.iter().any(|p| p.key == *k)).collect();
     for k in gone {
         if let Some(p) = st.panels.remove(&k) {
-            unsafe { (next.destroy_swapchain)(p.swapchain) };
+            unsafe { release(next, p) };
         }
     }
     for p in &panels {
@@ -493,7 +534,7 @@ unsafe fn panel_state<'a>(next: Next, st: &'a mut SessionState, format: i64, p: 
     let resized = st.panels.get(&p.key).is_some_and(|s| s.width != p.width || s.height != p.height);
     if resized {
         if let Some(old) = st.panels.remove(&p.key) {
-            unsafe { (next.destroy_swapchain)(old.swapchain) };
+            unsafe { release(next, old) };
         }
     }
     if !st.panels.contains_key(&p.key) {
@@ -517,12 +558,46 @@ unsafe fn panel_state<'a>(next: Next, st: &'a mut SessionState, format: i64, p: 
         }
         let mut n = 0u32;
         unsafe { (next.enumerate_swapchain_images)(swapchain, 0, &mut n, std::ptr::null_mut()) };
-        let mut raw =
-            vec![xr::SwapchainImageD3D11KHR { ty: xr::SwapchainImageD3D11KHR::TYPE, next: std::ptr::null_mut(), texture: std::ptr::null_mut() }; n as usize];
-        let ok = n > 0
-            && unsafe { (next.enumerate_swapchain_images)(swapchain, n, &mut n, raw.as_mut_ptr() as *mut xr::SwapchainImageBaseHeader) } == xr::Result::SUCCESS;
-        let images: Vec<ID3D11Texture2D> = raw.iter().filter_map(|i| unsafe { ID3D11Texture2D::from_raw_borrowed(&i.texture) }.cloned()).collect();
-        if !ok || images.len() != raw.len() {
+        let (ok, wanted, images) = match &st.on12 {
+            None => {
+                let mut raw =
+                    vec![
+                        xr::SwapchainImageD3D11KHR { ty: xr::SwapchainImageD3D11KHR::TYPE, next: std::ptr::null_mut(), texture: std::ptr::null_mut() };
+                        n as usize
+                    ];
+                let ok = n > 0
+                    && unsafe { (next.enumerate_swapchain_images)(swapchain, n, &mut n, raw.as_mut_ptr() as *mut xr::SwapchainImageBaseHeader) }
+                        == xr::Result::SUCCESS;
+                let images: Vec<ID3D11Texture2D> = raw.iter().filter_map(|i| unsafe { ID3D11Texture2D::from_raw_borrowed(&i.texture) }.cloned()).collect();
+                (ok, raw.len(), images)
+            }
+            Some(on12) => {
+                // Direct3D 12 images, wrapped as D3D11 textures (render-target state in and out,
+                // as OpenXR expects colour images to be when released).
+                let mut raw =
+                    vec![
+                        xr::SwapchainImageD3D12KHR { ty: xr::SwapchainImageD3D12KHR::TYPE, next: std::ptr::null_mut(), texture: std::ptr::null_mut() };
+                        n as usize
+                    ];
+                let ok = n > 0
+                    && unsafe { (next.enumerate_swapchain_images)(swapchain, n, &mut n, raw.as_mut_ptr() as *mut xr::SwapchainImageBaseHeader) }
+                        == xr::Result::SUCCESS;
+                let flags = D3D11_RESOURCE_FLAGS { BindFlags: D3D11_BIND_RENDER_TARGET.0 as u32, MiscFlags: 0, CPUAccessFlags: 0, StructureByteStride: 0 };
+                let images: Vec<ID3D11Texture2D> = raw
+                    .iter()
+                    .filter_map(|i| {
+                        let r = i.texture;
+                        let res = unsafe { IUnknown::from_raw_borrowed(&r) }?;
+                        let mut out: Option<ID3D11Texture2D> = None;
+                        unsafe { on12.CreateWrappedResource(res, &flags, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_RENDER_TARGET, &mut out) }
+                            .ok()?;
+                        out
+                    })
+                    .collect();
+                (ok, raw.len(), images)
+            }
+        };
+        if !ok || images.len() != wanted {
             unsafe { (next.destroy_swapchain)(swapchain) };
             return None;
         }
@@ -530,14 +605,16 @@ unsafe fn panel_state<'a>(next: Next, st: &'a mut SessionState, format: i64, p: 
     }
     let ps = st.panels.get_mut(&p.key)?;
     if ps.texture != p.texture {
-        let mut tex: Option<ID3D11Texture2D> = None;
-        // A shared handle from the app (legacy, not an NT handle: nothing to duplicate).
-        if unsafe { st.device.OpenSharedResource(HANDLE(p.texture as *mut c_void), &mut tex) }.is_err() {
+        // Shared by name by the app (works on Direct3D 11 and on D3D11-on-12 devices).
+        let name = HSTRING::from(apex_xr_shared::texture_name(p.texture));
+        let access = DXGI_SHARED_RESOURCE_READ.0 | DXGI_SHARED_RESOURCE_WRITE.0;
+        let tex = st.device.cast::<ID3D11Device1>().and_then(|d| unsafe { d.OpenSharedResourceByName::<_, ID3D11Texture2D>(&name, access) });
+        let Ok(tex) = tex else {
             log("Apex Overlays layer: could not open an overlay's shared texture");
             return Some(ps);
-        }
+        };
         ps.texture = p.texture;
-        ps.source = tex;
+        ps.source = Some(tex);
         ps.frame = p.frame.wrapping_sub(1);
     }
     if ps.frame == p.frame && ps.ready {
@@ -555,7 +632,16 @@ unsafe fn panel_state<'a>(next: Next, st: &'a mut SessionState, format: i64, p: 
             let mutex: Option<IDXGIKeyedMutex> = source.cast().ok();
             let locked = mutex.as_ref().map(|m| unsafe { (Interface::vtable(m).AcquireSync)(Interface::as_raw(m), 0, 4) }.0 == 0);
             if locked != Some(false) {
+                let wrapped: Option<ID3D11Resource> = st.on12.as_ref().and_then(|_| dst.cast().ok());
+                if let (Some(on12), Some(w)) = (&st.on12, &wrapped) {
+                    unsafe { on12.AcquireWrappedResources(&[Some(w.clone())]) };
+                }
                 unsafe { st.context.CopyResource(dst, &source) };
+                if let (Some(on12), Some(w)) = (&st.on12, &wrapped) {
+                    // Hand the image back to Direct3D 12 and submit the copy on the game's queue.
+                    unsafe { on12.ReleaseWrappedResources(&[Some(w.clone())]) };
+                    unsafe { st.context.Flush() };
+                }
                 if let (Some(m), Some(true)) = (mutex.as_ref(), locked) {
                     let _ = unsafe { m.ReleaseSync(0) };
                 }
