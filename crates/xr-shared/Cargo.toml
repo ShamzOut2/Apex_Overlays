@@ -1,0 +1,8 @@
+[package]
+name = "apex-xr-shared"
+description = "What the Apex Overlays app and its OpenXR layer share: the panel list in shared memory"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]

@@ -16,7 +16,13 @@ interface Base {
   label: string;
   help?: string;
   group?: string;
+  /** Shown only when this holds for the current values (e.g. a custom title only when the
+   *  title is set to custom); hidden settings keep their values. */
+  when?: (v: Values) => boolean;
 }
+
+/** Column `id` is switched on in a columns setting (or there is no such setting). */
+export const columnOn = (v: Values, id: string, key = 'columns') => !Array.isArray(v[key]) || enabledColumns(v[key]).includes(id);
 
 export type SettingDef =
   | (Base & { type: 'bool'; default: boolean })
@@ -106,7 +112,7 @@ export const COMMON: SettingDef[] = [
   // VR (desktop app with SteamVR): where this overlay goes in the headset.
   { key: 'vrShow', label: 'Show in VR', type: 'bool', default: true, group: 'VR', help: 'When VR is on (General → VR)' },
   {
-    key: 'vrAnchor',
+    key: 'vrAnchor', when: (v) => v.vrShow !== false,
     label: 'In VR it is',
     type: 'select',
     default: 'world',
@@ -117,7 +123,7 @@ export const COMMON: SettingDef[] = [
     group: 'VR',
   },
   {
-    key: 'vrPlace',
+    key: 'vrPlace', when: (v) => v.vrShow !== false,
     label: 'Placed',
     type: 'select',
     default: 'screen',
@@ -128,13 +134,14 @@ export const COMMON: SettingDef[] = [
     group: 'VR',
     help: 'As on my screen: the layout of your monitor on an imaginary screen in front of you (its distance and size are under General → VR)',
   },
-  { key: 'vrX', label: 'Left / right', type: 'number', default: 0, min: -2, max: 2, step: 0.01, unit: 'm', group: 'VR', help: 'Custom placement: + is to the right' },
-  { key: 'vrY', label: 'Down / up', type: 'number', default: 0, min: -2, max: 2, step: 0.01, unit: 'm', group: 'VR', help: 'Custom placement: + is up' },
-  { key: 'vrDistance', label: 'Distance in front', type: 'number', default: 0.9, min: 0.1, max: 5, step: 0.01, unit: 'm', group: 'VR' },
-  { key: 'vrYaw', label: 'Turn left / right', type: 'number', default: 0, min: -180, max: 180, step: 1, unit: '°', group: 'VR', help: 'Custom placement: turn it to face you when it is off to one side' },
-  { key: 'vrPitch', label: 'Tilt', type: 'number', default: 0, min: -90, max: 90, step: 1, unit: '°', group: 'VR' },
-  { key: 'vrWidth', label: 'Width', type: 'number', default: 0.3, min: 0.02, max: 3, step: 0.01, unit: 'm', group: 'VR', help: 'Custom placement: its size in the headset (the height follows)' },
-  { key: 'vrOpacity', label: 'Opacity in VR', type: 'number', default: 100, min: 5, max: 100, step: 1, unit: '%', group: 'VR' },
+  { key: 'vrX', when: (v) => v.vrShow !== false && v.vrPlace === 'custom', label: 'Custom position: left / right', type: 'number', default: 0, min: -2, max: 2, step: 0.01, unit: 'm', group: 'VR', help: 'Custom placement: + is to the right' },
+  { key: 'vrY', when: (v) => v.vrShow !== false && v.vrPlace === 'custom', label: 'Custom position: down / up', type: 'number', default: 0, min: -2, max: 2, step: 0.01, unit: 'm', group: 'VR', help: 'Custom placement: + is up' },
+  { key: 'vrDistance', when: (v) => v.vrShow !== false && v.vrPlace === 'custom', label: 'Custom position: distance in front', type: 'number', default: 0.9, min: 0.1, max: 5, step: 0.01, unit: 'm', group: 'VR' },
+  { key: 'vrYaw', when: (v) => v.vrShow !== false, label: 'Rotation: turn left / right', type: 'number', default: 0, min: -180, max: 180, step: 1, unit: '°', group: 'VR', help: 'However it is placed: turn it to face you when it is off to one side' },
+  { key: 'vrPitch', when: (v) => v.vrShow !== false, label: 'Rotation: tilt up / down', type: 'number', default: 0, min: -90, max: 90, step: 1, unit: '°', group: 'VR' },
+  { key: 'vrRoll', when: (v) => v.vrShow !== false, label: 'Rotation: roll', type: 'number', default: 0, min: -180, max: 180, step: 1, unit: '°', group: 'VR', help: 'Turns it in its own plane, like a picture on a wall' },
+  { key: 'vrWidth', when: (v) => v.vrShow !== false && v.vrPlace === 'custom', label: 'Custom size: width', type: 'number', default: 0.3, min: 0.02, max: 3, step: 0.01, unit: 'm', group: 'VR', help: 'Custom placement: its size in the headset (the height follows)' },
+  { key: 'vrOpacity', when: (v) => v.vrShow !== false, label: 'Opacity in VR', type: 'number', default: 100, min: 5, max: 100, step: 1, unit: '%', group: 'VR', help: 'SteamVR overlays only for now' },
   { key: 'customCss', label: 'Custom CSS', type: 'text', multiline: true, default: '', placeholder: '.row.player { outline: 1px solid gold; }', group: 'Advanced' },
 ];
 

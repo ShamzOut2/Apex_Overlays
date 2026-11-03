@@ -20,8 +20,8 @@ export const garage61: OverlayDef = {
   size: [300, 230],
   settings: [
     { key: 'showDelta', label: 'Live delta to the reference lap', type: 'bool', default: true, group: 'Delta', help: 'Choose your best or the team’s best on the Garage 61 settings page' },
-    { key: 'deltaRange', label: 'Delta bar range', type: 'number', default: 1, min: 0.2, max: 5, step: 0.1, unit: 's', group: 'Delta' },
-    { key: 'showSectors', label: 'Sector deltas', type: 'bool', default: true, group: 'Delta' },
+    { key: 'deltaRange', when: (v) => v.showDelta !== false, label: 'Delta bar range', type: 'number', default: 1, min: 0.2, max: 5, step: 0.1, unit: 's', group: 'Delta' },
+    { key: 'showSectors', when: (v) => v.showDelta !== false, label: 'Sector deltas', type: 'bool', default: true, group: 'Delta' },
     { key: 'rows', label: 'Team leaderboard rows', type: 'number', default: 5, min: 0, max: 10, group: 'Layout' },
     { key: 'showDates', label: 'Show lap dates', type: 'bool', default: false, group: 'Layout' },
     { key: 'showSessionDelta', label: 'Compare with my session best', type: 'bool', default: true, group: 'Layout' },

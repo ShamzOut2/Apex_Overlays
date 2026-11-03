@@ -2,7 +2,7 @@
 
 import { h, text, toggle } from '../lib/dom';
 import * as f from '../lib/format';
-import type { Values } from '../lib/settings';
+import { columnOn, type Values } from '../lib/settings';
 import { BADGE_COLORS, classBadge } from '../lib/classBadges';
 import { chip, type Col } from '../lib/table';
 import type { Driver, Extras } from '../lib/types';
@@ -270,54 +270,54 @@ export function extraCols<R extends Driver & Extras>(s: Values): Col<R>[] {
 
 /** Settings shared by every column-based overlay. */
 export const COLUMN_STYLE_SETTINGS = [
-  { key: 'flagStyle', label: 'Flag style', type: 'select' as const, default: 'emoji', options: [['emoji', 'Flag'], ['code', 'Country code']] as [string, string][], group: 'Columns' },
+  { key: 'flagStyle', when: (v: Values) => columnOn(v, 'flag'), label: 'Flag style', type: 'select' as const, default: 'emoji', options: [['emoji', 'Flag'], ['code', 'Country code']] as [string, string][], group: 'Column style' },
   {
-    key: 'makeStyle',
+    key: 'makeStyle', when: (v: Values) => columnOn(v, 'make'),
     label: 'Manufacturer style',
     type: 'select' as const,
     default: 'logo',
     options: [['logo', 'Logo (falls back to short name)'], ['short', 'Short name'], ['full', 'Full name']] as [string, string][],
     help: 'Logos for iRacing’s manufacturers are built in; your own images in the data folder under logos/ (e.g. porsche.png) take priority',
-    group: 'Columns',
+    group: 'Column style',
   },
-  { key: 'makePlate', label: 'Light background behind manufacturer logos', type: 'bool' as const, default: false, group: 'Columns', help: 'Off: logos sit on the overlay with a thin light outline so dark ones stay visible' },
+  { key: 'makePlate', when: (v: Values) => columnOn(v, 'make') && v.makeStyle === 'logo', label: 'Light background behind manufacturer logos', type: 'bool' as const, default: false, group: 'Column style', help: 'Off: logos sit on the overlay with a thin light outline so dark ones stay visible' },
   {
-    key: 'classStyle',
+    key: 'classStyle', when: (v: Values) => columnOn(v, 'class'),
     label: 'Class column',
     type: 'select' as const,
     default: 'badge',
     options: [['badge', 'Class badge (GT3, LMP2…)'], ['chip', 'Class name in its colour']] as [string, string][],
-    group: 'Columns',
+    group: 'Column style',
   },
   {
-    key: 'classBadgeColor',
+    key: 'classBadgeColor', when: (v: Values) => columnOn(v, 'class') && v.classStyle !== 'chip',
     label: 'Class badge colour',
     type: 'select' as const,
     default: 'match',
     options: BADGE_COLORS,
     help: 'Match: the badge colour closest to the class colour in this session (iRacing’s or your league’s)',
-    group: 'Columns',
+    group: 'Column style',
   },
   {
-    key: 'irGain',
+    key: 'irGain', when: (v: Values) => columnOn(v, 'irating'),
     label: 'iRating gain/loss next to iRating',
     type: 'bool' as const,
     default: true,
     help: 'Estimated race result: green ▲ gain, red ▼ loss (official races)',
-    group: 'Columns',
+    group: 'Column style',
   },
-  { key: 'outLapText', label: 'Out-lap label', type: 'text' as const, default: 'OUTLAP', group: 'Columns' },
-  { key: 'pointsPlus', label: 'Show points as gains (+25)', type: 'bool' as const, default: true, group: 'Columns' },
-  { key: 'finishFlag', label: 'Chequered flag next to drivers who have finished', type: 'bool' as const, default: true, group: 'Columns' },
+  { key: 'outLapText', when: (v: Values) => columnOn(v, 'stint'), label: 'Out-lap label', type: 'text' as const, default: 'OUTLAP', group: 'Column style' },
+  { key: 'pointsPlus', when: (v: Values) => columnOn(v, 'points'), label: 'Show points as gains (+25)', type: 'bool' as const, default: true, group: 'Column style' },
+  { key: 'finishFlag', when: (v: Values) => columnOn(v, 'name'), label: 'Chequered flag next to drivers who have finished', type: 'bool' as const, default: true, group: 'Column style' },
   {
-    key: 'driverFlags',
+    key: 'driverFlags', when: (v: Values) => columnOn(v, 'name'),
     label: 'Flags next to drivers (caused a yellow, black, meatball, blue…)',
     type: 'bool' as const,
     default: true,
-    group: 'Columns',
+    group: 'Column style',
   },
-  { key: 'penaltyBox', label: 'Penalty box next to drivers (DT, S&G 40s, +5s)', type: 'bool' as const, default: true, group: 'Columns' },
-  { key: 'pitTag', label: 'PIT after the name while on pit road', type: 'bool' as const, default: true, group: 'Columns' },
+  { key: 'penaltyBox', when: (v: Values) => columnOn(v, 'name'), label: 'Penalty box next to drivers (DT, S&G 40s, +5s)', type: 'bool' as const, default: true, group: 'Column style' },
+  { key: 'pitTag', when: (v: Values) => columnOn(v, 'name'), label: 'PIT after the name while on pit road', type: 'bool' as const, default: true, group: 'Column style' },
   { key: 'highlightBest', label: 'Colour lap times (purple = class best, green = personal best)', type: 'bool' as const, default: true, group: 'Colours' },
 ];
 

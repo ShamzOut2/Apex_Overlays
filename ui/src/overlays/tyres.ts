@@ -21,7 +21,7 @@ export const tyres: OverlayDef = {
   settings: [
     { key: 'showGauge', label: 'Wetness gauge', type: 'bool', default: true, group: 'Elements' },
     { key: 'showReasons', label: 'Explain why', type: 'bool', default: true, group: 'Elements' },
-    { key: 'maxReasons', label: 'Reasons shown', type: 'number', default: 3, min: 1, max: 8, group: 'Elements' },
+    { key: 'maxReasons', when: (v) => v.showReasons !== false, label: 'Reasons shown', type: 'number', default: 3, min: 1, max: 8, group: 'Elements' },
     { key: 'showField', label: 'Field tyre split', type: 'bool', default: true, group: 'Elements' },
     { key: 'showPace', label: 'Wet vs dry pace', type: 'bool', default: true, group: 'Elements' },
     { key: 'flash', label: 'Flash when it is time to box', type: 'bool', default: true, group: 'Alerts' },

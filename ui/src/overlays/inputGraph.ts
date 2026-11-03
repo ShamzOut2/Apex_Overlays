@@ -17,9 +17,9 @@ export const inputGraph: OverlayDef = {
     { key: 'background', label: 'Darker background behind the graph', type: 'bool', default: true, group: 'Look' },
     { key: 'throttleColor', label: 'Throttle', type: 'color', default: '#3ddc84', group: 'Colours' },
     { key: 'brakeColor', label: 'Brake', type: 'color', default: '#ff4d4d', group: 'Colours' },
-    { key: 'clutchColor', label: 'Clutch', type: 'color', default: '#4da3ff', group: 'Colours' },
-    { key: 'absColor', label: 'ABS', type: 'color', default: '#ffd84d', group: 'Colours' },
-    { key: 'steeringColor', label: 'Steering', type: 'color', default: '#e6e9ef', group: 'Colours' },
+    { key: 'clutchColor', when: (v) => v.showClutch !== false, label: 'Clutch', type: 'color', default: '#4da3ff', group: 'Colours' },
+    { key: 'absColor', when: (v) => v.absHighlight !== false, label: 'ABS', type: 'color', default: '#ffd84d', group: 'Colours' },
+    { key: 'steeringColor', when: (v) => v.traceSteering === true, label: 'Steering', type: 'color', default: '#e6e9ef', group: 'Colours' },
   ],
   commonDefaults: { hideWhenNotDriving: true },
   create(root, ctx) {

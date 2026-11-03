@@ -39,10 +39,10 @@ mod imp {
     use windows::Win32::Graphics::Direct3D::D3D_DRIVER_TYPE_HARDWARE;
     use windows::Win32::Graphics::Direct3D11::{
         D3D11CreateDevice, ID3D11Device, ID3D11DeviceContext, ID3D11Texture2D, D3D11_BIND_SHADER_RESOURCE, D3D11_BOX, D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-        D3D11_RESOURCE_MISC_SHARED, D3D11_SDK_VERSION, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT,
+        D3D11_RESOURCE_MISC_SHARED, D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX, D3D11_SDK_VERSION, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT,
     };
     use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_SAMPLE_DESC};
-    use windows::Win32::Graphics::Dxgi::IDXGIDevice;
+    use windows::Win32::Graphics::Dxgi::{IDXGIDevice, IDXGIKeyedMutex, IDXGIResource};
     use windows::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW};
     use windows::Win32::System::WinRT::Direct3D11::{CreateDirect3D11DeviceFromDXGIDevice, IDirect3DDxgiInterfaceAccess};
     use windows::Win32::System::WinRT::Graphics::Capture::IGraphicsCaptureItemInterop;
@@ -252,10 +252,15 @@ mod imp {
         session: GraphicsCaptureSession,
         size: SizeInt32,
         tex: Option<(ID3D11Texture2D, i32, i32)>,
+        /// For the OpenXR layer: the texture is shared with a keyed mutex (key 0), by handle.
+        keyed: bool,
+        handle: u64,
+        /// Frames copied so far.
+        frame: u32,
     }
 
     impl Capture {
-        fn new(g: &Gfx, hwnd: isize) -> windows::core::Result<Self> {
+        fn new(g: &Gfx, hwnd: isize, keyed: bool) -> windows::core::Result<Self> {
             let interop = windows::core::factory::<GraphicsCaptureItem, IGraphicsCaptureItemInterop>()?;
             let item: GraphicsCaptureItem = unsafe { interop.CreateForWindow(HWND(hwnd as *mut c_void))? };
             let size = item.Size()?;
@@ -265,7 +270,7 @@ mod imp {
             // Windows 11: no yellow "being captured" border around the overlay.
             let _ = session.SetIsBorderRequired(false);
             session.StartCapture()?;
-            Ok(Self { hwnd, pool, session, size, tex: None })
+            Ok(Self { hwnd, pool, session, size, tex: None, keyed, handle: 0, frame: 0 })
         }
 
         /// The newest frame, copied into this capture's own texture (None if nothing new).
@@ -290,18 +295,33 @@ mod imp {
                     Usage: D3D11_USAGE_DEFAULT,
                     BindFlags: D3D11_BIND_SHADER_RESOURCE.0 as u32,
                     CPUAccessFlags: 0,
-                    MiscFlags: D3D11_RESOURCE_MISC_SHARED.0 as u32,
+                    MiscFlags: if self.keyed { D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX.0 } else { D3D11_RESOURCE_MISC_SHARED.0 } as u32,
                 };
                 let mut t = None;
                 unsafe { g.device.CreateTexture2D(&desc, None, Some(&mut t))? };
+                self.handle = match (&t, self.keyed) {
+                    (Some(t), true) => unsafe { t.cast::<IDXGIResource>()?.GetSharedHandle()? }.0 as u64,
+                    _ => 0,
+                };
                 self.tex = t.map(|t| (t, w, h));
             }
             let Some((tex, _, _)) = self.tex.as_ref() else { return Ok(None) };
             let region = D3D11_BOX { left: 0, top: 0, front: 0, right: w as u32, bottom: h as u32, back: 1 };
+            // Shared with the OpenXR layer: write only while holding the texture's lock (a
+            // frame is skipped if the game is copying it right now).
+            let mutex: Option<IDXGIKeyedMutex> = if self.keyed { tex.cast().ok() } else { None };
+            let locked = mutex.as_ref().map(|m| unsafe { (Interface::vtable(m).AcquireSync)(Interface::as_raw(m), 0, 8) }.0 == 0);
+            if locked == Some(false) {
+                return Ok(None);
+            }
             unsafe {
                 g.context.CopySubresourceRegion(tex, 0, 0, 0, 0, &src, 0, Some(&region));
                 g.context.Flush();
+                if let Some(m) = &mutex {
+                    let _ = m.ReleaseSync(0);
+                }
             }
+            self.frame = self.frame.wrapping_add(1);
             if content != self.size {
                 // The window was resized: capture at the new size from the next frame on.
                 self.size = content;
@@ -316,6 +336,165 @@ mod imp {
             let _ = self.session.Close();
             let _ = self.pool.Close();
         }
+    }
+
+    // ---- OpenXR: panels for the app's OpenXR layer inside the game -----------------------
+
+    use apex_xr_shared::{self as xs, Panel, Shared};
+    use windows::core::{w, PCWSTR};
+    use windows::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE};
+    use windows::Win32::System::Memory::{CreateFileMappingW, MapViewOfFile, UnmapViewOfFile, FILE_MAP_ALL_ACCESS, MEMORY_MAPPED_VIEW_ADDRESS, PAGE_READWRITE};
+    use windows::Win32::System::Registry::{
+        RegCloseKey, RegCreateKeyExW, RegGetValueW, RegSetValueExW, HKEY, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_SET_VALUE, REG_DWORD,
+        REG_OPTION_NON_VOLATILE, RRF_RT_REG_DWORD,
+    };
+    use windows::Win32::UI::Shell::ShellExecuteW;
+    use windows::Win32::UI::WindowsAndMessaging::SW_HIDE;
+
+    /// The layer DLL (apps/xr-layer), embedded at build time (empty if it was not built).
+    const LAYER_DLL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/apex_xr_layer.dll"));
+    const IMPLICIT_LAYERS: &str = "SOFTWARE\\Khronos\\OpenXR\\1\\ApiLayers\\Implicit";
+
+    /// The shared memory the layer reads (see `apex_xr_shared`).
+    struct ShmWriter {
+        handle: HANDLE,
+        view: MEMORY_MAPPED_VIEW_ADDRESS,
+    }
+
+    impl ShmWriter {
+        fn create() -> Result<Self, String> {
+            let size = std::mem::size_of::<Shared>();
+            let handle = unsafe { CreateFileMappingW(INVALID_HANDLE_VALUE, None, PAGE_READWRITE, 0, size as u32, &HSTRING::from(xs::NAME)) }
+                .map_err(|e| format!("shared memory: {e}"))?;
+            let view = unsafe { MapViewOfFile(handle, FILE_MAP_ALL_ACCESS, 0, 0, size) };
+            if view.Value.is_null() {
+                unsafe {
+                    let _ = CloseHandle(handle);
+                }
+                return Err("shared memory: could not map it".into());
+            }
+            unsafe { std::ptr::write_volatile(view.Value as *mut Shared, Shared::default()) };
+            Ok(Self { handle, view })
+        }
+
+        /// Publish the panels (seqlock: odd `seq` while writing).
+        fn write(&self, panels: &[Panel], recenter: u32) {
+            use std::sync::atomic::{fence, Ordering::Release};
+            let p = self.view.Value as *mut Shared;
+            let mut s = Shared::default();
+            let n = panels.len().min(xs::MAX_PANELS);
+            s.panels[..n].copy_from_slice(&panels[..n]);
+            s.count = n as u32;
+            s.recenter = recenter;
+            s.written_ms = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0);
+            unsafe {
+                let seq = std::ptr::read_volatile(std::ptr::addr_of!((*p).seq));
+                let start = (seq | 1).wrapping_add(if seq % 2 == 1 { 2 } else { 0 });
+                std::ptr::write_volatile(std::ptr::addr_of_mut!((*p).seq), start);
+                fence(Release);
+                s.seq = start;
+                std::ptr::write_volatile(p, s);
+                fence(Release);
+                std::ptr::write_volatile(std::ptr::addr_of_mut!((*p).seq), start.wrapping_add(1));
+            }
+        }
+    }
+
+    impl Drop for ShmWriter {
+        fn drop(&mut self) {
+            // Nothing to draw any more (the layer stops at once rather than when it goes stale).
+            self.write(&[], 0);
+            unsafe {
+                let _ = UnmapViewOfFile(self.view);
+                let _ = CloseHandle(self.handle);
+            }
+        }
+    }
+
+    fn wide(s: &str) -> Vec<u16> {
+        s.encode_utf16().chain(std::iter::once(0)).collect()
+    }
+
+    /// The layer is registered as an implicit OpenXR layer (value 0 = enabled) under `root`.
+    fn registered(root: HKEY, manifest: &str) -> bool {
+        let (key, name) = (wide(IMPLICIT_LAYERS), wide(manifest));
+        let mut v = 0u32;
+        let mut size = 4u32;
+        let r = unsafe {
+            RegGetValueW(root, PCWSTR(key.as_ptr()), PCWSTR(name.as_ptr()), RRF_RT_REG_DWORD, None, Some(&mut v as *mut u32 as *mut c_void), Some(&mut size))
+        };
+        r.is_ok() && v == 0
+    }
+
+    fn register_user(manifest: &str) -> bool {
+        let (key, name) = (wide(IMPLICIT_LAYERS), wide(manifest));
+        let mut h = HKEY::default();
+        unsafe {
+            if RegCreateKeyExW(HKEY_CURRENT_USER, PCWSTR(key.as_ptr()), None, PCWSTR::null(), REG_OPTION_NON_VOLATILE, KEY_SET_VALUE, None, &mut h, None)
+                .is_err()
+            {
+                return false;
+            }
+            let ok = RegSetValueExW(h, PCWSTR(name.as_ptr()), None, REG_DWORD, Some(&0u32.to_le_bytes())).is_ok();
+            let _ = RegCloseKey(h);
+            ok
+        }
+    }
+
+    /// Ask Windows (one admin prompt) to register the layer for every user: the OpenXR
+    /// loader in every game reads that list.
+    fn register_machine(manifest: &str) {
+        let args = format!("add \"HKLM\\{IMPLICIT_LAYERS}\" /v \"{manifest}\" /t REG_DWORD /d 0 /f /reg:64");
+        unsafe { ShellExecuteW(None, w!("runas"), w!("reg.exe"), &HSTRING::from(args), PCWSTR::null(), SW_HIDE) };
+    }
+
+    /// Put the layer DLL and its manifest in the data folder and register it. Returns the
+    /// manifest path.
+    fn install_layer(dir: &std::path::Path) -> Result<String, String> {
+        if LAYER_DLL.is_empty() {
+            return Err("this build has no OpenXR layer".into());
+        }
+        let folder = dir.join("openxr");
+        std::fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
+        // One file per version: a game may still have the previous one loaded.
+        let dll = folder.join(format!("apex_xr_layer-{}.dll", env!("CARGO_PKG_VERSION")));
+        if std::fs::metadata(&dll).map(|m| m.len() as usize).ok() != Some(LAYER_DLL.len()) {
+            std::fs::write(&dll, LAYER_DLL).map_err(|e| format!("could not write the layer: {e}"))?;
+        }
+        let manifest = folder.join("apex-overlays-openxr.json");
+        let json = serde_json::json!({
+            "file_format_version": "1.0.0",
+            "api_layer": {
+                "name": "XR_APILAYER_APEX_overlays",
+                "library_path": dll.to_string_lossy(),
+                "api_version": "1.0",
+                "implementation_version": "1",
+                "description": "Apex Overlays: overlays inside OpenXR games",
+                "disable_environment": "DISABLE_APEX_OVERLAYS_XR_LAYER"
+            }
+        });
+        let text = serde_json::to_string_pretty(&json).unwrap_or_default();
+        if std::fs::read_to_string(&manifest).ok().as_deref() != Some(text.as_str()) {
+            std::fs::write(&manifest, &text).map_err(|e| format!("could not write the layer manifest: {e}"))?;
+        }
+        let path = manifest.to_string_lossy().into_owned();
+        register_user(&path);
+        Ok(path)
+    }
+
+    /// Overlay id → a stable key for the layer.
+    fn key(id: &str) -> u64 {
+        id.bytes().fold(0xcbf2_9ce4_8422_2325u64, |h, b| (h ^ b as u64).wrapping_mul(0x0100_0000_01b3))
+    }
+
+    struct Xr {
+        shm: ShmWriter,
+        captures: HashMap<String, Capture>,
+        failed: HashMap<String, Instant>,
+        recenter: u32,
+        manifest: Result<String, String>,
+        asked_admin: bool,
+        checked: Option<(Instant, bool)>,
     }
 
     struct Live {
@@ -341,6 +520,7 @@ mod imp {
         let mut vr: Option<Vr> = None;
         let mut gfx_dev: Option<Gfx> = None;
         let mut live: HashMap<String, Live> = HashMap::new();
+        let mut xr: Option<Xr> = None;
         let mut last_try = Instant::now() - Duration::from_secs(60);
         let mut status = String::new();
         // The config and the monitor size, re-read a few times a second (frames are copied
@@ -370,6 +550,124 @@ mod imp {
             }
             let (_, cfg, screen) = snapshot.as_ref().unwrap();
             let screen = *screen;
+            if cfg.vr.enabled && cfg.vr.mode == "openxr" {
+                // OpenXR: SteamVR is not used.
+                if let Some(v) = vr.take() {
+                    for (_, l) in live.drain() {
+                        v.destroy(l.handle);
+                    }
+                    if let Some(a) = &api {
+                        unsafe { (a.shutdown)() };
+                    }
+                }
+                if gfx_dev.is_none() {
+                    match gfx() {
+                        Ok(g) => gfx_dev = Some(g),
+                        Err(e) => {
+                            publish(&app, &mut status, "error", &format!("Direct3D 11 is not available: {e}"), 0);
+                            std::thread::sleep(Duration::from_secs(5));
+                            continue;
+                        }
+                    }
+                }
+                if xr.is_none() {
+                    match ShmWriter::create() {
+                        Ok(shm) => {
+                            xr = Some(Xr {
+                                shm,
+                                captures: HashMap::new(),
+                                failed: HashMap::new(),
+                                recenter: 0,
+                                manifest: install_layer(&data_dir),
+                                asked_admin: false,
+                                checked: None,
+                            })
+                        }
+                        Err(e) => {
+                            publish(&app, &mut status, "error", &e, 0);
+                            std::thread::sleep(Duration::from_secs(5));
+                            continue;
+                        }
+                    }
+                }
+                let (x, g) = (xr.as_mut().unwrap(), gfx_dev.as_ref().unwrap());
+                let message = match &x.manifest {
+                    Err(e) => {
+                        publish(&app, &mut status, "error", &format!("OpenXR layer: {e}"), 0);
+                        std::thread::sleep(Duration::from_secs(1));
+                        continue;
+                    }
+                    Ok(manifest) => {
+                        // Registered for every game? (re-checked every few seconds; one admin prompt)
+                        if x.checked.is_none_or(|c| c.0.elapsed() > Duration::from_secs(5)) {
+                            let machine = registered(HKEY_LOCAL_MACHINE, manifest);
+                            if !machine && !x.asked_admin {
+                                x.asked_admin = true;
+                                register_machine(manifest);
+                            }
+                            x.checked = Some((Instant::now(), machine));
+                        }
+                        if x.checked.is_some_and(|c| c.1) {
+                            "Start iRacing in OpenXR VR mode (restart it if it was already running)"
+                        } else {
+                            "Registered for your Windows user only — accept the admin prompt (or turn VR off and on) to register it for every game"
+                        }
+                    }
+                };
+                if RECENTER.swap(false, Ordering::Relaxed) {
+                    x.recenter = x.recenter.wrapping_add(1);
+                }
+                let shown = core.hub.visible.load(Ordering::Relaxed) || core.hub.edit_mode.load(Ordering::Relaxed);
+                let hwnds = core.hwnds.lock().unwrap().clone();
+                let sizes = core.auto_size.lock().unwrap().clone();
+                let wanted: Vec<_> = cfg.overlays.iter().filter(|o| o.enabled).filter_map(|o| hwnds.get(&o.id).map(|h| (o, *h))).collect();
+                x.captures.retain(|id, c| wanted.iter().any(|(o, h)| &o.id == id && *h == c.hwnd));
+                let mut panels = vec![];
+                for (o, hwnd) in &wanted {
+                    let (aw, ah) = sizes.get(&crate::label_for(&o.id)).copied().unwrap_or_default();
+                    let size = |auto: f64, set: u32| if auto > 0.0 { auto } else { set as f64 };
+                    let p = placement(o, &cfg.vr, screen, (o.x as f64, o.y as f64, size(aw, o.width), size(ah, o.height)));
+                    if !x.captures.contains_key(&o.id) && x.failed.get(&o.id).is_none_or(|t| t.elapsed() > Duration::from_secs(5)) {
+                        match Capture::new(g, *hwnd, true) {
+                            Ok(c) => {
+                                x.captures.insert(o.id.clone(), c);
+                            }
+                            Err(e) => {
+                                log::warn!("VR: cannot capture overlay {}: {e}", o.id);
+                                x.failed.insert(o.id.clone(), Instant::now());
+                            }
+                        }
+                    }
+                    let Some(c) = x.captures.get_mut(&o.id) else { continue };
+                    if let Err(e) = c.next(g) {
+                        log::warn!("VR: capture of overlay {} stopped: {e}", o.id);
+                        x.captures.remove(&o.id);
+                        x.failed.insert(o.id.clone(), Instant::now());
+                        continue;
+                    }
+                    let Some((_, w, h)) = c.tex.as_ref() else { continue };
+                    if !(shown && p.show) || c.handle == 0 {
+                        continue;
+                    }
+                    panels.push(Panel {
+                        texture: c.handle,
+                        width: *w as u32,
+                        height: *h as u32,
+                        frame: c.frame,
+                        head: p.head as u32,
+                        pos: p.pos,
+                        orient: xs::orientation(p.yaw, p.pitch, p.roll),
+                        size: [p.width, p.width * *h as f32 / (*w).max(1) as f32],
+                        key: key(&o.id),
+                    });
+                }
+                x.shm.write(&panels, x.recenter);
+                publish(&app, &mut status, "on", message, panels.len());
+                std::thread::sleep(Duration::from_millis(11));
+                continue;
+            }
+            // SteamVR (or off): the OpenXR output stops.
+            xr = None;
             if !cfg.vr.enabled {
                 if let Some(v) = vr.take() {
                     for (_, l) in live.drain() {
@@ -458,7 +756,7 @@ mod imp {
                     l.capture = None;
                 }
                 if l.capture.is_none() && l.failed_at.is_none_or(|t| t.elapsed() > Duration::from_secs(5)) {
-                    match Capture::new(g, *hwnd) {
+                    match Capture::new(g, *hwnd, false) {
                         Ok(c) => l.capture = Some(c),
                         Err(e) => {
                             log::warn!("VR: cannot capture overlay {}: {e}", o.id);

@@ -32,3 +32,8 @@ stored as one SVG template per class plus the badge colour palette.
 https://github.com/ValveSoftware/openvr (`bin/win64`), used by the desktop app to show
 overlays in VR. It is distributed under the BSD 3-Clause licence in
 `apps/desktop/vr/OPENVR_LICENSE.txt` (Copyright (c) 2015, Valve Corporation).
+
+## openxr-sys
+
+The OpenXR layer (`apps/xr-layer`) uses the `openxr-sys` crate (https://github.com/Ralith/openxrs),
+MIT or Apache-2.0, generated from the Khronos OpenXR registry (Apache-2.0).

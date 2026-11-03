@@ -232,16 +232,21 @@ impl Default for Hotkeys {
 #[serde(rename_all = "camelCase", default)]
 pub struct VrConfig {
     pub enabled: bool,
+    /// "steamvr" (SteamVR overlays) or "openxr" (the app's OpenXR layer inside the game,
+    /// any OpenXR runtime, no SteamVR needed).
+    pub mode: String,
     /// Overlays placed "as on my screen" sit on an imaginary screen this far in front of the
-    /// seated position (m), this wide (m), raised or lowered by `height` (m).
+    /// seated position (m), this wide (m), raised or lowered by `height` (m) and moved right
+    /// (+) or left (-) by `offset` (m).
     pub distance: f64,
     pub width: f64,
     pub height: f64,
+    pub offset: f64,
 }
 
 impl Default for VrConfig {
     fn default() -> Self {
-        Self { enabled: false, distance: 0.9, width: 1.2, height: -0.05 }
+        Self { enabled: false, mode: "steamvr".into(), distance: 0.9, width: 1.2, height: -0.05, offset: 0.0 }
     }
 }
 

@@ -7,10 +7,10 @@ import type { Player } from '../lib/types';
 
 /** Trace options, the same in both overlays. */
 export const TRACE_SETTINGS: SettingDef[] = [
-  { key: 'traceSeconds', label: 'Trace length', type: 'number', default: 6, min: 1, max: 30, unit: 's', group: 'Trace' },
-  { key: 'traceWidth', label: 'Trace line width', type: 'number', default: 2, min: 0.5, max: 6, step: 0.5, unit: 'px', group: 'Trace' },
-  { key: 'traceSteering', label: 'Show steering in trace', type: 'bool', default: false, group: 'Trace' },
-  { key: 'traceFill', label: 'Fill under throttle/brake', type: 'bool', default: true, group: 'Trace' },
+  { key: 'traceSeconds', when: (v) => v.showTrace !== false, label: 'Trace length', type: 'number', default: 6, min: 1, max: 30, unit: 's', group: 'Trace' },
+  { key: 'traceWidth', when: (v) => v.showTrace !== false, label: 'Trace line width', type: 'number', default: 2, min: 0.5, max: 6, step: 0.5, unit: 'px', group: 'Trace' },
+  { key: 'traceSteering', when: (v) => v.showTrace !== false, label: 'Show steering in trace', type: 'bool', default: false, group: 'Trace' },
+  { key: 'traceFill', when: (v) => v.showTrace !== false, label: 'Fill under throttle/brake', type: 'bool', default: true, group: 'Trace' },
   { key: 'absHighlight', label: 'Colour the brake trace and bar while ABS is active', type: 'bool', default: true, group: 'Trace' },
 ];
 

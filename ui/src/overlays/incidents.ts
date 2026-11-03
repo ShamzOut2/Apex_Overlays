@@ -46,7 +46,7 @@ export const incidents: OverlayDef = {
     { key: 'showSummary', label: 'Count per type', type: 'bool', default: true, group: 'Layout' },
     { key: 'showWhen', label: 'Lap and session time', type: 'bool', default: true, group: 'Layout' },
     { key: 'showReplay', label: 'Replay buttons', type: 'bool', default: true, group: 'Replay', help: 'Only work while a replay is playing in iRacing' },
-    { key: 'replayLead', label: 'Start the replay before the incident', type: 'number', default: 5, min: 0, max: 30, unit: 's', group: 'Replay' },
+    { key: 'replayLead', when: (v) => v.showReplay !== false, label: 'Start the replay before the incident', type: 'number', default: 5, min: 0, max: 30, unit: 's', group: 'Replay' },
     { key: 'hideWhenNone', label: 'Hide until the first incident', type: 'bool', default: false, group: 'Behaviour' },
   ],
   commonDefaults: { autoHeight: true },

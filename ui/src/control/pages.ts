@@ -4,7 +4,7 @@ import { commonFor, merge, type SettingDef } from '../lib/settings';
 import { applyUiTheme, PRESETS, THEME } from '../lib/theme';
 import type { OverlayInstance, SavedLayout } from '../lib/types';
 import { byKind, OVERLAYS } from '../overlays/registry';
-import { CHOICES, field, form } from './form';
+import { CHOICES, field, form, relevance } from './form';
 import { hotkeyInput } from './hotkey';
 import { releaseNotes } from './releaseNotes';
 import { STATS } from '../lib/monitorStats';
@@ -157,7 +157,7 @@ const tabOf = (s: SettingDef, common: boolean) =>
   common ? (s.group === 'Advanced' ? ADVANCED_TAB : s.group === 'VR' ? VR_TAB : SIZE_TAB) : (TAB_ALIAS[s.group ?? 'Options'] ?? s.group ?? 'Settings');
 
 /** What to show and how it is laid out first; looks and behaviour after; window options last. */
-const FIRST = ['Reference lap', 'What to show', 'Layout', 'Columns', 'Header'];
+const FIRST = ['Reference lap', 'What to show', 'Layout', 'Columns', 'Column style', 'Header'];
 const LAST = ['Look', 'Colours', 'Alerts', 'Behaviour', SIZE_TAB, VR_TAB, ADVANCED_TAB];
 const tabRank = (t: string) => (FIRST.includes(t) ? FIRST.indexOf(t) - 100 : LAST.includes(t) ? LAST.indexOf(t) + 100 : 0);
 
@@ -260,11 +260,14 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
   if (!tabs.includes(tab)) tab = tabs[0];
 
   const changed = (t: string) => entries.some((e) => e.tab === t && e.s.key in o.settings && JSON.stringify(o.settings[e.s.key]) !== JSON.stringify(e.s.default));
+  // Settings that only apply with other choices are shown or hidden as those change.
+  let relevant = () => {};
   const onChange = (k: string, v: unknown) => {
     values[k] = v;
     o.settings = { ...o.settings, [k]: v };
     save();
     drawTabs();
+    relevant();
   };
 
   const search = h('input', 'search');
@@ -337,13 +340,22 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
       for (const t of tabs) {
         const inTab = hits.filter((e) => e.tab === t);
         if (!inTab.length) continue;
+        // Searching finds every setting, including ones that only apply with other choices.
         parts.push(h('h3', '', t), ...inTab.map((e) => field(e.s, values, onChange)));
       }
+      relevant = () => {};
       panel.replaceChildren(...(parts.length ? parts : [h('p', 'dim', `No setting matches “${ui.query}”.`)]));
       return;
     }
-    const rows = entries.filter((e) => e.tab === tab).map((e) => field(e.s, values, onChange));
-    panel.replaceChildren(...rows, ...(tab === SIZE_TAB ? [sizeExtras()] : []));
+    const rows: [SettingDef, HTMLElement][] = entries.filter((e) => e.tab === tab).map((e) => [e.s, field(e.s, values, onChange)]);
+    const none = h('p', 'dim', 'Nothing here applies with your current choices (for example the columns shown, or a feature switched off).');
+    const apply = relevance(rows, values);
+    relevant = () => {
+      apply();
+      none.hidden = rows.some((r) => !r[1].hidden);
+    };
+    relevant();
+    panel.replaceChildren(...rows.map((r) => r[1]), none, ...(tab === SIZE_TAB ? [sizeExtras()] : []));
   };
 
   search.oninput = () => {
@@ -1230,20 +1242,33 @@ listen((t) => {
 /** VR (SteamVR overlays, desktop app on Windows). */
 function vrCard(): HTMLElement {
   const cfg = state.config!;
-  cfg.vr ??= { enabled: false, distance: 0.9, width: 1.2, height: -0.05 };
+  cfg.vr ??= { enabled: false, mode: 'steamvr', distance: 0.9, width: 1.2, height: -0.05, offset: 0 };
+  cfg.vr.mode ??= 'steamvr';
   const c = card('VR');
   c.append(
     h(
       'p',
       'dim',
-      'Shows your overlays in the headset as SteamVR overlays, looking and updating exactly as on your screen. Start SteamVR (and iRacing in VR); each overlay’s VR tab says whether it shows in VR, whether it is fixed in the car or follows your head, and where it goes.',
+      'Shows your overlays in the headset, looking and updating exactly as on your screen. Each overlay’s VR tab says whether it shows in VR, whether it is fixed in the car or follows your head, and where it goes.',
     ),
     form(
       [
-        { key: 'enabled', label: 'Show overlays in VR (SteamVR)', type: 'bool', default: false },
+        { key: 'enabled', label: 'Show overlays in VR', type: 'bool', default: false },
+        {
+          key: 'mode',
+          label: 'How',
+          type: 'select',
+          default: 'steamvr',
+          options: [
+            ['steamvr', 'SteamVR overlays (SteamVR running)'],
+            ['openxr', 'OpenXR, inside iRacing (any headset, no SteamVR needed)'],
+          ],
+          help: 'OpenXR: iRacing in its OpenXR VR mode with any OpenXR runtime (Quest Link, Virtual Desktop, Pimax, Varjo, WMR…). The first time, Windows asks for permission to register Apex Overlays’ OpenXR layer; restart iRacing after turning it on',
+        },
         { key: 'distance', label: 'Screen layout: distance in front', type: 'number', default: 0.9, min: 0.2, max: 5, step: 0.05, unit: 'm', help: 'Overlays placed “as on my screen” sit on an imaginary screen this far away' },
         { key: 'width', label: 'Screen layout: width', type: 'number', default: 1.2, min: 0.2, max: 6, step: 0.05, unit: 'm' },
         { key: 'height', label: 'Screen layout: raise / lower', type: 'number', default: -0.05, min: -2, max: 2, step: 0.01, unit: 'm' },
+        { key: 'offset', label: 'Screen layout: move left / right', type: 'number', default: 0, min: -2, max: 2, step: 0.01, unit: 'm', help: '+ moves every overlay placed “as on my screen” to the right' },
       ],
       cfg.vr as unknown as Record<string, unknown>,
       (k, v) => {
@@ -1256,11 +1281,17 @@ function vrCard(): HTMLElement {
   const line: Record<string, string> = {
     off: 'Off.',
     waiting: `Waiting for SteamVR${v?.message ? ` — ${v.message}` : ''}.`,
-    on: `In VR: ${v?.overlays ?? 0} overlay${v?.overlays === 1 ? '' : 's'} showing.`,
+    on: `In VR: ${v?.overlays ?? 0} overlay${v?.overlays === 1 ? '' : 's'} showing.${v?.message ? ` ${v.message}.` : ''}`,
     error: `VR is not working: ${v?.message ?? ''}`,
   };
   c.append(h('div', `notice${v?.status === 'on' ? ' good' : ''}`, v ? (line[v.status] ?? v.status) : 'VR works in the Apex Overlays desktop app on Windows, with SteamVR.'));
-  c.append(h('p', 'dim small', 'Set a “Recentre VR” hotkey under Hotkeys to reset the seated position. OpenXR without SteamVR is not supported yet.'));
+  c.append(
+    h(
+      'p',
+      'dim small',
+      'Set a “Recentre VR” hotkey under Hotkeys: with SteamVR it resets the seated position; with OpenXR it places the overlays fixed in the car from where your head is when you press it.',
+    ),
+  );
   return c;
 }
 
