@@ -4,6 +4,18 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### Improvements
+- A refreshed, modern look for the settings window, laid out exactly as before: icons in the sidebar, rounded cards with soft shadows, a pill highlight for the page you are on, and a pulsing dot when iRacing is connected
+- Smoother buttons, drop-downs, text boxes and switches, with hover effects and a clear focus ring for keyboard use
+- The overlay settings tabs are now a segmented bar, the overlay list has card-style rows, and the settings search box has a search icon
+- Pop-up menus and windows fade in, with the page behind blurred
+- Works with every colour theme, light ones included
+
+### Fixes
+- On narrow windows, the unit after a slider (such as “px” for the font size) no longer spills past the edge of its box
+
 ## 0.9.1
 
 ### Improvements
