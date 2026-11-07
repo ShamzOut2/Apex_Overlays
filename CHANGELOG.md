@@ -6,6 +6,11 @@ Each version groups its changes under `### New features`, `### Improvements` and
 
 ## Unreleased
 
+### New features
+- Virtual Desktop support without SteamVR: with Virtual Desktop’s own OpenXR runtime (VDXR) on a Quest, the overlays now show inside iRacing in OpenXR mode
+- New VR mode “Automatic”, now the default: it draws inside iRacing whenever iRacing runs in OpenXR mode (Virtual Desktop, Quest Link, Pimax, Varjo, SteamVR…), and otherwise uses SteamVR overlays while SteamVR runs. Settings saved with the old default (SteamVR) switch to Automatic once; “OpenXR only” and “SteamVR overlays only” are still there
+- The VR status now says when the overlays are showing inside iRacing and on which runtime (for example “Virtual Desktop (VDXR)”), or why they are not
+
 ### Improvements
 - A refreshed, modern look for the settings window, laid out exactly as before: icons in the sidebar, rounded cards with soft shadows, a pill highlight for the page you are on, and a pulsing dot when iRacing is connected
 - Smoother buttons, drop-downs, text boxes and switches, with hover effects and a clear focus ring for keyboard use
@@ -14,6 +19,8 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - Works with every colour theme, light ones included
 
 ### Fixes
+- OpenXR: if a runtime ever refuses the overlays, iRacing’s own frame is now sent unchanged instead of being lost, and the overlays try again a few seconds later; the reason shows in the VR status
+- OpenXR: overlay rotations are kept exact, as strict runtimes such as Virtual Desktop’s require
 - On narrow windows, the unit after a slider (such as “px” for the font size) no longer spills past the edge of its box
 
 ## 0.9.1
