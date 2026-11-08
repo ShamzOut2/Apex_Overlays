@@ -4,7 +4,7 @@
 //! travel. The line is resampled by distance so that point i sits at lap fraction i / BINS,
 //! like a recorded outline.
 
-use crate::engine::trackmap::{normalise, TrackMap, BINS};
+use crate::engine::trackmap::{normalise, TrackMap, BINS, MAP_VERSION};
 
 type P = [f64; 2];
 type M = [f64; 6];
@@ -638,7 +638,7 @@ pub fn build(track_id: i64, name: &str, active: &str, start_finish: Option<&str>
                 [p[0], -p[1]]
             })
             .collect();
-        return Some(TrackMap { track_id, name: name.to_string(), points: normalise(&pts), source: "iracing".into() });
+        return Some(TrackMap { track_id, name: name.to_string(), points: normalise(&pts), source: "iracing".into(), version: MAP_VERSION });
     }
     let (s0, arrow) = sf.unwrap_or((0.0, None));
     // Turn labels: the lowest number is turn 1.
@@ -690,7 +690,7 @@ pub fn build(track_id: i64, name: &str, active: &str, start_finish: Option<&str>
             [p[0], -p[1]]
         })
         .collect();
-    Some(TrackMap { track_id, name: name.to_string(), points: normalise(&pts), source: "iracing".into() })
+    Some(TrackMap { track_id, name: name.to_string(), points: normalise(&pts), source: "iracing".into(), version: MAP_VERSION })
 }
 
 /// Where the published index of iRacing's track maps lives (track id → map folder and

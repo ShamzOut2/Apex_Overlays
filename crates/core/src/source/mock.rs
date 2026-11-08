@@ -138,7 +138,7 @@ impl Circuit {
 
     pub fn map(&self, track_id: i64) -> TrackMap {
         let pts: Vec<[f64; 2]> = (0..crate::engine::trackmap::BINS).map(|b| self.xy[b * SAMPLES / crate::engine::trackmap::BINS]).collect();
-        TrackMap { track_id, name: "Apex Raceway".into(), points: normalise(&pts), source: "mock".into() }
+        TrackMap { track_id, name: "Apex Raceway".into(), points: normalise(&pts), source: "mock".into(), version: crate::engine::trackmap::MAP_VERSION }
     }
 }
 

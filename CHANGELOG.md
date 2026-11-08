@@ -10,6 +10,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - Virtual Desktop support without SteamVR: with Virtual Desktop’s own OpenXR runtime (VDXR) on a Quest, the overlays now show inside iRacing in OpenXR mode
 - New VR mode “Automatic”, now the default: it draws inside iRacing whenever iRacing runs in OpenXR mode (Virtual Desktop, Quest Link, Pimax, Varjo, SteamVR…), and otherwise uses SteamVR overlays while SteamVR runs. Settings saved with the old default (SteamVR) switch to Automatic once; “OpenXR only” and “SteamVR overlays only” are still there
 - The VR status now says when the overlays are showing inside iRacing and on which runtime (for example “Virtual Desktop (VDXR)”), or why they are not
+- Track map: choose your own colour for your car’s dot (Cars → turn off “Your car: use the theme’s highlight colour”)
 - Track map: iRacing’s official map for every track and layout (424 of them), straight away, with no iRacing login and no lap to record first. Tracks added to iRacing later are found automatically
 
 ### Improvements
@@ -24,6 +25,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - OpenXR: overlay rotations are kept exact, as strict runtimes such as Virtual Desktop’s require
 - Track map: official maps now come out right on tracks iRacing draws differently: Monza, Suzuka and Oran Park (drawn as a thin filled shape, which doubled the lap), 40 newer maps such as Adelaide, Navarra, Sachsenring, Cadwell Park and Sonoma (start/finish line in the wrong place), and maps whose corner names contain numbers or whose two-digit turn numbers are drawn digit by digit (Monza’s Lesmos, Algarve, Cadwell Park). Mount Washington runs from its start line to its finish
 - Track map: the direction of travel now follows iRacing’s turn numbers first (Spa’s classic pits layout ran the wrong way)
+- Track map: outlines recorded from your laps came out mirrored (the Charlotte Roval ran clockwise). They are now recorded the right way round, and ones you recorded before, plus the shared library’s, are turned round automatically
 - Track map: if iRacing’s map server does not answer, a copy of the same map is used, and a failed download is retried instead of giving up for the session
 - On narrow windows, the unit after a slider (such as “px” for the font size) no longer spills past the edge of its box
 

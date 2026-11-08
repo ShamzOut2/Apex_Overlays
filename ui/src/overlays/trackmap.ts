@@ -59,6 +59,8 @@ export const trackmap: OverlayDef = {
     { key: 'pitColor', when: (v) => v.showPitLane !== false, label: 'Pit entry/exit colour', type: 'color', default: '#4da3ff', group: 'Track' },
     { key: 'dotSize', label: 'Car size', type: 'number', default: 7, min: 2, max: 30, unit: 'px', group: 'Cars' },
     { key: 'playerScale', label: 'Your car size', type: 'number', default: 1.45, min: 1, max: 3, step: 0.05, unit: '×', group: 'Cars' },
+    { key: 'playerThemeColor', label: 'Your car: use the theme’s highlight colour', type: 'bool', default: true, group: 'Cars', help: 'Turn off to pick your own colour for your car’s dot (or the car you are watching)' },
+    { key: 'playerColor', when: (v) => v.playerThemeColor === false, label: 'Your car colour', type: 'color', default: '#ffd84d', group: 'Cars' },
     { key: 'label', label: 'Label on cars', type: 'select', default: 'classPosition', options: [['none', 'None'], ['number', 'Car number'], ['position', 'Overall position'], ['classPosition', 'Class position']], group: 'Cars' },
     { key: 'colorBy', label: 'Car colour', type: 'select', default: 'class', options: [['class', 'Class colour'], ['single', 'Single colour']], group: 'Cars' },
     { key: 'carColor', when: (v) => v.colorBy === 'single', label: 'Single car colour', type: 'color', default: '#ffffff', group: 'Cars' },
@@ -344,6 +346,8 @@ export const trackmap: OverlayDef = {
         }
       }
       const focus = cars.focus;
+      // Your car (or the one being watched): the theme's highlight or a colour of your own.
+      const mine = s.playerThemeColor === false && s.playerColor ? (s.playerColor as string) : (t.playerColor as string);
       // Focus car last so it is drawn on top.
       const list: CarDot[] = [...cars.cars].sort((a, b) => (a.i === focus ? 1 : b.i === focus ? -1 : b.pos - a.pos));
       const font = Math.max(8, (s.dotSize as number) * 1.15) * dpr();
@@ -357,7 +361,7 @@ export const trackmap: OverlayDef = {
         g.globalAlpha = s.dimPitCars && c.pit ? 0.4 : 1;
         g.beginPath();
         g.arc(x, y, r, 0, Math.PI * 2);
-        g.fillStyle = isFocus ? (t.playerColor as string) : s.colorBy === 'single' ? (s.carColor as string) : c.c;
+        g.fillStyle = isFocus ? mine : s.colorBy === 'single' ? (s.carColor as string) : c.c;
         g.fill();
         g.lineWidth = 1.5 * dpr();
         g.strokeStyle = c.off ? (t.warnColor as string) : 'rgba(0,0,0,0.85)';
@@ -372,7 +376,7 @@ export const trackmap: OverlayDef = {
         const label = s.label === 'number' ? c.n : s.label === 'position' ? String(c.pos) : s.label === 'classPosition' ? String(c.cpos) : '';
         if (label) {
           g.font = `700 ${font * (isFocus ? 1.1 : 1)}px ${family}`;
-          g.fillStyle = isFocus ? onColor(t.playerColor as string) : s.colorBy === 'single' ? onColor(s.carColor as string) : onColor(c.c);
+          g.fillStyle = isFocus ? onColor(mine) : s.colorBy === 'single' ? onColor(s.carColor as string) : onColor(c.c);
           g.fillText(label, x, y + 0.5);
         }
       }
