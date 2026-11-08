@@ -10,6 +10,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - Virtual Desktop support without SteamVR: with Virtual Desktop’s own OpenXR runtime (VDXR) on a Quest, the overlays now show inside iRacing in OpenXR mode
 - New VR mode “Automatic”, now the default: it draws inside iRacing whenever iRacing runs in OpenXR mode (Virtual Desktop, Quest Link, Pimax, Varjo, SteamVR…), and otherwise uses SteamVR overlays while SteamVR runs. Settings saved with the old default (SteamVR) switch to Automatic once; “OpenXR only” and “SteamVR overlays only” are still there
 - The VR status now says when the overlays are showing inside iRacing and on which runtime (for example “Virtual Desktop (VDXR)”), or why they are not
+- Track map: iRacing’s official map for every track and layout (424 of them), straight away, with no iRacing login and no lap to record first. Tracks added to iRacing later are found automatically
 
 ### Improvements
 - A refreshed, modern look for the settings window, laid out exactly as before: icons in the sidebar, rounded cards with soft shadows, a pill highlight for the page you are on, and a pulsing dot when iRacing is connected
@@ -21,6 +22,9 @@ Each version groups its changes under `### New features`, `### Improvements` and
 ### Fixes
 - OpenXR: if a runtime ever refuses the overlays, iRacing’s own frame is now sent unchanged instead of being lost, and the overlays try again a few seconds later; the reason shows in the VR status
 - OpenXR: overlay rotations are kept exact, as strict runtimes such as Virtual Desktop’s require
+- Track map: official maps now come out right on tracks iRacing draws differently: Monza, Suzuka and Oran Park (drawn as a thin filled shape, which doubled the lap), 40 newer maps such as Adelaide, Navarra, Sachsenring, Cadwell Park and Sonoma (start/finish line in the wrong place), and maps whose corner names contain numbers or whose two-digit turn numbers are drawn digit by digit (Monza’s Lesmos, Algarve, Cadwell Park). Mount Washington runs from its start line to its finish
+- Track map: the direction of travel now follows iRacing’s turn numbers first (Spa’s classic pits layout ran the wrong way)
+- Track map: if iRacing’s map server does not answer, a copy of the same map is used, and a failed download is retried instead of giving up for the session
 - On narrow windows, the unit after a slider (such as “px” for the font size) no longer spills past the edge of its box
 
 ## 0.9.1
