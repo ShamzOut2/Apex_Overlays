@@ -1,4 +1,4 @@
-use apex_xr_shared::{Panel, Shared, MAGIC, NAME, STALE_MS, VERSION};
+use apex_xr_shared::{put_text, LayerStatus, Panel, Shared, MAGIC, NAME, STALE_MS, STATUS_NAME, STATUS_VERSION, VERSION};
 use openxr_sys as xr;
 use openxr_sys::pfn;
 use openxr_sys::Handle;
@@ -17,7 +17,7 @@ use windows::Win32::Graphics::Direct3D11::{
 use windows::Win32::Graphics::Direct3D11on12::{D3D11On12CreateDevice, ID3D11On12Device, D3D11_RESOURCE_FLAGS};
 use windows::Win32::Graphics::Direct3D12::D3D12_RESOURCE_STATE_RENDER_TARGET;
 use windows::Win32::Graphics::Dxgi::{IDXGIKeyedMutex, DXGI_SHARED_RESOURCE_READ, DXGI_SHARED_RESOURCE_WRITE};
-use windows::Win32::System::Memory::{MapViewOfFile, OpenFileMappingW, UnmapViewOfFile, FILE_MAP_READ, MEMORY_MAPPED_VIEW_ADDRESS};
+use windows::Win32::System::Memory::{MapViewOfFile, OpenFileMappingW, UnmapViewOfFile, FILE_MAP_READ, FILE_MAP_WRITE, MEMORY_MAPPED_VIEW_ADDRESS};
 
 const LAYER_NAME: &str = "XR_APILAYER_APEX_overlays";
 /// Swapchain formats the captured BGRA pixels can be copied into, best first. The pixels are
@@ -25,6 +25,8 @@ const LAYER_NAME: &str = "XR_APILAYER_APEX_overlays";
 const FORMATS: [i64; 2] = [91 /* DXGI_FORMAT_B8G8R8A8_UNORM_SRGB */, 87 /* DXGI_FORMAT_B8G8R8A8_UNORM */];
 /// Composition layers a runtime must accept (XR_MIN_COMPOSITION_LAYERS_SUPPORTED).
 const MAX_LAYERS: usize = 16;
+/// After the runtime rejects a frame with the overlays in it, frames go without them this long.
+const BACK_OFF_SECS: u64 = 5;
 
 /// A few lines to %TEMP%\apex-xr-layer.log for troubleshooting (the first 200 only).
 fn log(msg: &str) {
@@ -88,8 +90,7 @@ impl Shm {
             let copy = unsafe { std::ptr::read_volatile(p) };
             let after = unsafe { std::ptr::read_volatile(std::ptr::addr_of!((*p).seq)) };
             if before == after {
-                let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0);
-                let fresh = now.saturating_sub(copy.written_ms) < STALE_MS;
+                let fresh = now_ms().saturating_sub(copy.written_ms) < STALE_MS;
                 return (copy.magic == MAGIC && copy.version == VERSION && fresh).then_some(copy);
             }
         }
@@ -102,6 +103,68 @@ impl Drop for Shm {
         unsafe {
             let _ = UnmapViewOfFile(self.view);
             let _ = CloseHandle(self.handle);
+        }
+    }
+}
+
+fn now_ms() -> u64 {
+    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0)
+}
+
+/// Where the layer tells the app it is running (see `apex_xr_shared::LayerStatus`).
+#[derive(Default)]
+struct Status {
+    map: Option<(HANDLE, MEMORY_MAPPED_VIEW_ADDRESS)>,
+    tried: Option<Instant>,
+    /// The texts last written (they are only rewritten when they change).
+    written: Option<(String, String)>,
+}
+
+impl Status {
+    /// Report one frame: overlays shown, Direct3D version, runtime and any problem.
+    fn report(&mut self, shown: u32, api: u32, runtime: &str, problem: &str) {
+        if self.map.is_none() && self.tried.is_none_or(|t| t.elapsed().as_secs() >= 2) {
+            // The app creates the block; until it runs there is nobody to tell.
+            self.tried = Some(Instant::now());
+            if let Ok(h) = unsafe { OpenFileMappingW(FILE_MAP_READ.0 | FILE_MAP_WRITE.0, false, &HSTRING::from(STATUS_NAME)) } {
+                let view = unsafe { MapViewOfFile(h, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, std::mem::size_of::<LayerStatus>()) };
+                if view.Value.is_null() {
+                    unsafe {
+                        let _ = CloseHandle(h);
+                    }
+                } else {
+                    self.map = Some((h, view));
+                    self.written = None;
+                }
+            }
+        }
+        let Some((_, view)) = self.map else { return };
+        let p = view.Value as *mut LayerStatus;
+        unsafe {
+            if self.written.as_ref().is_none_or(|(r, q)| r != runtime || q != problem) {
+                let mut text = LayerStatus::default();
+                put_text(&mut text.runtime, runtime);
+                put_text(&mut text.problem, problem);
+                std::ptr::write_volatile(std::ptr::addr_of_mut!((*p).runtime), text.runtime);
+                std::ptr::write_volatile(std::ptr::addr_of_mut!((*p).problem), text.problem);
+                std::ptr::write_volatile(std::ptr::addr_of_mut!((*p).magic), MAGIC);
+                std::ptr::write_volatile(std::ptr::addr_of_mut!((*p).version), STATUS_VERSION);
+                self.written = Some((runtime.to_string(), problem.to_string()));
+            }
+            std::ptr::write_volatile(std::ptr::addr_of_mut!((*p).shown), shown);
+            std::ptr::write_volatile(std::ptr::addr_of_mut!((*p).api), api);
+            std::ptr::write_volatile(std::ptr::addr_of_mut!((*p).alive_ms), now_ms());
+        }
+    }
+}
+
+impl Drop for Status {
+    fn drop(&mut self) {
+        if let Some((h, view)) = self.map.take() {
+            unsafe {
+                let _ = UnmapViewOfFile(view);
+                let _ = CloseHandle(h);
+            }
         }
     }
 }
@@ -137,11 +200,18 @@ struct SessionState {
     shm_tried: Option<Instant>,
     /// The quads submitted with the last frame (must outlive the call to the runtime).
     quads: Vec<xr::CompositionLayerQuad>,
+    /// When the runtime last rejected a frame with the overlays in it.
+    rejected: Option<Instant>,
 }
 
 struct State {
     next: Option<Next>,
     sessions: Vec<SessionState>,
+    /// The OpenXR runtime's name (e.g. "VirtualDesktopXR", "SteamVR/OpenXR").
+    runtime: String,
+    /// Why the overlays are off, for the app's VR status ("" = nothing wrong).
+    problem: String,
+    status: Status,
 }
 
 // The raw handles and COM pointers are only used under the lock, on the game's threads.
@@ -173,6 +243,16 @@ fn compose(a: xr::Posef, b: xr::Posef) -> xr::Posef {
         orientation: qmul(a.orientation, b.orientation),
         position: xr::Vector3f { x: a.position.x + r.x, y: a.position.y + r.y, z: a.position.z + r.z },
     }
+}
+
+/// Unit length again (strict runtimes such as Virtual Desktop's reject a layer whose
+/// orientation is even slightly off after the float maths).
+fn normalized(q: xr::Quaternionf) -> xr::Quaternionf {
+    let n = (q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w).sqrt();
+    if !n.is_finite() || n < 1e-6 {
+        return IDENTITY.orientation;
+    }
+    xr::Quaternionf { x: q.x / n, y: q.y / n, z: q.z / n, w: q.w / n }
 }
 
 /// A head pose reduced to a seated origin: its position and which way it faces (yaw only).
@@ -209,6 +289,31 @@ unsafe fn resolve(gipa: pfn::GetInstanceProcAddr, instance: xr::Instance) -> Opt
             wait_swapchain_image: load(gipa, instance, c"xrWaitSwapchainImage")?,
             release_swapchain_image: load(gipa, instance, c"xrReleaseSwapchainImage")?,
         })
+    }
+}
+
+/// The runtime's name, as it reports it.
+unsafe fn runtime_name(gipa: pfn::GetInstanceProcAddr, instance: xr::Instance) -> Option<String> {
+    let get: pfn::GetInstanceProperties = unsafe { load(gipa, instance, c"xrGetInstanceProperties")? };
+    let mut props = xr::InstanceProperties {
+        ty: xr::InstanceProperties::TYPE,
+        next: std::ptr::null_mut(),
+        runtime_version: xr::Version::new(0, 0, 0),
+        runtime_name: [0; 128],
+    };
+    if unsafe { get(instance, &mut props) } != xr::Result::SUCCESS {
+        return None;
+    }
+    Some(unsafe { CStr::from_ptr(props.runtime_name.as_ptr()) }.to_string_lossy().into_owned())
+}
+
+/// Log a reason the overlays are off and pass it on to the app.
+fn problem(msg: &str) {
+    log(&format!("Apex Overlays layer: {msg}"));
+    if let Ok(mut s) = STATE.lock() {
+        if let Some(s) = s.as_mut() {
+            s.problem = msg.to_string();
+        }
     }
 }
 
@@ -267,10 +372,12 @@ unsafe extern "system" fn create_api_layer_instance(
     if next.is_none() {
         log("Apex Overlays layer: could not find the runtime's functions; overlays off");
     }
+    let runtime = catch_unwind(|| unsafe { runtime_name(next_gipa, inst) }).ok().flatten().unwrap_or_default();
+    let problem = if next.is_none() { "the layer could not find the runtime's functions".to_string() } else { String::new() };
     if let Ok(mut s) = STATE.lock() {
-        *s = Some(State { next, sessions: vec![] });
+        *s = Some(State { next, sessions: vec![], runtime: runtime.clone(), problem, status: Status::default() });
     }
-    log(&format!("Apex Overlays layer {} loaded ({LAYER_NAME})", env!("CARGO_PKG_VERSION")));
+    log(&format!("Apex Overlays layer {} loaded ({LAYER_NAME}) on the {runtime} runtime", env!("CARGO_PKG_VERSION")));
     xr::Result::SUCCESS
 }
 
@@ -348,14 +455,14 @@ unsafe fn start_session(next: Next, info: *const xr::SessionCreateInfo, session:
                         device = Some(d);
                         log("Apex Overlays layer: Direct3D 12 session (through D3D11-on-12)");
                     }
-                    (r, _) => log(&format!("Apex Overlays layer: Direct3D 12 session but D3D11-on-12 failed ({r:?}); overlays off")),
+                    (r, _) => problem(&format!("Direct3D 12 session but D3D11-on-12 failed ({r:?}); overlays off")),
                 }
             }
         }
         p = unsafe { (*p).next };
     }
     let Some(device) = device else {
-        log("Apex Overlays layer: not a Direct3D 11 or 12 session; overlays off");
+        problem("the game is not using Direct3D 11 or 12; overlays off");
         return;
     };
     let Ok(context) = (unsafe { device.GetImmediateContext() }) else { return };
@@ -370,7 +477,7 @@ unsafe fn start_session(next: Next, info: *const xr::SessionCreateInfo, session:
         (unsafe { (next.create_reference_space)(session, &ci, &mut s) } == xr::Result::SUCCESS).then_some(s)
     };
     let (Some(local), Some(view)) = (space(xr::ReferenceSpaceType::LOCAL), space(xr::ReferenceSpaceType::VIEW)) else {
-        log("Apex Overlays layer: no LOCAL/VIEW space; overlays off");
+        problem("the runtime gave no LOCAL/VIEW space; overlays off");
         return;
     };
     // The formats the runtime offers for swapchains.
@@ -384,7 +491,7 @@ unsafe fn start_session(next: Next, info: *const xr::SessionCreateInfo, session:
     }
     let format = FORMATS.iter().copied().find(|f| formats.contains(f));
     if format.is_none() {
-        log(&format!("Apex Overlays layer: no BGRA swapchain format (runtime offers {formats:?}); overlays off"));
+        problem(&format!("the runtime offers no BGRA swapchain format ({formats:?}); overlays off"));
     }
     if let Ok(mut st) = STATE.lock() {
         if let Some(st) = st.as_mut() {
@@ -402,6 +509,7 @@ unsafe fn start_session(next: Next, info: *const xr::SessionCreateInfo, session:
                 shm: None,
                 shm_tried: None,
                 quads: vec![],
+                rejected: None,
             });
         }
     }
@@ -433,17 +541,30 @@ unsafe extern "system" fn end_frame(session: xr::Session, info: *const xr::Frame
         return unsafe { (next.end_frame)(session, info) };
     }
     let mut guard = STATE.lock().ok();
-    let st = guard.as_mut().and_then(|s| s.as_mut()).and_then(|st| st.sessions.iter_mut().find(|s| s.session == session));
-    let Some(st) = st else {
+    let Some(state) = guard.as_mut().and_then(|s| s.as_mut()) else {
         drop(guard);
         return unsafe { (next.end_frame)(session, info) };
     };
+    let State { sessions, runtime, problem, status, .. } = state;
+    let Some(st) = sessions.iter_mut().find(|s| s.session == session) else {
+        // A session the layer cannot draw in: still tell the app the game is here, and why.
+        status.report(0, 0, runtime, problem);
+        drop(guard);
+        return unsafe { (next.end_frame)(session, info) };
+    };
+    let api = if st.on12.is_some() { 12 } else { 11 };
     let original = unsafe { &*info };
-    let added = catch_unwind(AssertUnwindSafe(|| unsafe { build(next, st, original) })).unwrap_or_else(|_| {
-        log("Apex Overlays layer: error while adding overlays; frame passed on unchanged");
+    let backing_off = st.rejected.is_some_and(|t| t.elapsed().as_secs() < BACK_OFF_SECS);
+    let added = if backing_off {
         0
-    });
+    } else {
+        catch_unwind(AssertUnwindSafe(|| unsafe { build(next, st, original) })).unwrap_or_else(|_| {
+            log("Apex Overlays layer: error while adding overlays; frame passed on unchanged");
+            0
+        })
+    };
     if added == 0 {
+        status.report(0, api, runtime, problem);
         drop(guard);
         return unsafe { (next.end_frame)(session, info) };
     }
@@ -461,8 +582,35 @@ unsafe extern "system" fn end_frame(session: xr::Session, info: *const xr::Frame
     ours.layer_count = layers.len() as u32;
     ours.layers = layers.as_ptr();
     let r = unsafe { (next.end_frame)(session, &ours) };
+    if r.into_raw() >= 0 {
+        if !problem.is_empty() && st.rejected.is_some() {
+            problem.clear();
+        }
+        status.report(added as u32, api, runtime, problem);
+        drop(guard);
+        return r;
+    }
+    if matches!(
+        r,
+        xr::Result::ERROR_SESSION_NOT_RUNNING
+            | xr::Result::ERROR_SESSION_LOST
+            | xr::Result::ERROR_INSTANCE_LOST
+            | xr::Result::ERROR_CALL_ORDER_INVALID
+            | xr::Result::ERROR_HANDLE_INVALID
+    ) {
+        // About the game's session, not the overlays: the game handles it.
+        status.report(0, api, runtime, problem);
+        drop(guard);
+        return r;
+    }
+    // The runtime refused the frame with the overlays in it: never cost the game a frame.
+    // Send the game's own frame as it was, and leave the overlays out for a few seconds.
+    st.rejected = Some(Instant::now());
+    *problem = format!("the {runtime} runtime rejected the overlays ({r:?}); retrying every {BACK_OFF_SECS} s");
+    log(&format!("Apex Overlays layer: {problem}"));
+    status.report(0, api, runtime, problem);
     drop(guard);
-    r
+    unsafe { (next.end_frame)(session, info) }
 }
 
 /// Update the panels from the app and build their quad layers; how many were added.
@@ -522,7 +670,11 @@ unsafe fn build(next: Next, st: &mut SessionState, info: &xr::FrameEndInfo) -> u
                 image_rect: xr::Rect2Di { offset: xr::Offset2Di { x: 0, y: 0 }, extent: xr::Extent2Di { width: p.width as i32, height: p.height as i32 } },
                 image_array_index: 0,
             },
-            pose: if head { pose } else { compose(origin, pose) },
+            pose: {
+                let mut pose = if head { pose } else { compose(origin, pose) };
+                pose.orientation = normalized(pose.orientation);
+                pose
+            },
             size: xr::Extent2Df { width: p.size[0], height: p.size[1] },
         });
     }

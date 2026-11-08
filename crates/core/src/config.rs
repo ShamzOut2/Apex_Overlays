@@ -8,6 +8,9 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 use tokio::sync::watch;
 
+/// Bumped when [`Config::migrate`] has something new to do.
+pub const CONFIG_VERSION: u32 = 2;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Config {
@@ -105,7 +108,7 @@ impl Default for Config {
             settings: serde_json::json!({}),
         };
         Self {
-            version: 1,
+            version: CONFIG_VERSION,
             server: ServerConfig::default(),
             units: "auto".into(),
             theme: serde_json::json!({}),
@@ -232,8 +235,9 @@ impl Default for Hotkeys {
 #[serde(rename_all = "camelCase", default)]
 pub struct VrConfig {
     pub enabled: bool,
-    /// "steamvr" (SteamVR overlays) or "openxr" (the app's OpenXR layer inside the game,
-    /// any OpenXR runtime, no SteamVR needed).
+    /// "auto" (SteamVR overlays while SteamVR runs, the OpenXR layer otherwise or whenever
+    /// the layer is running inside the game), "steamvr" (SteamVR overlays only) or "openxr"
+    /// (the app's OpenXR layer inside the game, any OpenXR runtime, no SteamVR needed).
     pub mode: String,
     /// Overlays placed "as on my screen" sit on an imaginary screen this far in front of the
     /// seated position (m), this wide (m), raised or lowered by `height` (m) and moved right
@@ -246,7 +250,7 @@ pub struct VrConfig {
 
 impl Default for VrConfig {
     fn default() -> Self {
-        Self { enabled: false, mode: "steamvr".into(), distance: 0.9, width: 1.2, height: -0.05, offset: 0.0 }
+        Self { enabled: false, mode: "auto".into(), distance: 0.9, width: 1.2, height: -0.05, offset: 0.0 }
     }
 }
 
@@ -546,6 +550,19 @@ impl Config {
         true
     }
 
+    /// Bring a config saved by an older version up to date.
+    pub fn migrate(&mut self) {
+        if self.version < 2 {
+            // 0.9.2: VR mode "auto" replaces the old default "steamvr" (which left the overlays
+            // out of the headset with OpenXR-only runtimes such as Virtual Desktop's).
+            if self.vr.mode == "steamvr" {
+                self.vr.mode = "auto".into();
+            }
+        }
+        self.version = CONFIG_VERSION;
+        self.add_new_kinds();
+    }
+
     /// Overlay kinds added in later versions, set up (switched off) in existing configs so
     /// they appear in the overlay list and the hotkeys straight away.
     pub fn add_new_kinds(&mut self) {
@@ -604,7 +621,7 @@ impl ConfigStore {
             })
             .unwrap_or_default();
         let mut cfg = cfg;
-        cfg.add_new_kinds();
+        cfg.migrate();
         let s = Self::new(cfg, Some(path));
         s.save();
         s
@@ -651,6 +668,22 @@ impl ConfigStore {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn migrate_moves_old_vr_default_to_auto_once() {
+        let mut c = Config { version: 1, ..Config::default() };
+        c.vr.mode = "steamvr".into();
+        c.migrate();
+        assert_eq!((c.vr.mode.as_str(), c.version), ("auto", CONFIG_VERSION));
+        // A choice made after the update stays.
+        c.vr.mode = "steamvr".into();
+        c.migrate();
+        assert_eq!(c.vr.mode, "steamvr");
+        let mut c = Config { version: 1, ..Config::default() };
+        c.vr.mode = "openxr".into();
+        c.migrate();
+        assert_eq!(c.vr.mode, "openxr");
+    }
     #[test]
     fn update_postpone() {
         let later = UpdatePostpone { version: "0.6.0".into(), until: Some(1_000) };

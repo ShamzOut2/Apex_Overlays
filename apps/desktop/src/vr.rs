@@ -505,6 +505,91 @@ mod imp {
         Ok(path)
     }
 
+    /// What the layer reports from inside the game (see `apex_xr_shared::LayerStatus`).
+    struct StatusMap {
+        handle: HANDLE,
+        view: MEMORY_MAPPED_VIEW_ADDRESS,
+    }
+
+    /// The layer's report, read.
+    struct LayerReport {
+        /// How long ago the game last drew a frame (ms).
+        age_ms: u64,
+        shown: u32,
+        api: u32,
+        runtime: String,
+        problem: String,
+    }
+
+    impl LayerReport {
+        /// The game is running in OpenXR mode right now, with the layer loaded.
+        fn live(&self) -> bool {
+            self.age_ms < 2000
+        }
+    }
+
+    impl StatusMap {
+        fn create() -> Option<Self> {
+            let size = std::mem::size_of::<xs::LayerStatus>();
+            let handle = unsafe { CreateFileMappingW(INVALID_HANDLE_VALUE, None, PAGE_READWRITE, 0, size as u32, &HSTRING::from(xs::STATUS_NAME)) }.ok()?;
+            let view = unsafe { MapViewOfFile(handle, FILE_MAP_ALL_ACCESS, 0, 0, size) };
+            if view.Value.is_null() {
+                unsafe {
+                    let _ = CloseHandle(handle);
+                }
+                return None;
+            }
+            Some(Self { handle, view })
+        }
+
+        fn read(&self) -> Option<LayerReport> {
+            let st = unsafe { std::ptr::read_volatile(self.view.Value as *const xs::LayerStatus) };
+            if st.magic != xs::MAGIC || st.version != xs::STATUS_VERSION || st.alive_ms == 0 {
+                return None;
+            }
+            let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0);
+            Some(LayerReport {
+                age_ms: now.saturating_sub(st.alive_ms),
+                shown: st.shown,
+                api: st.api,
+                runtime: xs::get_text(&st.runtime),
+                problem: xs::get_text(&st.problem),
+            })
+        }
+    }
+
+    impl Drop for StatusMap {
+        fn drop(&mut self) {
+            unsafe {
+                let _ = UnmapViewOfFile(self.view);
+                let _ = CloseHandle(self.handle);
+            }
+        }
+    }
+
+    /// Friendlier names for the runtimes people are likely to use.
+    fn runtime_label(name: &str) -> String {
+        let l = name.to_ascii_lowercase();
+        let known = if l.contains("virtualdesktop") || l.contains("vdxr") {
+            "Virtual Desktop (VDXR)"
+        } else if l.contains("steamvr") {
+            "SteamVR"
+        } else if l.contains("oculus") || l.contains("meta") {
+            "Meta Quest Link"
+        } else if l.contains("pimax") {
+            "Pimax"
+        } else if l.contains("varjo") {
+            "Varjo"
+        } else if l.contains("windows mixed reality") || l.contains("oasis") {
+            "Windows Mixed Reality"
+        } else if name.is_empty() {
+            "OpenXR"
+        } else {
+            return name.to_string();
+        };
+        known.to_string()
+    }
+
     /// Overlay id → a stable key for the layer.
     fn key(id: &str) -> u64 {
         id.bytes().fold(0xcbf2_9ce4_8422_2325u64, |h, b| (h ^ b as u64).wrapping_mul(0x0100_0000_01b3))
@@ -516,7 +601,6 @@ mod imp {
         failed: HashMap<String, Instant>,
         recenter: u32,
         manifest: Result<String, String>,
-        asked_admin: bool,
         checked: Option<(Instant, bool)>,
     }
 
@@ -546,6 +630,10 @@ mod imp {
         let mut xr: Option<Xr> = None;
         let mut last_try = Instant::now() - Duration::from_secs(60);
         let mut status = String::new();
+        // Where the layer tells the app it is running inside the game (made once VR is on).
+        let mut layer_status: Option<StatusMap> = None;
+        // One admin prompt per run to register the layer for every game.
+        let mut asked_admin = false;
         // The config and the monitor size, re-read a few times a second (frames are copied
         // every pass).
         let mut snapshot: Option<(Instant, apex_core::config::Config, (f64, f64))> = None;
@@ -573,7 +661,32 @@ mod imp {
             }
             let (_, cfg, screen) = snapshot.as_ref().unwrap();
             let screen = *screen;
-            if cfg.vr.enabled && cfg.vr.mode == "openxr" {
+            if cfg.vr.enabled && layer_status.is_none() {
+                layer_status = StatusMap::create();
+            }
+            let layer = layer_status.as_ref().and_then(|m| m.read()).filter(|l| l.live());
+            let auto = !matches!(cfg.vr.mode.as_str(), "openxr" | "steamvr");
+            // Automatic: the OpenXR layer while it runs inside the game (whatever the runtime:
+            // Virtual Desktop, Quest Link, SteamVR...), else SteamVR overlays while SteamVR runs,
+            // else the OpenXR layer, ready for the game to start.
+            if cfg.vr.enabled && auto && vr.is_none() && layer.as_ref().is_none_or(|l| l.api == 0) && last_try.elapsed() >= Duration::from_secs(5) {
+                last_try = Instant::now();
+                if api.is_none() {
+                    api = load(&data_dir).ok();
+                }
+                if gfx_dev.is_none() {
+                    gfx_dev = gfx().ok();
+                }
+                if let (Some(a), Some(_)) = (&api, &gfx_dev) {
+                    vr = start(a).ok();
+                }
+            }
+            let use_xr = match cfg.vr.mode.as_str() {
+                "openxr" => true,
+                "steamvr" => false,
+                _ => layer.as_ref().is_some_and(|l| l.api != 0) || vr.is_none(),
+            };
+            if cfg.vr.enabled && use_xr {
                 // OpenXR: SteamVR is not used.
                 if let Some(v) = vr.take() {
                     for (_, l) in live.drain() {
@@ -602,7 +715,6 @@ mod imp {
                                 failed: HashMap::new(),
                                 recenter: 0,
                                 manifest: install_layer(&data_dir),
-                                asked_admin: false,
                                 checked: None,
                             })
                         }
@@ -624,16 +736,27 @@ mod imp {
                         // Registered for every game? (re-checked every few seconds; one admin prompt)
                         if x.checked.is_none_or(|c| c.0.elapsed() > Duration::from_secs(5)) {
                             let machine = registered(HKEY_LOCAL_MACHINE, manifest);
-                            if !machine && !x.asked_admin {
-                                x.asked_admin = true;
+                            if !machine && !asked_admin {
+                                asked_admin = true;
                                 register_machine(manifest);
                             }
                             x.checked = Some((Instant::now(), machine));
                         }
-                        if x.checked.is_some_and(|c| c.1) {
-                            "Start iRacing in OpenXR VR mode (restart it if it was already running)"
-                        } else {
-                            "Registered for your Windows user only — accept the admin prompt (or turn VR off and on) to register it for every game"
+                        let registered = x.checked.is_some_and(|c| c.1);
+                        match &layer {
+                            Some(l) if l.api != 0 && (l.problem.is_empty() || l.shown > 0) => {
+                                format!("Connected to iRacing through OpenXR on {}", runtime_label(&l.runtime))
+                            }
+                            Some(l) => format!(
+                                "iRacing is running on {} but the overlays are off: {}",
+                                runtime_label(&l.runtime),
+                                if l.problem.is_empty() { "the game does not use Direct3D 11 or 12" } else { &l.problem }
+                            ),
+                            None if !registered => {
+                                "Registered for your Windows user only — accept the admin prompt (or turn VR off and on) to register it for every game".into()
+                            }
+                            None if auto => "Waiting for VR: start iRacing in its OpenXR VR mode (Virtual Desktop, Quest Link, Pimax… restart iRacing if it was already running), or start SteamVR".into(),
+                            None => "Start iRacing in OpenXR VR mode (restart it if it was already running)".into(),
                         }
                     }
                 };
@@ -685,7 +808,13 @@ mod imp {
                     });
                 }
                 x.shm.write(&panels, x.recenter);
-                publish(&app, &mut status, "on", message, panels.len());
+                let state = match &layer {
+                    Some(l) if l.api == 0 || (!l.problem.is_empty() && l.shown == 0) => "error",
+                    Some(_) => "on",
+                    None => "waiting",
+                };
+                let shown = layer.as_ref().map_or(0, |l| l.shown as usize);
+                publish(&app, &mut status, state, &message, shown);
                 std::thread::sleep(Duration::from_millis(11));
                 continue;
             }
@@ -809,7 +938,7 @@ mod imp {
                 }
             }
             let n = live.values().filter(|l| l.shown == Some(true)).count();
-            publish(&app, &mut status, "on", "", n);
+            publish(&app, &mut status, "on", if auto { "Showing as SteamVR overlays" } else { "" }, n);
             std::thread::sleep(Duration::from_millis(11));
         }
     }

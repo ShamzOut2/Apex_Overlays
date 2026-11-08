@@ -64,6 +64,54 @@ impl Shared {
     }
 }
 
+/// Name of the shared memory the layer writes back to the app (created by the app, which
+/// lives longer than any game; the layer opens it for writing).
+pub const STATUS_NAME: &str = "Local\\ApexOverlaysOpenXRStatus";
+pub const STATUS_VERSION: u32 = 1;
+
+/// What the layer reports while it runs inside a game: that it is there (and so the game is
+/// in OpenXR mode), which OpenXR runtime it is on, and anything that stops the overlays.
+/// Written field by field each frame; the text only changes when a session starts or a
+/// problem is hit, so an occasional torn read only shows for one refresh.
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct LayerStatus {
+    pub magic: u32,
+    pub version: u32,
+    /// Milliseconds since the Unix epoch at the game's last frame.
+    pub alive_ms: u64,
+    /// Overlays added to the last frame.
+    pub shown: u32,
+    /// 11 or 12: the game's Direct3D version (0 = not a Direct3D session).
+    pub api: u32,
+    /// The runtime's name (`xrGetInstanceProperties`), NUL-terminated UTF-8.
+    pub runtime: [u8; 64],
+    /// Why the overlays are off or were dropped, NUL-terminated UTF-8 ("" = none).
+    pub problem: [u8; 128],
+}
+
+impl Default for LayerStatus {
+    fn default() -> Self {
+        Self { magic: MAGIC, version: STATUS_VERSION, alive_ms: 0, shown: 0, api: 0, runtime: [0; 64], problem: [0; 128] }
+    }
+}
+
+/// `text` into a fixed NUL-terminated buffer (cut at a character boundary).
+pub fn put_text<const N: usize>(buf: &mut [u8; N], text: &str) {
+    let mut end = text.len().min(N - 1);
+    while !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    buf.fill(0);
+    buf[..end].copy_from_slice(&text.as_bytes()[..end]);
+}
+
+/// The text in a NUL-terminated buffer.
+pub fn get_text(buf: &[u8]) -> String {
+    let end = buf.iter().position(|&b| b == 0).unwrap_or(buf.len());
+    String::from_utf8_lossy(&buf[..end]).into_owned()
+}
+
 /// Name of the shared texture with id `texture` (opened with OpenSharedResourceByName).
 pub fn texture_name(texture: u64) -> String {
     format!("Local\\ApexOverlaysTexture{texture}")
@@ -97,6 +145,18 @@ mod tests {
         let t = cross(u, v).map(|c| 2.0 * c);
         let c = cross(u, t);
         [v[0] + w * t[0] + c[0], v[1] + w * t[1] + c[1], v[2] + w * t[2] + c[2]]
+    }
+
+    #[test]
+    fn status_text_round_trips_and_is_cut_safely() {
+        let mut st = LayerStatus::default();
+        put_text(&mut st.runtime, "VirtualDesktopXR");
+        assert_eq!(get_text(&st.runtime), "VirtualDesktopXR");
+        put_text(&mut st.runtime, &"é".repeat(40));
+        let t = get_text(&st.runtime);
+        assert!(t.len() <= 63 && t.chars().all(|c| c == 'é'), "{t}");
+        put_text(&mut st.runtime, "");
+        assert_eq!(get_text(&st.runtime), "");
     }
 
     #[test]

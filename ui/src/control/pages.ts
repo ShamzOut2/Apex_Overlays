@@ -1239,11 +1239,11 @@ listen((t) => {
   if (t === 'monitor' && monitorView.tiles.size && document.contains([...monitorView.tiles.values()][0])) drawMonitor();
 });
 
-/** VR (SteamVR overlays, desktop app on Windows). */
+/** VR (SteamVR overlays or the OpenXR layer, desktop app on Windows). */
 function vrCard(): HTMLElement {
   const cfg = state.config!;
-  cfg.vr ??= { enabled: false, mode: 'steamvr', distance: 0.9, width: 1.2, height: -0.05, offset: 0 };
-  cfg.vr.mode ??= 'steamvr';
+  cfg.vr ??= { enabled: false, mode: 'auto', distance: 0.9, width: 1.2, height: -0.05, offset: 0 };
+  cfg.vr.mode ??= 'auto';
   const c = card('VR');
   c.append(
     h(
@@ -1258,12 +1258,13 @@ function vrCard(): HTMLElement {
           key: 'mode',
           label: 'How',
           type: 'select',
-          default: 'steamvr',
+          default: 'auto',
           options: [
-            ['steamvr', 'SteamVR overlays (SteamVR running)'],
-            ['openxr', 'OpenXR, inside iRacing (any headset, no SteamVR needed)'],
+            ['auto', 'Automatic (recommended)'],
+            ['openxr', 'OpenXR only (no SteamVR needed)'],
+            ['steamvr', 'SteamVR overlays only'],
           ],
-          help: 'OpenXR: iRacing in its OpenXR VR mode with any OpenXR runtime (Quest Link, Virtual Desktop, Pimax, Varjo, WMR…), alongside other OpenXR layers such as NextLevelXR or OpenXR Toolkit (Direct3D 11 and 12). The first time, Windows asks for permission to register Apex Overlays’ OpenXR layer; restart iRacing after turning it on',
+          help: 'Automatic draws inside iRacing when it runs in OpenXR mode (Virtual Desktop, Quest Link, Pimax, Varjo, SteamVR…), otherwise uses SteamVR overlays',
         },
         { key: 'distance', label: 'Screen layout: distance in front', type: 'number', default: 0.9, min: 0.2, max: 5, step: 0.05, unit: 'm', help: 'Overlays placed “as on my screen” sit on an imaginary screen this far away' },
         { key: 'width', label: 'Screen layout: width', type: 'number', default: 1.2, min: 0.2, max: 6, step: 0.05, unit: 'm' },
@@ -1280,16 +1281,26 @@ function vrCard(): HTMLElement {
   const v = state.vr;
   const line: Record<string, string> = {
     off: 'Off.',
-    waiting: `Waiting for SteamVR${v?.message ? ` — ${v.message}` : ''}.`,
+    waiting: v?.message ? (cfg.vr.mode === 'steamvr' ? `Waiting for SteamVR — ${v.message}.` : `${v.message}.`) : 'Waiting for SteamVR.',
     on: `In VR: ${v?.overlays ?? 0} overlay${v?.overlays === 1 ? '' : 's'} showing.${v?.message ? ` ${v.message}.` : ''}`,
     error: `VR is not working: ${v?.message ?? ''}`,
   };
-  c.append(h('div', `notice${v?.status === 'on' ? ' good' : ''}`, v ? (line[v.status] ?? v.status) : 'VR works in the Apex Overlays desktop app on Windows, with SteamVR.'));
+  c.append(h('div', `notice${v?.status === 'on' ? ' good' : ''}`, v ? (line[v.status] ?? v.status) : 'VR works in the Apex Overlays desktop app on Windows, with SteamVR or any OpenXR runtime.'));
   c.append(
     h(
       'p',
       'dim small',
       'Set a “Recentre VR” hotkey under Hotkeys: with SteamVR it resets the seated position; with OpenXR it places the overlays fixed in the car from where your head is when you press it.',
+    ),
+    h(
+      'p',
+      'dim small',
+      'Virtual Desktop: in the Virtual Desktop Streamer, set the OpenXR runtime to VDXR, then pick OpenXR as iRacing’s VR mode. No SteamVR needed; the status above says when the overlays are showing inside iRacing.',
+    ),
+    h(
+      'p',
+      'dim small',
+      'OpenXR: the first time, Windows asks for permission to register Apex Overlays’ OpenXR layer, so every game can load it. Restart iRacing after turning VR on. It works alongside other OpenXR layers such as NextLevelXR or OpenXR Toolkit (Direct3D 11 and 12).',
     ),
     h(
       'p',

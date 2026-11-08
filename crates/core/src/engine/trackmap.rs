@@ -9,6 +9,11 @@ use std::path::PathBuf;
 
 pub const BINS: usize = 500;
 
+/// Current outline format: north up and east to the right (version 2). Outlines recorded
+/// before had east and north swapped (YawNorth read as a maths angle), so they came out
+/// mirrored; [`TrackMap::upgraded`] turns them round.
+pub const MAP_VERSION: u32 = 2;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TrackMap {
@@ -17,6 +22,24 @@ pub struct TrackMap {
     /// Normalised outline, `BINS` points indexed by lap fraction, x/y in 0..1.
     pub points: Vec<[f32; 2]>,
     pub source: String,
+    /// See [`MAP_VERSION`] (0 in files written before it existed).
+    #[serde(default)]
+    pub version: u32,
+}
+
+impl TrackMap {
+    /// A recorded outline (the player's or the shared library's) in the current format: older
+    /// ones are mirrored back by swapping east and north. Others are left as they are.
+    pub fn upgraded(mut self) -> Self {
+        if self.version < 2 && matches!(self.source.as_str(), "recorded" | "library") {
+            // Screen x was north and screen y (down) was 1 - east; now x is east and y is 1 - north.
+            for p in &mut self.points {
+                *p = [1.0 - p[1], 1.0 - p[0]];
+            }
+        }
+        self.version = MAP_VERSION;
+        self
+    }
 }
 
 pub struct Recorder {
@@ -62,10 +85,20 @@ impl Recorder {
         self.track_name = name.to_string();
         self.active = false;
         let read = |p: PathBuf| std::fs::read_to_string(p).ok().and_then(|s| serde_json::from_str::<TrackMap>(&s).ok());
-        // The player's own recording, else a copy from the shared map library.
-        self.map = self.path(track_id).and_then(read).or_else(|| {
+        // The player's own recording (turned round once if it was recorded mirrored), else a
+        // copy from the shared map library.
+        let own = self.path(track_id).and_then(|p| {
+            let m = read(p.clone())?;
+            let old = m.version < MAP_VERSION;
+            let m = m.upgraded();
+            if old {
+                let _ = std::fs::write(&p, serde_json::to_string(&m).unwrap_or_default());
+            }
+            Some(m)
+        });
+        self.map = own.or_else(|| {
             let lib = self.dir.as_ref()?.join("library").join(format!("{track_id}.json"));
-            read(lib).filter(|m| m.track_id == track_id).map(|m| TrackMap { source: "library".into(), ..m })
+            read(lib).filter(|m| m.track_id == track_id).map(|m| TrackMap { source: "library".into(), ..m }.upgraded())
         });
         if self.official.as_ref().is_some_and(|m| m.track_id != track_id) {
             self.official = None;
@@ -92,6 +125,7 @@ impl Recorder {
     /// An outline from the shared map library: used while nothing is recorded for this track,
     /// and never written over the player's own recording.
     pub fn set_library(&mut self, map: TrackMap) {
+        let map = map.upgraded();
         if map.track_id == self.track_id && self.map.is_none() {
             self.map = Some(map);
             self.active = false;
@@ -155,9 +189,10 @@ impl Recorder {
                 // Teleport / reset to pits: abandon this lap.
                 self.active = false;
             } else {
+                // YawNorth is a compass heading (0 = north, clockwise): east is sin, north cos.
                 let yaw = t.yaw_north as f64;
-                self.pos[0] += ds * yaw.cos();
-                self.pos[1] += ds * yaw.sin();
+                self.pos[0] += ds * yaw.sin();
+                self.pos[1] += ds * yaw.cos();
                 let bin = ((pct.clamp(0.0, 0.9999)) * BINS as f32) as usize;
                 self.bins[bin] = Some(self.pos);
             }
@@ -176,7 +211,7 @@ impl Recorder {
             p[0] -= err[0] * k;
             p[1] -= err[1] * k;
         }
-        let map = TrackMap { track_id: self.track_id, name: self.track_name.clone(), points: normalise(&pts), source: "recorded".into() };
+        let map = TrackMap { track_id: self.track_id, name: self.track_name.clone(), points: normalise(&pts), source: "recorded".into(), version: MAP_VERSION };
         if let Some(p) = self.path(self.track_id) {
             if let Some(dir) = p.parent() {
                 let _ = std::fs::create_dir_all(dir);
@@ -205,8 +240,8 @@ impl Recorder {
         if dx == 0.0 && dy == 0.0 {
             return None;
         }
-        // Recorded outlines are integrated from YawNorth itself; the simulator's circuit uses maths angles.
-        Some(if map.source == "mock" { std::f32::consts::FRAC_PI_2 - dy.atan2(dx) } else { dy.atan2(dx) })
+        // East and north to a compass heading (0 = north, clockwise).
+        Some(dx.atan2(dy).rem_euclid(std::f32::consts::TAU))
     }
 }
 
@@ -286,6 +321,43 @@ mod tests {
             assert!(diff.min(std::f32::consts::TAU - diff) < 0.05, "{f}: {got} vs {want}");
         }
     }
+
+    #[test]
+    fn records_the_right_way_round() {
+        // Start heading east and keep turning right (compass heading going up): a clockwise
+        // lap, so on screen it starts at the top and heads right, then down.
+        let info = SessionInfo { track_id: 8, ..Default::default() };
+        let mut r = Recorder::new(None);
+        r.load(8, "Clockwise");
+        let mut t = Telemetry { is_on_track: true, speed: 50.0, player_idx: 0, ..Default::default() };
+        t.cars[0] = CarTel { surface: surface::ON_TRACK, pct: 0.0, ..Default::default() };
+        let steps = 4000;
+        for s in 0..=(steps * 2 + 10) {
+            let f = (s % steps) as f32 / steps as f32;
+            t.lap_dist_pct = f;
+            t.lap_dist = f * 1000.0;
+            t.yaw_north = std::f32::consts::FRAC_PI_2 + f * std::f32::consts::TAU;
+            r.update(&t, &info);
+        }
+        let m = r.map.clone().unwrap();
+        let (start, quarter) = (m.points[0], m.points[BINS / 4]);
+        assert!(start[1] < 0.05 && (start[0] - 0.5).abs() < 0.05, "starts at the top: {start:?}");
+        assert!(quarter[0] > 0.95 && (quarter[1] - 0.5).abs() < 0.05, "a quarter in, on the right: {quarter:?}");
+        assert!((r.heading_at(0.25).unwrap() - std::f32::consts::PI).abs() < 0.05, "heading south");
+    }
+
+    #[test]
+    fn old_recordings_are_turned_round() {
+        // Recorded before version 2: x was north, y (down) was 1 - east.
+        let old = TrackMap { track_id: 1, name: "T".into(), points: vec![[0.9, 0.2]], source: "recorded".into(), version: 0 };
+        let new = old.clone().upgraded();
+        // East 0.8, north 0.9: x 0.8, y 0.1.
+        let p = new.points[0];
+        assert!((p[0] - 0.8).abs() < 1e-6 && (p[1] - 0.1).abs() < 1e-6 && new.version == MAP_VERSION, "{p:?}");
+        assert_eq!(new.clone().upgraded(), new, "only once");
+        let official = TrackMap { source: "iracing".into(), ..old };
+        assert_eq!(official.clone().upgraded().points, official.points);
+    }
 }
 
 #[cfg(test)]
@@ -293,7 +365,7 @@ mod library_tests {
     use super::*;
 
     fn map(id: i64, source: &str) -> TrackMap {
-        TrackMap { track_id: id, name: "T".into(), points: vec![[0.0, 0.0]; BINS], source: source.into() }
+        TrackMap { track_id: id, name: "T".into(), points: vec![[0.0, 0.0]; BINS], source: source.into(), version: MAP_VERSION }
     }
 
     #[test]
