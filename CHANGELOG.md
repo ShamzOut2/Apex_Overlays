@@ -4,6 +4,11 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### New features
+- Track state: how much rubber is down (Clean, Low usage, Moderately high usage…, as iRacing reports it) as a new session detail. Pick it in the Session info overlay’s fields, in the relative and standings headers, in the data box, or as a readout in the weather overlay (off until you turn it on)
+
 ## 0.9.3
 
 ### New features

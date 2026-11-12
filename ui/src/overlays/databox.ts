@@ -68,6 +68,7 @@ export const FIELDS: Field[] = [
   { id: 'trackTemp', group: 'Weather', label: 'Track temperature', get: sess('trackTemp') },
   { id: 'airTemp', group: 'Weather', label: 'Air temperature', get: sess('airTemp') },
   { id: 'wetness', group: 'Weather', label: 'Track wetness', get: sess('wetness') },
+  { id: 'trackState', group: 'Weather', label: 'Track state (rubber)', get: sess('trackState') },
   { id: 'rain', group: 'Weather', label: 'Rain', get: sess('rain') },
   { id: 'wind', group: 'Weather', label: 'Wind', get: sess('wind') },
   { id: 'humidity', group: 'Weather', label: 'Humidity', get: sess('humidity') },
