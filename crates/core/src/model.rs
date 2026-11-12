@@ -333,6 +333,9 @@ pub struct SessionDef {
     pub laps: Option<i32>,
     pub time: Option<f64>,
     pub results: Vec<ResultPos>,
+    /// How much rubber is down: iRacing's SessionTrackRubberState ("clean", "low usage",
+    /// "moderately high usage", "carry over"...).
+    pub rubber: String,
 }
 
 impl SessionDef {
@@ -407,6 +410,7 @@ impl SessionInfo {
                 num: s.get("SessionNum").i32_or(0),
                 kind: s.get("SessionType").string(),
                 name: s.get("SessionName").string(),
+                rubber: s.get("SessionTrackRubberState").string(),
                 laps: (!unlimited(s.get("SessionLaps"))).then(|| s.get("SessionLaps").i32_or(0)),
                 time: (!unlimited(s.get("SessionTime"))).then(|| s.get("SessionTime").f64().unwrap_or(0.0)),
                 results: s
@@ -620,13 +624,14 @@ mod tests {
     #[test]
     fn parses_session_info() {
         let s = SessionInfo::parse(
-            "WeekendInfo:\n TrackID: 9\n TrackDisplayName: Road Atlanta\n TrackLength: 4.08 km\n WeekendOptions:\n  IncidentLimit: unlimited\nSessionInfo:\n Sessions:\n - SessionNum: 0\n   SessionLaps: 20\n   SessionTime: unlimited\n   SessionType: Race\nDriverInfo:\n DriverCarIdx: 2\n DriverCarFuelMaxLtr: 100.0\n DriverCarMaxFuelPct: 0.5\n DriverTires:\n - TireIndex: 0\n   TireCompoundType: \"Hard\"\n - TireIndex: 1\n   TireCompoundType: \"Wet\"\n Drivers:\n - CarIdx: 2\n   UserName: Me\n   CarClassColor: 0xff0000\n",
+            "WeekendInfo:\n TrackID: 9\n TrackDisplayName: Road Atlanta\n TrackLength: 4.08 km\n WeekendOptions:\n  IncidentLimit: unlimited\nSessionInfo:\n Sessions:\n - SessionNum: 0\n   SessionLaps: 20\n   SessionTime: unlimited\n   SessionType: Race\n   SessionTrackRubberState: moderately high usage\nDriverInfo:\n DriverCarIdx: 2\n DriverCarFuelMaxLtr: 100.0\n DriverCarMaxFuelPct: 0.5\n DriverTires:\n - TireIndex: 0\n   TireCompoundType: \"Hard\"\n - TireIndex: 1\n   TireCompoundType: \"Wet\"\n Drivers:\n - CarIdx: 2\n   UserName: Me\n   CarClassColor: 0xff0000\n",
         );
         assert_eq!(s.track_id, 9);
         assert_eq!(s.incident_limit, None);
         assert_eq!(s.sessions[0].laps, Some(20));
         assert_eq!(s.sessions[0].time, None);
         assert!(s.sessions[0].is_race());
+        assert_eq!(s.sessions[0].rubber, "moderately high usage");
         assert_eq!(s.fuel_capacity(), 50.0);
         assert_eq!(s.tire_is_wet(1), Some(true));
         assert_eq!(s.tire_is_wet(0), Some(false));

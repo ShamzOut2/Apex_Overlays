@@ -180,6 +180,8 @@ pub struct SessionOut<'a> {
     pub session_type: &'a str,
     pub session_name: &'a str,
     pub session_state: &'a str,
+    /// Rubber on the track (iRacing's words, e.g. "moderately high usage"; "" if unknown).
+    pub track_state: &'a str,
     pub is_race: bool,
     pub time_remain: Option<f32>,
     pub time_total: Option<f32>,
@@ -231,6 +233,7 @@ pub fn session(e: &Engine) -> SessionOut<'_> {
         track_country: &e.info.track_country,
         session_type: def.map(|d| d.kind.as_str()).unwrap_or(""),
         session_name: def.map(|d| d.name.as_str()).unwrap_or(""),
+        track_state: def.map(|d| d.rubber.as_str()).unwrap_or(""),
         session_state: model::session_state_label(t.session_state),
         is_race: e.is_race(),
         time_remain: (time_total.is_some() && t.session_time_remain >= 0.0 && t.session_time_remain < 1e6).then(|| round(t.session_time_remain as f32, 1)),

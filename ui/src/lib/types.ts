@@ -21,6 +21,8 @@ export interface Session {
   sessionType: string;
   sessionName: string;
   sessionState: string;
+  /** Rubber on the track, iRacing's words ("clean", "moderately high usage"…); "" if unknown. */
+  trackState: string;
   isRace: boolean;
   timeRemain: number | null;
   timeTotal: number | null;

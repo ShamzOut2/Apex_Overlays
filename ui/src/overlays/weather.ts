@@ -1,6 +1,7 @@
 import { h, show, style, text } from '../lib/dom';
 import * as f from '../lib/format';
 import type { OverlayDef } from '../lib/overlay';
+import { trackState } from '../lib/sessionFields';
 import type { Player, Session } from '../lib/types';
 
 // Compass ring (rotates with the car) and a fixed car marker pointing up.
@@ -39,6 +40,7 @@ export const weather: OverlayDef = {
     { key: 'showSky', label: 'Sky', type: 'bool', default: true, group: 'Readouts' },
     { key: 'showRain', label: 'Rain and track wetness', type: 'bool', default: true, group: 'Readouts' },
     { key: 'showFog', label: 'Fog', type: 'bool', default: false, group: 'Readouts' },
+    { key: 'showTrackState', label: 'Track state (rubber: clean, low usage…)', type: 'bool', default: false, group: 'Readouts' },
   ],
   create(root, ctx) {
     const s = ctx.settings;
@@ -68,6 +70,7 @@ export const weather: OverlayDef = {
       ['showSky', 'Sky'],
       ['showRain', 'Rain'],
       ['showFog', 'Fog'],
+      ['showTrackState', 'Rubber'],
     ]) {
       if (!s[key]) continue;
       const v = h('div', 'v');
@@ -112,6 +115,7 @@ export const weather: OverlayDef = {
       const arrow = session.weatherTrend === 'wetting' ? ' ↑' : session.weatherTrend === 'drying' ? ' ↓' : '';
       set('showRain', `${session.precipitation > 0 ? `${Math.round(session.precipitation * 100)}%` : 'None'} · ${session.wetnessLabel}${arrow}`);
       set('showFog', `${Math.round(session.fog * 100)}%`);
+      set('showTrackState', trackState(session.trackState) || '–');
     };
 
     return {

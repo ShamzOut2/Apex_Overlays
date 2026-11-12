@@ -449,7 +449,7 @@ impl Mock {
 
     fn yaml(&self) -> String {
         let mut y = format!(
-            "---\nWeekendInfo:\n TrackName: apex raceway\n TrackID: 9001\n TrackLength: {:.2} km\n TrackDisplayName: Apex Raceway\n TrackConfigName: Grand Prix\n TrackPitSpeedLimit: 79.20 kph\n TrackCity: Nowhere\n TrackCountry: Simland\n SeriesID: 1\n SubSessionID: 424242\n LeagueID: 0\n Official: 1\n EventType: Race\n WeekendOptions:\n  IncidentLimit: 25\nSessionInfo:\n Sessions:\n - SessionNum: 0\n   SessionLaps: unlimited\n   SessionTime: {:.4} sec\n   SessionType: Race\n   SessionName: RACE\n   ResultsPositions:\n",
+            "---\nWeekendInfo:\n TrackName: apex raceway\n TrackID: 9001\n TrackLength: {:.2} km\n TrackDisplayName: Apex Raceway\n TrackConfigName: Grand Prix\n TrackPitSpeedLimit: 79.20 kph\n TrackCity: Nowhere\n TrackCountry: Simland\n SeriesID: 1\n SubSessionID: 424242\n LeagueID: 0\n Official: 1\n EventType: Race\n WeekendOptions:\n  IncidentLimit: 25\nSessionInfo:\n Sessions:\n - SessionNum: 0\n   SessionLaps: unlimited\n   SessionTime: {:.4} sec\n   SessionType: Race\n   SessionName: RACE\n   SessionTrackRubberState: moderately high usage\n   ResultsPositions:\n",
             self.track.len / 1000.0,
             self.race_seconds
         );

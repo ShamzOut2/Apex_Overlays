@@ -15,6 +15,7 @@ export const SESSION_FIELDS: ColumnDef[] = [
   { id: 'trackTemp', label: 'Track temperature' },
   { id: 'airTemp', label: 'Air temperature' },
   { id: 'wetness', label: 'Track wetness' },
+  { id: 'trackState', label: 'Track state (rubber: clean, low usage…)' },
   { id: 'rain', label: 'Rain' },
   { id: 'declared', label: 'Declared wet' },
   { id: 'skies', label: 'Sky' },
@@ -49,6 +50,7 @@ export const FIELD_LABELS: Record<string, string> = {
   trackTemp: 'TRACK',
   airTemp: 'AIR',
   wetness: 'SURFACE',
+  trackState: 'TRACK STATE',
   rain: 'RAIN',
   declared: 'DECLARED WET',
   skies: 'SKY',
@@ -100,6 +102,8 @@ export function fieldValue(id: string, d: Session, u: f.Units, o: FieldOpts = {}
       return `${o.compact ? 'Air ' : ''}${f.temp(d.airTemp, u)}`;
     case 'wetness':
       return d.wetnessLabel;
+    case 'trackState':
+      return trackState(d.trackState, o.compact);
     case 'rain':
       return d.precipitation > 0 ? `${o.compact ? 'Rain ' : ''}${Math.round(d.precipitation * 100)}%` : o.compact ? '' : 'None';
     case 'declared':
@@ -123,6 +127,18 @@ export function fieldValue(id: string, d: Session, u: f.Units, o: FieldOpts = {}
     default:
       return '';
   }
+}
+
+/** iRacing's rubber state in sentence case ("Moderately high usage"); compact headers get
+ *  a short form ("Rubber: mod. high"). */
+export function trackState(raw: string | undefined, compact = false): string {
+  const t = (raw ?? '').trim().toLowerCase();
+  if (!t) return '';
+  if (compact) {
+    const short = t.replace('moderately', 'mod.').replace(/\s*usage$/, '');
+    return `Rubber: ${short}`;
+  }
+  return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
 /** Data attribute used to colour the flags field. */
