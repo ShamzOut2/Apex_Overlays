@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 0.9.4
 
 ### New features
 - Fuel calculator: a new design. Laps of fuel left in large figures, a segmented bar with a line at the finish, per lap, laps to go and fuel at the finish, and a status pill: cyan “Makes the finish”, amber “Marginal” (under half a lap spare, adjustable) or red “Pit · add 4.7 L”. The colours can be changed. A compact mode shows just the laps, the bar and the fuel at the finish. Last lap, stops and pit window show underneath, and every other figure (usual here, max per lap, needed to finish, target and save per lap, laps per tank, per hour, history) can be added in the same style
