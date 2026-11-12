@@ -1,7 +1,7 @@
 import { h } from '../lib/dom';
 import * as f from '../lib/format';
 import { commonFor, merge, type SettingDef } from '../lib/settings';
-import { applyUiTheme, PRESETS, THEME } from '../lib/theme';
+import { applyUiTheme, PRESETS, THEME, themeValues } from '../lib/theme';
 import type { OverlayInstance, SavedLayout } from '../lib/types';
 import { byKind, OVERLAYS } from '../overlays/registry';
 import { CHOICES, field, form, relevance } from './form';
@@ -690,7 +690,7 @@ const themePage: Page = {
     const cfg = state.config!;
     const rerender = () => this.render(el);
     applyUiTheme(cfg.theme, document.documentElement);
-    const values = merge(THEME, cfg.theme);
+    const values = themeValues(cfg.theme);
     cfg.savedThemes ??= [];
     const apply = (theme: Record<string, unknown>, coloursOnly: boolean) => {
       // Presets only carry colours, so fonts and sizes the user picked survive.

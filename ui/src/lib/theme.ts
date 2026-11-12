@@ -3,8 +3,47 @@
 
 import { merge, type SettingDef, type Values } from './settings';
 
+const STANDARD_FONT = "'Segoe UI', 'Inter', system-ui, sans-serif";
+
+/** Fonts for the overlays (the settings window keeps its own). `stretch` picks a width of a
+ *  variable font, e.g. Bahnschrift's condensed cut. */
+export const FONTS: { id: string; label: string; family: string; stretch?: string }[] = [
+  { id: 'standard', label: 'Standard (Segoe UI)', family: STANDARD_FONT },
+  { id: 'bahnschrift', label: 'Bahnschrift Condensed (as the fuel calculator)', family: "'Bahnschrift', 'Segoe UI', system-ui, sans-serif", stretch: 'condensed' },
+  // Bundled with the app (ui/static/assets/fonts/overlay, SIL Open Font License).
+  { id: 'barlow-condensed', label: 'Barlow Condensed (condensed, sporty)', family: "'Barlow Condensed', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'rajdhani', label: 'Rajdhani (square, technical)', family: "'Rajdhani', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'oswald', label: 'Oswald (tall and bold)', family: "'Oswald', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'titillium-web', label: 'Titillium Web (wide and clean)', family: "'Titillium Web', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'chakra-petch', label: 'Chakra Petch (angular, futuristic)', family: "'Chakra Petch', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'saira-semi-condensed', label: 'Saira Semi Condensed (rounded racing)', family: "'Saira Semi Condensed', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'roboto-condensed', label: 'Roboto Condensed (neutral, very readable)', family: "'Roboto Condensed', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'exo-2', label: 'Exo 2 (modern geometric)', family: "'Exo 2', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'inter', label: 'Inter (crisp, readable when small)', family: "'Inter', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'montserrat', label: 'Montserrat (wide and confident)', family: "'Montserrat', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'teko', label: 'Teko (very condensed, tall)', family: "'Teko', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'kanit', label: 'Kanit (rounded, punchy)', family: "'Kanit', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'orbitron', label: 'Orbitron (wide sci-fi display)', family: "'Orbitron', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'sora', label: 'Sora (soft geometric)', family: "'Sora', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'space-grotesk', label: 'Space Grotesk (grotesk with character)', family: "'Space Grotesk', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'archivo-narrow', label: 'Archivo Narrow (narrow, neutral)', family: "'Archivo Narrow', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'big-shoulders-display', label: 'Big Shoulders Display (condensed industrial)', family: "'Big Shoulders Display', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'ibm-plex-sans-condensed', label: 'IBM Plex Sans Condensed (engineering feel)', family: "'IBM Plex Sans Condensed', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'fira-sans-condensed', label: 'Fira Sans Condensed (humanist, compact)', family: "'Fira Sans Condensed', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'antonio', label: 'Antonio (tall scoreboard style)', family: "'Antonio', 'Segoe UI', system-ui, sans-serif" },
+];
+
 export const THEME: SettingDef[] = [
-  { key: 'fontFamily', label: 'Font family', type: 'text', default: "'Segoe UI', 'Inter', system-ui, sans-serif", group: 'Text' },
+  {
+    key: 'font',
+    label: 'Overlay font',
+    type: 'select',
+    default: 'standard',
+    options: [...FONTS.map((f): [string, string] => [f.id, f.label]), ['custom', 'Custom (type a font name)']],
+    help: 'Every overlay uses it; the settings window keeps its own font',
+    group: 'Text',
+  },
+  { key: 'fontFamily', when: (v) => v.font === 'custom', label: 'Custom font', type: 'text', default: STANDARD_FONT, help: 'Any font installed on this PC, e.g. Arial Narrow; list a few, separated by commas', group: 'Text' },
   { key: 'fontSize', label: 'Base font size', type: 'number', default: 13, min: 8, max: 32, step: 0.5, unit: 'px', group: 'Text' },
   { key: 'fontWeight', label: 'Font weight', type: 'select', default: '500', options: [['400', 'Regular'], ['500', 'Medium'], ['600', 'Semi bold'], ['700', 'Bold']], group: 'Text' },
   { key: 'textColor', label: 'Text', type: 'color', default: '#f2f4f8', group: 'Colours' },
@@ -28,6 +67,21 @@ export const THEME: SettingDef[] = [
   { key: 'border', label: 'Outline', type: 'bool', default: true, group: 'Shape' },
   { key: 'shadow', label: 'Text shadow (better on bright scenes)', type: 'bool', default: true, group: 'Shape' },
 ];
+
+/** The theme's values, with the font choice worked out: themes saved before the font list
+ *  existed keep a font they typed in (as "custom"). */
+export function themeValues(stored: Values | undefined): Values {
+  const t = merge(THEME, stored);
+  if (stored?.font == null && typeof stored?.fontFamily === 'string' && stored.fontFamily.trim() && stored.fontFamily !== STANDARD_FONT) t.font = 'custom';
+  return t;
+}
+
+/** CSS font family and width for the overlays. */
+export function overlayFont(t: Values): { family: string; stretch: string } {
+  const f = FONTS.find((x) => x.id === t.font);
+  if (f) return { family: f.family, stretch: f.stretch ?? 'normal' };
+  return { family: (t.fontFamily as string) || STANDARD_FONT, stretch: 'normal' };
+}
 
 type Preset = { name: string; values: Values };
 
@@ -129,11 +183,13 @@ export function isLight(hex: string): boolean {
 }
 
 export function applyTheme(stored: Values | undefined, el: HTMLElement, overrides: { scale?: number; bgOpacity?: number; opacity?: number } = {}) {
-  const t = merge(THEME, stored);
+  const t = themeValues(stored);
   const s = el.style;
   const bgOpacity = overrides.bgOpacity != null && overrides.bgOpacity >= 0 ? overrides.bgOpacity : (t.backgroundOpacity as number);
   const text = t.textColor as string;
-  s.setProperty('--font', `'Twemoji Country Flags', ${t.fontFamily}`);
+  const font = overlayFont(t);
+  s.setProperty('--font', `'Twemoji Country Flags', ${font.family}`);
+  s.setProperty('--font-stretch', font.stretch);
   s.setProperty('--font-size', `${((t.fontSize as number) * (overrides.scale ?? 100)) / 100}px`);
   s.setProperty('--weight', t.fontWeight as string);
   s.setProperty('--text', text);

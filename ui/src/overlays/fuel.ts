@@ -51,7 +51,6 @@ export const fuel: OverlayDef = {
     { key: 'segments', when: (v) => v.showGauge !== false && full(v), label: 'Bar segments', type: 'number', default: 20, min: 6, max: 40, group: 'Bar', help: 'One lap per segment, more laps per segment in long races' },
     { key: 'compactSegments', when: (v) => v.showGauge !== false && !full(v), label: 'Bar segments', type: 'number', default: 12, min: 4, max: 30, group: 'Bar' },
     { key: 'decimals', label: 'Decimals per lap', type: 'number', default: 2, min: 0, max: 3, group: 'Format' },
-    { key: 'font', label: 'Numbers font', type: 'select', default: 'condensed', options: [['condensed', 'Condensed (Bahnschrift, built into Windows)'], ['theme', 'Theme font']], group: 'Format' },
   ],
   create(root, ctx) {
     const s = ctx.settings;
@@ -59,7 +58,6 @@ export const fuel: OverlayDef = {
     const dec = s.decimals as number;
     const compact = s.mode === 'compact';
     root.classList.add('fuel', compact ? 'fl-compact' : 'fl-full');
-    toggle(root, 'fl-condensed', s.font !== 'theme');
     style(root, '--fl-ok', s.okColor as string);
     style(root, '--fl-marginal', s.marginalColor as string);
     style(root, '--fl-short', s.shortColor as string);

@@ -1,3 +1,6 @@
+/* Fonts offered under Theme → Overlay font; each is only downloaded when chosen. */
+@import url('/assets/fonts/overlay/fonts.css');
+
 /* Country flags: Windows has no flag emoji, so a tiny flags-only font is bundled
    (Twemoji Country Flags, CC-BY 4.0 — see THIRD_PARTY_NOTICES.md). */
 @font-face {
@@ -36,6 +39,7 @@ html, body {
   font-family: var(--font);
   font-size: var(--font-size);
   font-weight: var(--weight, 500);
+  font-stretch: var(--font-stretch, normal);
   font-variant-numeric: tabular-nums;
   text-shadow: var(--shadow);
   user-select: none;
@@ -547,7 +551,6 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .panel.fuel.st-marginal { --tone: var(--fl-marginal, #ffb020); }
 .panel.fuel.st-short { --tone: var(--fl-short, #ff5a3c); }
 .panel.fuel.st-none .fl-hero { color: var(--text); }
-.panel.fuel.fl-condensed { font-family: 'Bahnschrift', var(--font); font-stretch: condensed; }
 .fuel .fl-num { font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: -0.01em; }
 .fuel .fl-label { font-size: 0.74em; font-weight: 600; letter-spacing: 0.16em; color: var(--dim); text-transform: uppercase; white-space: nowrap; }
 .fuel .fl-unit { font-size: 0.55em; font-weight: 600; color: var(--dim); margin-left: 0.12em; }
