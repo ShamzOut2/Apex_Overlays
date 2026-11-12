@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 0.9.5
 
 ### New features
 - Theme → Overlay font: pick the font every overlay uses from a list, or type any installed font under Custom. The settings window keeps its own font. A font you had typed in before stays as Custom
