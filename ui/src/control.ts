@@ -95,7 +95,6 @@ listen((t) => {
     }
   }
   if (t === 'garage61' && current().id === 'garage61') render();
-  if (t === 'leagueImport' && current().id === 'leagues') render();
   if ((t === 'trackmap' || t === 'vr') && current().id === 'general') render();
   if (t === 'update' && (promptKind === 'update' || (!promptMode && current().id === 'general'))) render();
   // Race control lists live flags: refresh every couple of seconds unless the user is typing.

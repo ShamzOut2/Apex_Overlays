@@ -4,6 +4,20 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 0.9.3
+
+### New features
+- League builder: “Import league file” also takes a league exported from the commentator app: its classes and colours, every driver (car number, class, nickname, team), the points system and bonuses, and the championship so far, worked out from the rounds’ results (per class or overall, with multipliers, adjustments, dropped rounds and penalties). Importing a league you already have (same iRacing league ID) offers to update it
+
+### Improvements
+- League builder: the championship standings are shown per class when points are scored per class
+
+### Fixes
+- League builder: a file that is not a league export now says so instead of doing nothing
+
+### Removed
+- League builder: the “Import a league from iRacing” section (it needed an iRacing API login most people cannot get). Use “Import league file” or “Create from current session” instead
+
 ## 0.9.2
 
 ### New features
