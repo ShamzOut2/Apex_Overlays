@@ -1,3 +1,6 @@
+/* Fonts offered under Theme → Overlay font; each is only downloaded when chosen. */
+@import url('/assets/fonts/overlay/fonts.css');
+
 /* Country flags: Windows has no flag emoji, so a tiny flags-only font is bundled
    (Twemoji Country Flags, CC-BY 4.0 — see THIRD_PARTY_NOTICES.md). */
 @font-face {

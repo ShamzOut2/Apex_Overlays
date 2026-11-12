@@ -6,6 +6,15 @@
 The flag artwork is from [Twemoji](https://github.com/twitter/twemoji), © Twitter, Inc and other contributors,
 licensed under [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
+## Overlay fonts
+The fonts offered under Theme → Overlay font are bundled in `ui/static/assets/fonts/overlay/` (Latin and
+Latin Extended subsets, from Google Fonts, fetched with `tools/fetch-overlay-fonts.py`). Each is licensed
+under the [SIL Open Font License 1.1](https://openfontlicense.org); the licence and copyright notice of each
+font is in `ui/static/assets/fonts/overlay/licenses/`:
+Antonio, Archivo Narrow, Barlow Condensed, Big Shoulders Display, Chakra Petch, Exo 2, Fira Sans Condensed,
+IBM Plex Sans Condensed, Inter, Kanit, Montserrat, Orbitron, Oswald, Rajdhani, Roboto Condensed,
+Saira Semi Condensed, Sora, Space Grotesk, Teko and Titillium Web.
+
 ## Lovely Sim Racing data
 The following data is downloaded at runtime from community projects by [Lovely Sim Racing](https://lsr.gg), licensed under
 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). None of it is bundled with this application.

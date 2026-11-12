@@ -10,6 +10,27 @@ const STANDARD_FONT = "'Segoe UI', 'Inter', system-ui, sans-serif";
 export const FONTS: { id: string; label: string; family: string; stretch?: string }[] = [
   { id: 'standard', label: 'Standard (Segoe UI)', family: STANDARD_FONT },
   { id: 'bahnschrift', label: 'Bahnschrift Condensed (as the fuel calculator)', family: "'Bahnschrift', 'Segoe UI', system-ui, sans-serif", stretch: 'condensed' },
+  // Bundled with the app (ui/static/assets/fonts/overlay, SIL Open Font License).
+  { id: 'barlow-condensed', label: 'Barlow Condensed (condensed, sporty)', family: "'Barlow Condensed', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'rajdhani', label: 'Rajdhani (square, technical)', family: "'Rajdhani', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'oswald', label: 'Oswald (tall and bold)', family: "'Oswald', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'titillium-web', label: 'Titillium Web (wide and clean)', family: "'Titillium Web', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'chakra-petch', label: 'Chakra Petch (angular, futuristic)', family: "'Chakra Petch', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'saira-semi-condensed', label: 'Saira Semi Condensed (rounded racing)', family: "'Saira Semi Condensed', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'roboto-condensed', label: 'Roboto Condensed (neutral, very readable)', family: "'Roboto Condensed', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'exo-2', label: 'Exo 2 (modern geometric)', family: "'Exo 2', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'inter', label: 'Inter (crisp, readable when small)', family: "'Inter', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'montserrat', label: 'Montserrat (wide and confident)', family: "'Montserrat', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'teko', label: 'Teko (very condensed, tall)', family: "'Teko', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'kanit', label: 'Kanit (rounded, punchy)', family: "'Kanit', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'orbitron', label: 'Orbitron (wide sci-fi display)', family: "'Orbitron', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'sora', label: 'Sora (soft geometric)', family: "'Sora', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'space-grotesk', label: 'Space Grotesk (grotesk with character)', family: "'Space Grotesk', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'archivo-narrow', label: 'Archivo Narrow (narrow, neutral)', family: "'Archivo Narrow', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'big-shoulders-display', label: 'Big Shoulders Display (condensed industrial)', family: "'Big Shoulders Display', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'ibm-plex-sans-condensed', label: 'IBM Plex Sans Condensed (engineering feel)', family: "'IBM Plex Sans Condensed', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'fira-sans-condensed', label: 'Fira Sans Condensed (humanist, compact)', family: "'Fira Sans Condensed', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'antonio', label: 'Antonio (tall scoreboard style)', family: "'Antonio', 'Segoe UI', system-ui, sans-serif" },
 ];
 
 export const THEME: SettingDef[] = [

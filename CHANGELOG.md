@@ -7,7 +7,8 @@ Each version groups its changes under `### New features`, `### Improvements` and
 ## Unreleased
 
 ### New features
-- Theme → Overlay font: pick the font every overlay uses from a list (Standard, or Bahnschrift Condensed as the fuel calculator used), or type any installed font under Custom. The settings window keeps its own font. A font you had typed in before stays as Custom
+- Theme → Overlay font: pick the font every overlay uses from a list, or type any installed font under Custom. The settings window keeps its own font. A font you had typed in before stays as Custom
+- 20 fonts come with the app, so they work on any PC without installing anything: Barlow Condensed, Rajdhani, Oswald, Titillium Web, Chakra Petch, Saira Semi Condensed, Roboto Condensed, Exo 2, Inter, Montserrat, Teko, Kanit, Orbitron, Sora, Space Grotesk, Archivo Narrow, Big Shoulders Display, IBM Plex Sans Condensed, Fira Sans Condensed and Antonio. Plus Standard (Segoe UI) and Bahnschrift Condensed from Windows
 
 ### Removed
 - Fuel calculator: its own font option. It now follows Theme → Overlay font (choose Bahnschrift Condensed there for the previous look)
