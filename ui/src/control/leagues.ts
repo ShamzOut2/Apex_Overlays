@@ -6,6 +6,7 @@ import { h } from '../lib/dom';
 import type { ClassRules, League, LeagueClass, PointsConfig } from '../lib/types';
 import { flagEmoji } from '../overlays/common';
 import { showFlagCodes } from './flagCodes';
+import { fromCommentator, isCommentatorLeague } from './leagueImport';
 import type { Page } from './pages';
 import { client, download, save, state, uid, upload } from './state';
 
@@ -337,14 +338,23 @@ function pointsCard(l: League, rerender: () => void) {
   );
   c.append(table, bar, h('p', 'dim small', 'Add the “League points” and “Championship total” columns to the Relative or Standings overlay to see live points.'));
   if (l.seasonPoints?.length) {
-    const top = [...l.seasonPoints].sort((a, b) => b.points - a.points).slice(0, 10);
-    const t = h('table', 'drivers');
-    t.append(...top.map((e, i) => {
-      const tr = h('tr');
-      tr.append(h('td', '', String(e.position || i + 1)), h('td', '', e.name), h('td', '', String(e.points)));
-      return tr;
-    }));
-    c.append(h('h3', '', `Championship standings ${l.seasonName ? `(${l.seasonName})` : ''}`), t);
+    c.append(h('h3', '', `Championship standings ${l.seasonName ? `(${l.seasonName})` : ''}`));
+    // Scored per class: a table per class (by each driver's class in the roster).
+    const classOf = new Map(l.driverOverrides.map((d) => [d.customerId, d.classId]));
+    const groups = p.basis === 'class' && l.classes.length ? [...l.classes.map((k) => ({ name: k.name, id: k.id })), { name: 'Other', id: '' }] : [{ name: '', id: null }];
+    for (const g of groups) {
+      const rows = l.seasonPoints.filter((e) => g.id === null || (classOf.get(e.customerId) ?? '') === g.id || (g.id === '' && !l.classes.some((k) => k.id === classOf.get(e.customerId))));
+      if (!rows.length) continue;
+      const top = rows.sort((a, b) => b.points - a.points).slice(0, 10);
+      const t = h('table', 'drivers');
+      t.append(...top.map((e, i) => {
+        const tr = h('tr');
+        tr.append(h('td', '', String(e.position || i + 1)), h('td', '', e.name), h('td', '', String(e.points)));
+        return tr;
+      }));
+      if (g.name) c.append(h('p', 'small', g.name));
+      c.append(t);
+    }
   }
   return c;
 }
@@ -626,8 +636,27 @@ export const leaguesPage: Page = {
         add(l);
       }),
       btn('Import league file', async () => {
-        const l = (await upload()) as League;
-        if (!l || !Array.isArray(l.classes)) return alert('That file is not a league export.');
+        let file: unknown;
+        try {
+          file = await upload();
+        } catch {
+          return alert('That file could not be read (it is not a JSON file).');
+        }
+        if (isCommentatorLeague(file)) {
+          // From the commentator app: update the league with the same iRacing league ID, or add it.
+          const leagueId = Number(file.league.league_id) || 0;
+          const same = leagueId > 0 ? cfg.leagues.find((x) => x.iracingLeagueId === leagueId) : undefined;
+          if (same && confirm(`Update “${same.name || 'unnamed league'}” (iRacing league ${leagueId}) with this file?\n\nOK: update it. Cancel: add it as a new league.`)) {
+            Object.assign(same, fromCommentator(file, same));
+            selected = same.id;
+            save();
+            rerender();
+            return;
+          }
+          return add(fromCommentator(file, newLeague(file.league.name || 'Imported league')));
+        }
+        const l = file as League;
+        if (!l || !Array.isArray(l.classes)) return alert('That file is not a league export (from Apex Overlays or the commentator app).');
         add({ ...newLeague(l.name), ...l, id: uid('league') });
       }),
     );
