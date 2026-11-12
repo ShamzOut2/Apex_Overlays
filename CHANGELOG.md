@@ -15,6 +15,9 @@ Each version groups its changes under `### New features`, `### Improvements` and
 ### Fixes
 - League builder: a file that is not a league export now says so instead of doing nothing
 
+### Removed
+- League builder: the “Import a league from iRacing” section (it needed an iRacing API login most people cannot get). Use “Import league file” or “Create from current session” instead
+
 ## 0.9.2
 
 ### New features

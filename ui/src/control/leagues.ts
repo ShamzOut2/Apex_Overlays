@@ -8,11 +8,9 @@ import { flagEmoji } from '../overlays/common';
 import { showFlagCodes } from './flagCodes';
 import { fromCommentator, isCommentatorLeague } from './leagueImport';
 import type { Page } from './pages';
-import { client, download, save, state, uid, upload } from './state';
+import { download, save, state, uid, upload } from './state';
 
 let selected = '';
-let importLeagueId = '';
-let importSeasonId = '';
 
 const RULES: [keyof ClassRules, string, 'num' | 'text', string][] = [
   ['carNumbers', 'Car numbers', 'text', '1, 7, 42'],
@@ -151,100 +149,6 @@ function classEditor(l: League, c: LeagueClass, i: number, rerender: () => void)
   }
   el.append(head, rules);
   return el;
-}
-
-/** Login + league ID import from the iRacing Data API. */
-function importCard(rerender: () => void, league?: League) {
-  const cfg = state.config!;
-  const api = cfg.iracingApi;
-  const configured = !!(api.clientId && api.username && api.clientSecretMasked && api.passwordMasked);
-  const c = h('section', 'card');
-  c.append(
-    h('h2', '', 'Import a league from iRacing (optional)'),
-    h('p', 'dim', 'Enter a league ID to pull its name, roster nicknames, car classes, points system and championship standings straight from iRacing.'),
-  );
-  const creds = h('details');
-  creds.open = !configured;
-  creds.append(h('summary', '', configured ? `iRacing API login: ${api.username} (saved)` : 'iRacing API login (required once)'));
-  creds.append(
-    h(
-      'p',
-      'dim small',
-      'iRacing only allows Data API access through OAuth. You need a client ID and secret registered with iRacing (request a “password limited” client from iRacing support) plus your iRacing email and password. Your password and secret are stored only in the scrambled form iRacing’s login expects, never as plain text.',
-    ),
-  );
-  const field = (label: string, type: string, value: string, placeholder: string) => {
-    const i = h('input');
-    i.type = type;
-    i.value = value;
-    i.placeholder = placeholder;
-    creds.append(labeled(label, i));
-    return i;
-  };
-  const clientId = field('Client ID', 'text', api.clientId, 'my-client-id');
-  const secret = field('Client secret', 'password', '', api.clientSecretMasked ? 'saved — type to replace' : 'client secret');
-  const user = field('iRacing email', 'email', api.username, 'you@example.com');
-  const pass = field('iRacing password', 'password', '', api.passwordMasked ? 'saved — type to replace' : 'password');
-  creds.append(
-    btn(
-      'Save login',
-      () => {
-        client.send({ op: 'setIracingApi', clientId: clientId.value, clientSecret: secret.value, username: user.value, password: pass.value });
-        secret.value = '';
-        pass.value = '';
-      },
-      'primary',
-    ),
-  );
-  const row = h('div', 'toolbar');
-  const id = h('input');
-  id.type = 'number';
-  id.placeholder = 'League ID';
-  id.style.width = '140px';
-  id.value = importLeagueId || (league?.iracingLeagueId ? String(league.iracingLeagueId) : '') || (state.session?.leagueId ? String(state.session.leagueId) : '');
-  id.oninput = () => (importLeagueId = id.value);
-  const imp = state.leagueImport;
-  const season = h('select');
-  const auto = h('option', '', 'Current season');
-  auto.value = '';
-  season.append(auto);
-  for (const s of imp?.leagueId === Number(id.value) ? imp.seasons : []) {
-    const o = h('option', '', `${s.name}${s.active ? ' (active)' : ''}`);
-    o.value = String(s.seasonId);
-    season.append(o);
-  }
-  season.value = importSeasonId;
-  season.onchange = () => (importSeasonId = season.value);
-  row.append(
-    id,
-    season,
-    btn(
-      'Import / refresh',
-      () => {
-        const leagueId = parseInt(id.value, 10);
-        if (!leagueId) return alert('Enter the league ID (the number in the league page URL on iracing.com).');
-        importLeagueId = id.value;
-        client.send({ op: 'importLeague', leagueId, seasonId: importSeasonId ? parseInt(importSeasonId, 10) : null });
-      },
-      'primary',
-    ),
-  );
-  c.append(creds, row);
-  if (imp) {
-    const status = h('div', 'notice', imp.message);
-    if (imp.status === 'ok' && imp.id) {
-      status.append(
-        ' ',
-        btn('Open it', () => {
-          selected = imp.id!;
-          rerender();
-        }, 'mini'),
-      );
-    }
-    c.append(status);
-  }
-  c.append(h('p', 'dim small', 'No API access? Use “Create from current session” above while you are in a league session, then add the points table by hand.'));
-  return c;
 }
 
 function pointsCard(l: League, rerender: () => void) {
@@ -620,7 +524,7 @@ export const leaguesPage: Page = {
     else if (cfg.leagueMode === 'always') now = `Using ${sess.league ? `“${sess.league}”` : 'no league'} in every session.`;
     else if (!sid) now = 'This session is not a league session (e.g. an official race), so no league is used.';
     else if (match) now = `This session belongs to iRacing league ${sid} → using “${match.name || 'unnamed league'}”.`;
-    else now = `This session belongs to iRacing league ${sid}, but none of your leagues has that ID — no league is used. Import it below, or set the ID on one of your leagues.`;
+    else now = `This session belongs to iRacing league ${sid}, but none of your leagues has that ID — no league is used. Import its league file, or set the ID on one of your leagues.`;
     const bar = h('div', 'toolbar');
     const add = (l: League) => {
       cfg.leagues.push(l);
@@ -677,7 +581,7 @@ export const leaguesPage: Page = {
 
     const l = cfg.leagues.find((x) => x.id === selected);
     if (!l) {
-      el.replaceChildren(top, importCard(rerender));
+      el.replaceChildren(top);
       return;
     }
     l.driverOverrides ??= [];
@@ -728,7 +632,6 @@ export const leaguesPage: Page = {
     leagueId.value = l.iracingLeagueId ? String(l.iracingLeagueId) : '';
     leagueId.oninput = () => {
       l.iracingLeagueId = parseInt(leagueId.value, 10) || 0;
-      importLeagueId = leagueId.value;
       save();
     };
     const season = h('input');
@@ -741,9 +644,9 @@ export const leaguesPage: Page = {
     };
     ed.append(
       h('h2', '', 'League info'),
-      h('p', 'dim', 'Everything here can be entered by hand — importing from iRacing is optional.'),
+      h('p', 'dim', 'Everything here can be entered by hand, or brought in with “Import league file”.'),
       labeled('League name', name),
-      labeled('iRacing league ID', leagueId, 'Used automatically in sessions of this league, and for importing from iRacing'),
+      labeled('iRacing league ID', leagueId, 'Used automatically in sessions of this league'),
       labeled('Season', season),
       meta,
       labeled('Cars matching no class', fallback),
@@ -757,6 +660,6 @@ export const leaguesPage: Page = {
     );
     l.classes.forEach((c, i) => ed.append(classEditor(l, c, i, rerender)));
 
-    el.replaceChildren(top, ed, rosterCard(l, rerender), pointsCard(l, rerender), importCard(rerender, l));
+    el.replaceChildren(top, ed, rosterCard(l, rerender), pointsCard(l, rerender));
   },
 };
