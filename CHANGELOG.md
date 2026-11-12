@@ -4,6 +4,14 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### New features
+- Theme → Overlay font: pick the font every overlay uses from a list (Standard, or Bahnschrift Condensed as the fuel calculator used), or type any installed font under Custom. The settings window keeps its own font. A font you had typed in before stays as Custom
+
+### Removed
+- Fuel calculator: its own font option. It now follows Theme → Overlay font (choose Bahnschrift Condensed there for the previous look)
+
 ## 0.9.4
 
 ### New features
