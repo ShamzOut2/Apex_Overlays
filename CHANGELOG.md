@@ -7,6 +7,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 ## Unreleased
 
 ### New features
+- Fuel calculator: a new design. Laps of fuel left in large figures, a segmented bar with a line at the finish, per lap, laps to go and fuel at the finish, and a status pill: cyan “Makes the finish”, amber “Marginal” (under half a lap spare, adjustable) or red “Pit · add 4.7 L”. The colours can be changed. A compact mode shows just the laps, the bar and the fuel at the finish. Last lap, stops and pit window show underneath, and every other figure (usual here, max per lap, needed to finish, target and save per lap, laps per tank, per hour, history) can be added in the same style
 - Track state: how much rubber is down (Clean, Low usage, Moderately high usage…, as iRacing reports it) as a new session detail. Pick it in the Session info overlay’s fields, in the relative and standings headers, in the data box, or as a readout in the weather overlay (off until you turn it on)
 
 ## 0.9.3

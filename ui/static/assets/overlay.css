@@ -541,3 +541,40 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .safety.still .sa-slow { animation: none; }
 @keyframes sa-blink { 50% { opacity: 0.55; } }
 .sa-driver .slow-tag { font-size: 0.68em; }
+
+/* Fuel calculator: laps of fuel against laps to go */
+.panel.fuel { --fl-gap: 0.22em; --tone: var(--fl-ok, #3dd6f5); gap: 0.6em; padding: 0.95em 1.1em 1em; }
+.panel.fuel.st-marginal { --tone: var(--fl-marginal, #ffb020); }
+.panel.fuel.st-short { --tone: var(--fl-short, #ff5a3c); }
+.panel.fuel.st-none .fl-hero { color: var(--text); }
+.panel.fuel.fl-condensed { font-family: 'Bahnschrift', var(--font); font-stretch: condensed; }
+.fuel .fl-num { font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: -0.01em; }
+.fuel .fl-label { font-size: 0.74em; font-weight: 600; letter-spacing: 0.16em; color: var(--dim); text-transform: uppercase; white-space: nowrap; }
+.fuel .fl-unit { font-size: 0.55em; font-weight: 600; color: var(--dim); margin-left: 0.12em; }
+.fuel .fl-top { display: flex; justify-content: space-between; align-items: center; gap: 0.6em; min-height: 1.6em; }
+.fuel .fl-pill { padding: 0.32em 0.85em; border-radius: 999px; background: var(--tone); color: var(--fl-tone-text, #0b0e13); font-size: 0.74em; font-weight: 800; letter-spacing: 0.1em; white-space: nowrap; text-shadow: none; }
+.fuel .fl-pill.neutral { background: var(--track); color: var(--dim); }
+.fuel .fl-main { display: flex; align-items: flex-end; gap: 0.55em; }
+.fuel .fl-hero { font-size: 3.7em; font-weight: 800; color: var(--tone); line-height: 0.82; }
+.fuel .fl-hero-label { padding-bottom: 0.05em; }
+.fuel .fl-tank { margin-left: auto; font-size: 1.95em; }
+.fuel .fl-bar { position: relative; display: flex; gap: var(--fl-gap); height: 1em; margin: 0.1em 0; }
+.fuel .fl-seg { flex: 1; min-width: 0; border-radius: 0.2em; background: linear-gradient(90deg, var(--tone) calc(var(--p, 0) * 100%), var(--track) 0); }
+.fuel .fl-finish { position: absolute; top: -0.35em; bottom: -0.35em; width: 0.17em; margin-left: -0.085em; border-radius: 0.1em; background: var(--fl-line, #fff); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
+.fuel .fl-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.65em 0.9em; }
+.fuel .fl-stats > :nth-child(3n) { text-align: right; }
+.fuel .fl-stat { display: flex; flex-direction: column; gap: 0.3em; min-width: 0; }
+.fuel .fl-val { font-size: 1.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fuel .fl-stats > :nth-child(3) .fl-val { color: var(--tone); }
+.fuel .fl-extra { padding-top: 0.65em; border-top: 1px solid var(--track); }
+.fuel .fl-extra > :nth-child(3) .fl-val { color: var(--text); }
+.fuel .fl-extra .fl-val { font-size: 1.2em; }
+.fuel .fl-history { display: flex; align-items: flex-end; gap: 0.18em; height: 2em; }
+.fuel .fl-hbar { flex: 1; max-width: 1.1em; min-height: 2px; border-radius: 0.15em 0.15em 0 0; background: var(--dim); opacity: 0.4; }
+.fuel .fl-hbar:last-child { background: var(--tone); opacity: 0.9; }
+/* Compact: laps, bar, fuel at the finish in one row */
+.panel.fuel.fl-compact { flex-direction: row; align-items: center; gap: 1em; padding: 0.7em 1.1em; }
+.fuel.fl-compact .fl-c-left { display: flex; flex-direction: column; gap: 0.25em; }
+.fuel.fl-compact .fl-hero { font-size: 2.9em; line-height: 0.85; }
+.fuel.fl-compact .fl-bar { flex: 1; height: 0.95em; }
+.fuel.fl-compact .fl-at { font-size: 2.3em; font-weight: 800; color: var(--tone); min-width: 2.4em; text-align: right; }
