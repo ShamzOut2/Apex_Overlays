@@ -2,7 +2,7 @@
 // window (?prompt=update) when a new version is found at start-up.
 
 import { h } from '../lib/dom';
-import { releaseNotes } from './releaseNotes';
+import { releaseHistory } from './releaseNotes';
 import { client, state } from './state';
 
 function button(label: string, onClick: () => void, cls = '') {
@@ -29,7 +29,11 @@ export function renderUpdatePrompt(el: HTMLElement) {
   switch (u?.status) {
     case 'available':
       box.append(h('p', 'dim', `You have version ${u.current ?? '?'}. Updating takes a few seconds; Apex Overlays restarts by itself and keeps all your settings.`));
-      if (u.notes) box.append(h('h3', '', 'What’s new'), releaseNotes(u.notes));
+      {
+        const releases = u.releases?.length ? u.releases : u.notes ? [{ version, notes: u.notes }] : [];
+        if (releases.length > 1) box.append(h('h3', '', `What’s new — ${releases.length} updates since your version`), releaseHistory(releases));
+        else if (releases.length) box.append(h('h3', '', 'What’s new'), releaseHistory(releases));
+      }
       bar.append(
         button('Update now', () => client.send({ op: 'installUpdate' }), 'primary'),
         button('Remind me tomorrow', () => client.send({ op: 'postponeUpdate', version, days: 1 })),

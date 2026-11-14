@@ -6,7 +6,7 @@ import type { OverlayInstance, SavedLayout } from '../lib/types';
 import { byKind, OVERLAYS } from '../overlays/registry';
 import { CHOICES, field, form, relevance } from './form';
 import { hotkeyInput } from './hotkey';
-import { releaseNotes } from './releaseNotes';
+import { releaseHistory } from './releaseNotes';
 import { STATS } from '../lib/monitorStats';
 import { client, download, listen, save, state, uid, upload } from './state';
 
@@ -967,7 +967,11 @@ function updatesCard(): HTMLElement {
       );
     }
   }
-  if (u?.status === 'available' && u.notes) c.append(h('h3', '', `What’s new in ${u.version}`), releaseNotes(u.notes));
+  if (u?.status === 'available') {
+    const releases = u.releases?.length ? u.releases : u.notes ? [{ version: u.version ?? '', notes: u.notes }] : [];
+    if (releases.length > 1) c.append(h('h3', '', `What’s new in the ${releases.length} versions since yours`), releaseHistory(releases));
+    else if (releases.length) c.append(h('h3', '', `What’s new in ${u.version}`), releaseHistory(releases));
+  }
   return c;
 }
 

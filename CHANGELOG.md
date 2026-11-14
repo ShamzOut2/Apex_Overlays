@@ -4,6 +4,11 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### Improvements
+- Update pop-up: when you are a few versions behind, it now lists what is new in every version since yours (newest first, each under its version number), not only the latest one. The Updates card on the General page does the same
+
 ## 0.9.5
 
 ### New features

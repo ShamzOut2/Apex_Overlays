@@ -28,6 +28,19 @@ function inline(text: string): Node[] {
   return out;
 }
 
+/** Notes of several versions, newest first, each under its version number; one version is
+ *  shown as before. */
+export function releaseHistory(releases: { version: string; notes: string }[]): HTMLElement {
+  if (releases.length === 1) return releaseNotes(releases[0].notes);
+  const box = h('div', 'release-history');
+  for (const r of releases) {
+    const part = h('div', 'rn-version');
+    part.append(h('div', 'rn-version-head', `Version ${r.version}`), releaseNotes(r.notes));
+    box.append(part);
+  }
+  return box;
+}
+
 export function releaseNotes(notes: string): HTMLElement {
   const box = h('div', 'release-notes');
   let list: HTMLElement | null = null;

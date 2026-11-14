@@ -245,9 +245,15 @@ body.prompt main { padding: 14px; }
 .update-prompt { margin: 0; }
 .update-prompt h2 { margin-top: 0; }
 .update-prompt .release-notes { max-height: 300px; overflow: auto; margin-bottom: 12px; }
+.update-prompt .release-history { max-height: 250px; overflow: auto; margin-bottom: 12px; padding-right: 4px; }
+.update-prompt .release-history .release-notes { max-height: none; overflow: visible; margin-bottom: 0; }
 .update-prompt h3 { margin: 6px 0 6px; }
 
 /* Release notes: sections with bullet points */
+.release-history { display: flex; flex-direction: column; gap: 14px; }
+.rn-version { display: flex; flex-direction: column; gap: 6px; }
+.rn-version-head { font-weight: 700; font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.rn-version-head::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
 .release-notes { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: var(--r); background: var(--panel-2); border: 1px solid var(--line); }
 .release-notes ul { margin: 0 0 6px; padding-left: 20px; }
 .release-notes li { margin: 3px 0; line-height: 1.45; }

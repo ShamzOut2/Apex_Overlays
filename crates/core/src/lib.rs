@@ -3,6 +3,7 @@
 //! overlays over a local WebSocket.
 
 pub mod cardata;
+pub mod changelog;
 pub mod config;
 pub mod corners;
 pub mod countries;

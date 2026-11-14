@@ -561,6 +561,8 @@ export interface UpdateState {
   current?: string;
   version?: string;
   notes?: string;
+  /** Every version since the installed one, newest first (`notes` is only the newest's). */
+  releases?: { version: string; notes: string }[];
   progress?: number;
   message?: string;
 }
