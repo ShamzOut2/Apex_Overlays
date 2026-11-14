@@ -8,6 +8,7 @@ import { renderClosePrompt } from './control/closePrompt';
 import { PAGES, type Page } from './control/pages';
 import { listen, pageTopics, state } from './control/state';
 import { applyUiTheme } from './lib/theme';
+import { labsLogo } from './control/brand';
 
 // General first, then the overlays and everything else.
 const byId = (id: string) => PAGES.find((p) => p.id === id)!;
@@ -17,7 +18,10 @@ const nav = h('nav');
 const brand = h('div', 'brand');
 const logo = h('span', 'logo');
 logo.append(h('b', '', 'Apex'), ' Overlays');
-brand.append(h('span', 'brand-mark', 'A'), logo);
+const mark = h('img', 'brand-mark') as HTMLImageElement;
+mark.src = '/assets/brand/apex-overlays-icon-64.png';
+mark.alt = '';
+brand.append(mark, logo);
 const conn = h('div', 'conn');
 const main = h('main');
 nav.append(brand);
@@ -41,7 +45,7 @@ for (const p of pages) {
   nav.append(a);
   links.set(p.id, a);
 }
-nav.append(conn);
+nav.append(labsLogo('nav-labs'), conn);
 document.body.append(nav, main);
 // The desktop app opens this page as a small "update available" or "close?" window.
 const promptKind = new URLSearchParams(location.search).get('prompt');

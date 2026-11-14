@@ -6,6 +6,9 @@ Each version groups its changes under `### New features`, `### Improvements` and
 
 ## Unreleased
 
+### New features
+- Apex Overlays is now a tool by Apex Labs: a new app icon (taskbar, tray, installer and browser tabs), the Apex Labs logo in the settings window and the update pop-up (light or dark lettering to suit your theme), and Apex Labs as the publisher in Windows
+
 ### Improvements
 - Update pop-up: when you are a few versions behind, it now lists what is new in every version since yours (newest first, each under its version number), not only the latest one. The Updates card on the General page does the same
 

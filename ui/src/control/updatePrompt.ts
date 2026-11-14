@@ -3,6 +3,7 @@
 
 import { h } from '../lib/dom';
 import { releaseHistory } from './releaseNotes';
+import { labsLogo } from './brand';
 import { client, state } from './state';
 
 function button(label: string, onClick: () => void, cls = '') {
@@ -58,6 +59,6 @@ export function renderUpdatePrompt(el: HTMLElement) {
       box.append(h('p', 'dim', 'You are on the latest version.'));
       bar.append(button('Close', close));
   }
-  box.append(bar);
+  box.append(bar, labsLogo('prompt-labs'));
   el.replaceChildren(box);
 }

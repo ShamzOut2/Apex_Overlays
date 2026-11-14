@@ -1,4 +1,13 @@
-# Apex Overlays
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/apex-labs-logo-on-dark.svg">
+    <img src="docs/brand/apex-labs-logo-on-light.svg" alt="Apex Labs" height="72">
+  </picture>
+</p>
+
+# <img src="docs/brand/apex-overlays-icon-128.png" alt="" height="36" align="top"> Apex Overlays
+
+*A tool by Apex Labs.*
 
 A lightweight, fully customisable overlay suite for **iRacing**. It reads telemetry at the sim's native **60 Hz**,
 does all the race maths once in a small native core (Rust), and draws each overlay as a minimal web page

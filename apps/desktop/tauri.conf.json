@@ -19,7 +19,8 @@
     "targets": [
       "nsis"
     ],
-    "publisher": "Apex Overlays",
+    "publisher": "Apex Labs",
+    "copyright": "© 2026 Apex Labs",
     "shortDescription": "Lightweight, fully customisable iRacing overlays",
     "icon": [
       "icons/32x32.png",

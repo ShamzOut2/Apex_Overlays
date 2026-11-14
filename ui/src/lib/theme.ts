@@ -242,4 +242,5 @@ export function applyUiTheme(stored: Values | undefined, el: HTMLElement) {
   s.setProperty('--accent-text', onColor(t.accent as string));
   s.setProperty('--shade', light ? 'rgba(20, 30, 45, 0.10)' : 'rgba(0, 0, 0, 0.35)');
   s.setProperty('color-scheme', light ? 'light' : 'dark');
+  el.classList.toggle('ui-light', light);
 }
