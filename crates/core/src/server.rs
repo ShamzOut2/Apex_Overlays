@@ -32,6 +32,20 @@ pub struct AppState {
     pub data_dir: PathBuf,
 }
 
+/// The Le Mans Ultimate track maps built on this PC, for the shared map library
+/// (data/trackmaps in the repository): `{"maps": [...]}`.
+async fn lmu_track_maps(s: State<AppState>) -> axum::Json<serde_json::Value> {
+    let dir = s.data_dir.join("trackmaps");
+    let maps: Vec<crate::engine::trackmap::TrackMap> = std::fs::read_dir(&dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|f| serde_json::from_str::<crate::engine::trackmap::TrackMap>(&std::fs::read_to_string(f.path()).ok()?).ok())
+        .filter(|m| m.source == "lmu" && !crate::source::lmu::is_iracing_track(m.track_id))
+        .collect();
+    axum::Json(serde_json::json!({ "maps": maps }))
+}
+
 pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/", get(|s: State<AppState>| async move { asset(&s, "control.html") }))
@@ -42,6 +56,7 @@ pub fn router(state: AppState) -> Router {
         .route("/logos/{file}", get(logo))
         .route("/make-logo/{name}", get(make_logo))
         .route("/api/session-info", get(session_info))
+        .route("/api/lmu-track-maps", get(lmu_track_maps))
         .fallback(|s: State<AppState>, uri: Uri| async move { asset(&s, uri.path().trim_start_matches('/')) })
         .with_state(state)
 }

@@ -728,7 +728,33 @@ export interface VrState {
   overlays: number;
 }
 
+/** Sky words shared by both games. */
+export type Sky = 'clear' | 'light' | 'partly' | 'mostly' | 'overcast' | 'drizzle' | 'lightRain' | 'rain' | 'heavyRain' | 'storm';
+
+export interface ForecastPoint {
+  /** Minutes from now (negative: already begun). */
+  minutes: number;
+  sky: Sky;
+  /** Air temperature, °C. */
+  temp: number;
+  /** Chance of rain, 0-1. */
+  rain: number;
+}
+
+export interface Forecast {
+  game: string;
+  /** Minutes left in the session; null when it runs on laps. */
+  minutesLeft: number | null;
+  /** Seconds since midnight at the track. */
+  timeOfDay: number;
+  now: { sky: Sky; air: number; track: number; rain: number; wetness: number };
+  points: ForecastPoint[];
+  /** Why there is no forecast ('' when there is one). */
+  note: string;
+}
+
 export interface TopicMap {
+  forecast: Forecast;
   session: Session;
   player: Player;
   cars: Cars;

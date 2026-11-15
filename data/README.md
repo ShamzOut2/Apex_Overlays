@@ -30,3 +30,13 @@ always takes priority, and so does iRacing's official map when it is available.
 To add a track: drive a clean lap so Apex Overlays records it, then take
 `%APPDATA%\Apex Overlays\trackmaps\<trackId>.json`, copy it here (set `"source"` to
 `"library"`) and add the track to `index.json`.
+
+### Le Mans Ultimate tracks
+
+LMU outlines go in the same library, under the LMU track ids (from 1,000,000,000 up; Apex
+Overlays derives them from the track's name). The app builds them from the cars on track and
+keeps them; *Settings → General → Game → Export my LMU track maps* saves every one it has as
+`apex-lmu-track-maps.json` (`{"maps": [...]}`). For each map in it: save it here as
+`<trackId>.json` with `"source"` set to `"library"`, and add `"<trackId>": "<track name>"` to
+`index.json`. From then on every LMU driver gets that track's map straight away.
+

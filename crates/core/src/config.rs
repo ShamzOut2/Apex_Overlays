@@ -135,6 +135,7 @@ impl Default for Config {
                 o("tyres", "tyres", 1540, 680, 300, 150),
                 o("flags", "flags", 860, 70, 220, 110),
                 o("startLights", "startLights", 760, 190, 400, 110),
+                OverlayInstance { enabled: false, ..o("forecast", "forecast", 1240, 520, 460, 150) },
                 o("spotter", "spotter", 850, 520, 220, 200),
                 o("pit", "pit", 845, 300, 230, 200),
                 o("safety", "safety", 760, 160, 400, 230),
@@ -641,7 +642,7 @@ impl Config {
     /// they appear in the overlay list and the hotkeys straight away.
     pub fn add_new_kinds(&mut self) {
         let defaults = Config::default().overlays;
-        for kind in ["safety", "delta", "inputGraph", "startLights"] {
+        for kind in ["safety", "delta", "inputGraph", "startLights", "forecast"] {
             if self.overlays.iter().any(|o| o.kind == kind) {
                 continue;
             }
@@ -865,9 +866,15 @@ mod tests {
         let added: Vec<_> = c.overlays.iter().skip(1).map(|o| (o.id.as_str(), o.kind.as_str(), o.enabled)).collect();
         assert_eq!(
             added,
-            vec![("safety-2", "safety", false), ("delta", "delta", false), ("inputGraph", "inputGraph", false), ("startLights", "startLights", false)]
+            vec![
+                ("safety-2", "safety", false),
+                ("delta", "delta", false),
+                ("inputGraph", "inputGraph", false),
+                ("startLights", "startLights", false),
+                ("forecast", "forecast", false)
+            ]
         );
         c.add_new_kinds();
-        assert_eq!(c.overlays.len(), 5);
+        assert_eq!(c.overlays.len(), 6);
     }
 }

@@ -1335,8 +1335,22 @@ function gameCard(): HTMLElement {
     h(
       'p',
       'dim small',
-      'In Le Mans Ultimate there are no iRating, licences or incident points, so those columns stay empty. Track maps are recorded from your driving (one clean lap) instead of downloaded.',
+      'In Le Mans Ultimate there are no iRating, licences or incident points, so those columns stay empty. Track maps are drawn from where the cars on track are, usually within a minute, and kept; tracks in the shared map library appear straight away.',
     ),
+    button('Export my LMU track maps', async () => {
+      // For the shared map library, so other drivers get these tracks without mapping them.
+      try {
+        const r = await fetch('/api/lmu-track-maps');
+        const d = (await r.json()) as { maps: unknown[] };
+        if (!d.maps?.length) {
+          alert('No Le Mans Ultimate track maps yet: they are made as you go on track in LMU.');
+          return;
+        }
+        download('apex-lmu-track-maps.json', d);
+      } catch {
+        alert('Could not read the track maps.');
+      }
+    }),
   );
   return c;
 }

@@ -641,3 +641,26 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .sl-label.hidden-label { display: none; }
 /* Counting down: "RACE STARTS IN" above the number. */
 .start-lights.counting .sl-label { order: -1; }
+
+/* Weather forecast: frosted cards, the weather now first. */
+.panel.forecast { padding: 0.5em 0.55em 0.55em; gap: 0.4em; }
+.fc-head { display: flex; align-items: baseline; justify-content: space-between; padding: 0 0.15em; }
+.fc-title { font-size: 0.72em; font-weight: 800; letter-spacing: 0.22em; color: var(--dim); }
+.fc-sub { font-size: 0.72em; color: var(--dim); font-variant-numeric: tabular-nums; }
+.fc-row { flex: 1; min-height: 0; display: flex; gap: 0.4em; }
+.fc-card { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.12em; padding: 0.35em 0.3em 0.45em; border-radius: 0.7em; background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03)); border: 1px solid rgba(255, 255, 255, 0.09); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06); transition: box-shadow 0.3s, border-color 0.3s; }
+.fc-card.now { background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05)); border-color: rgba(255, 255, 255, 0.22); }
+.fc-card.wet { border-color: color-mix(in srgb, var(--fc-rain) 70%, transparent); box-shadow: 0 0 0.9em color-mix(in srgb, var(--fc-rain) 35%, transparent), inset 0 0 1.2em color-mix(in srgb, var(--fc-rain) 14%, transparent); }
+.fc-label { font-size: 0.66em; font-weight: 800; letter-spacing: 0.12em; color: var(--dim); white-space: nowrap; }
+.fc-card.now .fc-label { color: var(--fg, #fff); }
+.fc-icon { width: 2.75em; height: 2.75em; flex: none; filter: drop-shadow(0 0.08em 0.15em rgba(0, 0, 0, 0.45)); }
+.fc-icon svg { width: 100%; height: 100%; display: block; }
+.fc-sky { font-size: 0.62em; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.fc-temp { font-size: 1.15em; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fc-extra { font-size: 0.6em; font-weight: 600; color: var(--dim); }
+.fc-rain { display: flex; align-items: center; gap: 0.25em; font-size: 0.72em; font-weight: 700; color: var(--fc-rain); font-variant-numeric: tabular-nums; }
+.fc-drop { width: 0.62em; height: 0.8em; display: inline-flex; }
+.fc-drop svg { width: 100%; height: 100%; }
+.fc-bar { width: 70%; height: 0.22em; border-radius: 1em; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.fc-fill { height: 100%; background: var(--fc-rain); border-radius: 1em; }
+.fc-note { font-size: 0.7em; color: var(--dim); text-align: center; }

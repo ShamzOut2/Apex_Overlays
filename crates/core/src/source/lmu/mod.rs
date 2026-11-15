@@ -10,6 +10,7 @@
 //! no plugin needs installing.
 
 pub mod data;
+pub mod extras;
 pub mod map;
 
 use self::data::{text, ScoringInfo, VehicleScoring, VehicleTelemetry};
@@ -363,6 +364,7 @@ pub fn apply(st: &mut State, snap: &Snapshot, tel: &mut Telemetry) -> Option<Str
     let w = info.mWind;
     tel.wind_vel = (w.x * w.x + w.z * w.z).sqrt() as f32;
     tel.wind_dir = (w.x.atan2(w.z) as f32).rem_euclid(std::f32::consts::TAU);
+    tel.sky_code = info.mCloudCoverage.min(10) as i32;
     tel.skies = match info.mCloudCoverage {
         0 => 0,
         1 | 2 => 1,

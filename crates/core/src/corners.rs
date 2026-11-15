@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-const BASE: &str = "https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-track-data/main/data/";
+pub(crate) const BASE: &str = "https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-track-data/main/data/";
 
 /// Everything the track map uses from a Lovely track file.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

@@ -76,6 +76,8 @@ pub enum Command {
     SetClassNames(std::collections::HashMap<String, String>),
     /// Driver countries looked up from the iRacing Data API (customer ID → ISO code).
     SetCountries(std::collections::BTreeMap<i64, String>),
+    /// Le Mans Ultimate's weather forecast (from its local REST API), or none.
+    SetLmuForecast(Option<crate::source::lmu::extras::Forecast>),
 }
 
 pub struct Hub {

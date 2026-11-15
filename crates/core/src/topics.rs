@@ -26,11 +26,12 @@ pub enum Topic {
     Pit,
     Safety,
     Delta,
+    Forecast,
 }
 
 impl Topic {
     // Drivers first: when they change, they reach the clients before the rows that use them.
-    pub const ALL: [Topic; 16] = [
+    pub const ALL: [Topic; 17] = [
         Topic::Drivers,
         Topic::Session,
         Topic::Player,
@@ -47,6 +48,7 @@ impl Topic {
         Topic::Pit,
         Topic::Safety,
         Topic::Delta,
+        Topic::Forecast,
     ];
 
     pub fn name(self) -> &'static str {
@@ -67,6 +69,7 @@ impl Topic {
             Topic::Pit => "pit",
             Topic::Safety => "safety",
             Topic::Delta => "delta",
+            Topic::Forecast => "forecast",
         }
     }
 
@@ -80,6 +83,8 @@ impl Topic {
             Topic::Relative | Topic::Safety => 3,
             Topic::Standings | Topic::Battle => 6,
             Topic::Session | Topic::Fuel | Topic::Tyres | Topic::Incidents => 15,
+            // Weather changes slowly: once a second.
+            Topic::Forecast => 60,
             // Only re-sent when they change (see `publish`).
             Topic::TrackMap | Topic::Car | Topic::Delta | Topic::Drivers => 1,
         }
@@ -126,9 +131,106 @@ impl Topic {
             Topic::Pit => serde_json::to_string(&e.pit_out),
             Topic::Safety => serde_json::to_string(&crate::safety::build(e)),
             Topic::Delta => serde_json::to_string(&DeltaOut { session: e.laps.session.as_ref(), all_time: e.laps.all_time.as_ref() }),
+            Topic::Forecast => serde_json::to_string(&forecast(e)),
         };
         r.unwrap_or_else(|_| "null".into())
     }
+}
+
+/// The weather now and to come. Le Mans Ultimate publishes a forecast for each session;
+/// iRacing shares only the conditions now with apps.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ForecastOut {
+    pub game: &'static str,
+    /// Minutes left in the session (`None` when it runs on laps, with no clock to place the forecast on).
+    pub minutes_left: Option<f32>,
+    /// Time of day at the track, seconds since midnight (sun or moon icons).
+    pub time_of_day: f32,
+    pub now: WeatherNow,
+    /// Forecast points, minutes from now (negative: already begun), in time order.
+    pub points: Vec<ForecastPoint>,
+    /// Why there is no forecast ("" when there is one).
+    pub note: &'static str,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WeatherNow {
+    pub sky: &'static str,
+    pub air: f32,
+    pub track: f32,
+    /// Rain falling now, 0-1.
+    pub rain: f32,
+    /// iRacing-style track wetness (1 dry ... 7 extremely wet).
+    pub wetness: i32,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ForecastPoint {
+    pub minutes: f32,
+    pub sky: &'static str,
+    pub temp: f32,
+    /// Chance of rain, 0-1.
+    pub rain: f32,
+}
+
+/// Sky words shared by both games: clear, light, partly, mostly, overcast (clouds), then
+/// drizzle, lightRain, rain, heavyRain, storm.
+pub fn lmu_sky(code: i32) -> &'static str {
+    ["clear", "light", "partly", "mostly", "overcast", "drizzle", "lightRain", "lightRain", "rain", "heavyRain", "storm"][code.clamp(0, 10) as usize]
+}
+
+/// iRacing: Skies (0 clear, 1 partly, 2 mostly, 3 overcast) and how hard it is raining.
+pub fn iracing_sky(skies: i32, precipitation: f32) -> &'static str {
+    match precipitation {
+        p if p >= 0.6 => "heavyRain",
+        p if p >= 0.3 => "rain",
+        p if p >= 0.1 => "lightRain",
+        p if p > 0.01 => "drizzle",
+        _ => ["clear", "partly", "mostly", "overcast"][skies.clamp(0, 3) as usize],
+    }
+}
+
+pub fn forecast(e: &Engine) -> ForecastOut {
+    let t = &e.tel;
+    // The mock sim plays LMU here, so the overlay can be tried without a game.
+    let lmu = e.source == "lmu" || (e.source == "mock" && e.lmu_forecast.is_some());
+    let now = WeatherNow {
+        sky: if t.sky_code >= 0 { lmu_sky(t.sky_code) } else { iracing_sky(t.skies, t.precipitation) },
+        air: round(t.air_temp, 1),
+        track: round(t.track_temp, 1),
+        rain: round(t.precipitation, 2),
+        wetness: t.track_wetness,
+    };
+    let length = (t.session_time + t.session_time_remain) as f32;
+    let timed = t.session_time_remain > 0.0 && length > 0.0;
+    let minutes_left = timed.then(|| round(t.session_time_remain as f32 / 60.0, 1));
+    let nodes = if lmu { e.lmu_forecast.as_ref().map(|f| f.for_session(e.session_def().map_or("", |s| s.kind.as_str()))).unwrap_or(&[]) } else { &[] };
+    let points: Vec<ForecastPoint> = if timed {
+        nodes
+            .iter()
+            .map(|n| ForecastPoint {
+                minutes: round((n.frac * length - t.session_time as f32) / 60.0, 1),
+                sky: lmu_sky(n.sky),
+                temp: round(n.temp, 1),
+                rain: round(n.rain, 2),
+            })
+            .collect()
+    } else {
+        vec![]
+    };
+    let note = if !lmu {
+        "iRacing does not share its forecast with apps: conditions now only"
+    } else if nodes.is_empty() {
+        "Waiting for Le Mans Ultimate's forecast"
+    } else if !timed {
+        "This session runs on laps: no clock to place the forecast on"
+    } else {
+        ""
+    };
+    ForecastOut { game: e.source, minutes_left, time_of_day: t.time_of_day, now, points, note }
 }
 
 /// Your own reference laps for the delta bar (Garage 61's come on the `garage61` topic).
@@ -1111,6 +1213,36 @@ mod tests {
         let st = standings(&e);
         assert_eq!(st.classes.len(), 2);
         assert_eq!(st.classes.iter().map(|c| c.rows.len()).sum::<usize>(), 6);
+    }
+
+    #[test]
+    fn forecast_for_lmu_and_conditions_now_for_iracing() {
+        use crate::source::lmu::extras::{Forecast, Node};
+        let mut e = engine(4, true);
+        e.tel.session_time = 600.0;
+        e.tel.session_time_remain = 3000.0;
+        e.tel.air_temp = 21.0;
+        e.tel.skies = 2;
+        // iRacing: the weather now, no forecast.
+        e.source = "iracing";
+        let f = forecast(&e);
+        assert!(f.points.is_empty() && f.note.contains("iRacing"));
+        assert_eq!(f.now.sky, "mostly");
+        assert_eq!(f.minutes_left, Some(50.0));
+        // LMU: its forecast points placed on the session clock (60 min session, 10 min in).
+        e.source = "lmu";
+        e.tel.sky_code = 6;
+        let node = |frac: f32, sky: i32| Node { frac, sky, temp: 20.0, rain: 0.3 };
+        e.lmu_forecast = Some(Forecast { race: (0..5).map(|i| node(i as f32 * 0.2, i * 2)).collect(), ..Default::default() });
+        let f = forecast(&e);
+        assert_eq!(f.note, "");
+        assert_eq!(f.now.sky, "lightRain");
+        assert_eq!(f.points.iter().map(|p| p.minutes).collect::<Vec<_>>(), vec![-10.0, 2.0, 14.0, 26.0, 38.0]);
+        assert_eq!(f.points[4].sky, "rain");
+        // A lap race: no clock to place it on.
+        e.tel.session_time_remain = 0.0;
+        let f = forecast(&e);
+        assert!(f.points.is_empty() && f.minutes_left.is_none() && f.note.contains("laps"));
     }
 
     #[test]

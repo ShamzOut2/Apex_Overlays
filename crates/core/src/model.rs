@@ -197,6 +197,9 @@ pub struct Telemetry {
     pub humidity: f32,
     pub fog: f32,
     pub skies: i32,
+    /// A game's own finer sky scale where it has one (Le Mans Ultimate: 0 clear ... 10 storm);
+    /// -1 otherwise (iRacing: `skies` 0-3 and `precipitation`).
+    pub sky_code: i32,
     pub air_pressure: f32,
     pub display_metric: bool,
     /// Spotter: irsdk_CarLeftRight (0 off, 1 clear, 2 car left, 3 car right, 4 cars left and
@@ -271,6 +274,7 @@ impl Default for Telemetry {
             humidity: 0.0,
             fog: 0.0,
             skies: 0,
+            sky_code: -1,
             air_pressure: 0.0,
             display_metric: true,
             car_left_right: 0,
