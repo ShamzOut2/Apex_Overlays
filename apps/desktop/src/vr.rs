@@ -545,6 +545,20 @@ mod imp {
         api: u32,
         runtime: String,
         problem: String,
+        /// The game the layer runs in, for people ("iRacing", "Le Mans Ultimate"; "" if unknown).
+        game: String,
+    }
+
+    /// A game's name from its program's ("iRacingSim64DX11" → "iRacing").
+    fn game_label(exe: &str) -> String {
+        let l = exe.to_lowercase();
+        if l.contains("iracing") {
+            "iRacing".into()
+        } else if l.contains("le mans") || l.starts_with("lmu") {
+            "Le Mans Ultimate".into()
+        } else {
+            exe.to_string()
+        }
     }
 
     impl LayerReport {
@@ -570,7 +584,8 @@ mod imp {
 
         fn read(&self) -> Option<LayerReport> {
             let st = unsafe { std::ptr::read_volatile(self.view.Value as *const xs::LayerStatus) };
-            if st.magic != xs::MAGIC || st.version != xs::STATUS_VERSION || st.alive_ms == 0 {
+            // Version 1 (a layer loaded into a game before an update) has no game name.
+            if st.magic != xs::MAGIC || !(1..=xs::STATUS_VERSION).contains(&st.version) || st.alive_ms == 0 {
                 return None;
             }
             let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0);
@@ -580,6 +595,7 @@ mod imp {
                 api: st.api,
                 runtime: xs::get_text(&st.runtime),
                 problem: xs::get_text(&st.problem),
+                game: if st.version >= 2 { game_label(&xs::get_text(&st.app)) } else { String::new() },
             })
         }
     }
@@ -774,20 +790,22 @@ mod imp {
                             x.checked = Some((Instant::now(), machine));
                         }
                         let registered = x.checked.is_some_and(|c| c.1);
+                        let game = |l: &LayerReport| if l.game.is_empty() { "The game".to_string() } else { l.game.clone() };
                         match &layer {
                             Some(l) if l.api != 0 && (l.problem.is_empty() || l.shown > 0) => {
-                                format!("Connected to iRacing through OpenXR on {}", runtime_label(&l.runtime))
+                                format!("Connected to {} through OpenXR on {}", if l.game.is_empty() { "the game" } else { &l.game }, runtime_label(&l.runtime))
                             }
                             Some(l) => format!(
-                                "iRacing is running on {} but the overlays are off: {}",
+                                "{} is running on {} but the overlays are off: {}",
+                                game(l),
                                 runtime_label(&l.runtime),
                                 if l.problem.is_empty() { "the game does not use Direct3D 11 or 12" } else { &l.problem }
                             ),
                             None if !registered => {
                                 "Registered for your Windows user only — accept the admin prompt (or turn VR off and on) to register it for every game".into()
                             }
-                            None if auto => "Waiting for VR: start iRacing in its OpenXR VR mode (Virtual Desktop, Quest Link, Pimax… restart iRacing if it was already running), or start SteamVR".into(),
-                            None => "Start iRacing in OpenXR VR mode (restart it if it was already running)".into(),
+                            None if auto => "Waiting for VR: start iRacing or Le Mans Ultimate in VR (OpenXR: Virtual Desktop, Quest Link, Pimax… restart the game if it was already running), or start SteamVR".into(),
+                            None => "Start iRacing or Le Mans Ultimate in VR with OpenXR (restart the game if it was already running)".into(),
                         }
                     }
                 };
