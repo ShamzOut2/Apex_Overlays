@@ -403,6 +403,7 @@ export interface DeltaRefs {
 
 export interface Status {
   connected: boolean;
+  /** The game being read: 'iracing', 'lmu', 'mock', or '' while looking for one. */
   source: string;
   editMode: boolean;
   visible: boolean;
@@ -557,6 +558,8 @@ export interface Config {
   trackOutline: 'iracing' | 'recorded';
   /** 'balanced': timing tables a few times a second; 'full': everything 60 times a second. */
   updateRate: 'fast' | 'balanced' | 'full';
+  /** Which game to read: whichever is running, or one chosen by hand. */
+  game?: 'auto' | 'iracing' | 'lmu';
   /** Closing the settings window: ask, close everything, or keep the overlays running. */
   closeAction: 'ask' | 'quit' | 'keep';
 }

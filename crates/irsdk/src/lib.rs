@@ -10,7 +10,7 @@ pub mod yaml;
 #[cfg(windows)]
 mod shm;
 #[cfg(windows)]
-pub use shm::SharedMemory;
+pub use shm::{NamedMapping, SharedMemory};
 #[cfg(windows)]
 mod broadcast;
 #[cfg(windows)]

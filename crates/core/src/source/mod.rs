@@ -1,7 +1,10 @@
 //! Telemetry sources. A source fills a [`Telemetry`] each tick and hands back
-//! the raw session-info YAML whenever it changes.
+//! the raw session-info YAML whenever it changes (other games' sources write theirs in
+//! iRacing's format, so the engine reads every game the same way).
 
+pub mod games;
 pub mod iracing;
+pub mod lmu;
 pub mod mock;
 
 use crate::model::Telemetry;
@@ -17,6 +20,12 @@ pub enum Poll {
 
 pub trait Source: Send {
     fn name(&self) -> &'static str;
+    /// The game being read right now ("iracing", "lmu", "mock"; "" while none is running).
+    fn active(&self) -> &'static str {
+        self.name()
+    }
+    /// Which game to read: "auto", "iracing" or "lmu" (sources reading one game ignore it).
+    fn set_game(&mut self, _game: &str) {}
     /// Wait for and read the next telemetry row (blocks at most ~1 frame).
     fn poll(&mut self, tel: &mut Telemetry) -> Poll;
     /// A known track outline, for sources that have one (the mock does).

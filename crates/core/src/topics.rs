@@ -357,7 +357,8 @@ pub fn player(e: &Engine) -> PlayerOut {
         long_g: round(t.long_accel / 9.81, 2),
         heading: e.focus_heading().map(|h| round(h, 1)),
         start: model::start_lights(t.session_flags),
-        race_start_in: (e.is_race() && matches!(t.session_state, 1 | 2) && t.session_time_remain > 0.0 && t.session_time_remain < 3600.0)
+        // iRacing counts down to the start in these states; other games' timers mean the race length.
+        race_start_in: (e.source != "lmu" && e.is_race() && matches!(t.session_state, 1 | 2) && t.session_time_remain > 0.0 && t.session_time_remain < 3600.0)
             .then(|| round(t.session_time_remain as f32, 1)),
         gridding: e.is_race() && t.session_state == 3,
         // Standing starts have formation laps too: only a rolling start's pace laps count.

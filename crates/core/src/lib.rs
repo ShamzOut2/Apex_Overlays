@@ -113,8 +113,9 @@ pub fn start(opts: Options) -> std::io::Result<App> {
     if !opts.mock {
         cardata::spawn(hub.clone(), opts.data_dir.clone(), wanted_cars.clone());
     }
-    let source: Box<dyn Source> = if opts.mock { Box::new(source::mock::Mock::new()) } else { Box::new(source::iracing::IRacing::new()) };
-    *hub.source.lock().unwrap() = source.name();
+    let mut source: Box<dyn Source> = if opts.mock { Box::new(source::mock::Mock::new()) } else { Box::new(source::games::Games::new()) };
+    source.set_game(&config.read(|c| c.game.clone()));
+    *hub.source.lock().unwrap() = source.active();
     hub.publish_status();
     hub.publish("update", &serde_json::json!({ "status": "unsupported", "current": env!("CARGO_PKG_VERSION") }).to_string());
     let (h, c, d) = (hub.clone(), config.clone(), opts.data_dir.clone());
@@ -136,14 +137,16 @@ fn run(
     data_dir: PathBuf,
 ) {
     let mut e = Engine::new(config.get(), Some(data_dir));
-    e.source = source.name();
+    e.source = source.active();
     let mut cfg_rx = config.subscribe();
     let mut keys = Keys::default();
     let mut last_session_layout: (i64, i32, &'static str) = (0, -1, "");
     loop {
         if cfg_rx.has_changed().unwrap_or(false) {
             cfg_rx.mark_unchanged();
-            e.set_config(config.get());
+            let cfg = config.get();
+            source.set_game(&cfg.game);
+            e.set_config(cfg);
         }
         while let Ok(cmd) = cmds.try_recv() {
             match cmd {
@@ -166,7 +169,22 @@ fn run(
                 }
             }
         }
-        match source.poll(&mut e.tel) {
+        let polled = source.poll(&mut e.tel);
+        // A different game (switched by hand, or found running): start from a clean slate.
+        let game = source.active();
+        if game != e.source {
+            if e.connected {
+                e.reset();
+                hub.connected.store(false, Ordering::Relaxed);
+                publish(&e, &hub, &mut keys, true);
+                *combo.lock().unwrap() = Default::default();
+            }
+            log::info!("game: {}", if game.is_empty() { "none (looking for a running game)" } else { game });
+            e.source = game;
+            *hub.source.lock().unwrap() = game;
+            hub.publish_status();
+        }
+        match polled {
             Poll::Idle => continue,
             Poll::Disconnected => {
                 if e.connected {
@@ -196,14 +214,27 @@ fn run(
                         let data = corners::TrackData { corners: c, straights: vec![], pit_entry, pit_exit };
                         e.set_track_data(e.info.track_id, data, "mock");
                     }
-                    *track.lock().unwrap() = (e.info.track_id, e.info.track_name.clone());
-                    let mut cars: Vec<String> =
-                        e.info.drivers.iter().filter(|d| !d.is_pace_car && !d.is_spectator).map(|d| d.car_path.to_lowercase()).collect();
+                    // iRacing's own track maps and track data, car data and member countries only
+                    // exist for iRacing: other games' tracks record their outline as you drive.
+                    let iracing = e.source != "lmu";
+                    *track.lock().unwrap() = if iracing && source::lmu::is_iracing_track(e.info.track_id) {
+                        (e.info.track_id, e.info.track_name.clone())
+                    } else {
+                        (0, String::new())
+                    };
+                    let mut cars: Vec<String> = if iracing {
+                        e.info.drivers.iter().filter(|d| !d.is_pace_car && !d.is_spectator).map(|d| d.car_path.to_lowercase()).collect()
+                    } else {
+                        vec![]
+                    };
                     cars.sort();
                     cars.dedup();
                     *wanted_cars.lock().unwrap() = cars;
-                    *wanted_countries.lock().unwrap() =
-                        e.info.drivers.iter().filter(|d| d.country.is_empty() && !d.is_ai && !d.is_pace_car && !d.is_spectator).map(|d| d.user_id).collect();
+                    *wanted_countries.lock().unwrap() = if iracing {
+                        e.info.drivers.iter().filter(|d| d.country.is_empty() && !d.is_ai && !d.is_pace_car && !d.is_spectator).map(|d| d.user_id).collect()
+                    } else {
+                        vec![]
+                    };
                     let me = e.info.driver(e.info.player_car_idx.max(0) as usize);
                     let mut c = combo.lock().unwrap();
                     *c = garage61::Combo {

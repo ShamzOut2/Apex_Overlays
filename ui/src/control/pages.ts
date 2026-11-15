@@ -1258,6 +1258,64 @@ listen((t) => {
   if (t === 'monitor' && monitorView.tiles.size && document.contains([...monitorView.tiles.values()][0])) drawMonitor();
 });
 
+/** A game's name for people ('iracing' → iRacing). */
+export function gameName(id: string): string {
+  return id === 'mock' ? 'Mock sim' : id === 'lmu' ? 'Le Mans Ultimate' : 'iRacing';
+}
+
+/** Which game to read: automatic, or one chosen by hand. */
+function gameCard(): HTMLElement {
+  const cfg = state.config!;
+  const c = card('Game');
+  c.append(
+    h('p', 'dim', 'Apex Overlays reads iRacing and Le Mans Ultimate. Automatic switches to whichever game you start; pick one to stay with it.'),
+    form(
+      [
+        {
+          key: 'game',
+          label: 'Game',
+          type: 'select',
+          default: 'auto',
+          options: [
+            ['auto', 'Automatic'],
+            ['iracing', 'iRacing'],
+            ['lmu', 'Le Mans Ultimate'],
+          ],
+          help: 'Automatic: whichever game is running',
+        },
+      ],
+      { game: cfg.game ?? 'auto' },
+      (_k, v) => {
+        cfg.game = v as 'auto' | 'iracing' | 'lmu';
+        save();
+      },
+    ),
+  );
+  const s = state.status;
+  const auto = (cfg.game ?? 'auto') === 'auto';
+  const line = !s
+    ? 'Not connected to the app.'
+    : s.connected
+      ? `Reading ${gameName(s.source)}${auto ? ' (found automatically)' : ''}.`
+      : s.source
+        ? `Waiting for ${gameName(s.source)} — start a session in the game.`
+        : 'Looking for iRacing or Le Mans Ultimate — start a session in either game.';
+  c.append(h('div', `notice${s?.connected ? ' good' : ''}`, line));
+  c.append(
+    h(
+      'p',
+      'dim small',
+      'Le Mans Ultimate: its built-in shared memory must be on. Turn on “Enable Plugins” in the game’s settings, then restart the game. No plugin needs installing.',
+    ),
+    h(
+      'p',
+      'dim small',
+      'In Le Mans Ultimate there are no iRating, licences or incident points, so those columns stay empty. Track maps are recorded from your driving (one clean lap) instead of downloaded.',
+    ),
+  );
+  return c;
+}
+
 /** VR (SteamVR overlays or the OpenXR layer, desktop app on Windows). */
 function vrCard(): HTMLElement {
   const cfg = state.config!;
@@ -1428,7 +1486,7 @@ const generalPage: Page = {
         'General',
         form(
           [
-            { key: 'units', label: 'Units', type: 'select', default: 'auto', options: [['auto', 'Same as iRacing'], ['metric', 'Metric'], ['imperial', 'Imperial']], group: 'Display' },
+            { key: 'units', label: 'Units', type: 'select', default: 'auto', options: [['auto', 'Same as the game'], ['metric', 'Metric'], ['imperial', 'Imperial']], group: 'Display' },
             {
               key: 'ratingsOfficialOnly',
               label: 'Only estimate iRating / SR in official races',
@@ -1486,6 +1544,7 @@ const generalPage: Page = {
           },
         ),
       ),
+      gameCard(),
       hotkeysCard(),
       vrCard(),
       monitoringCard(),
