@@ -88,6 +88,10 @@ export interface Player {
   heading: number | null;
   /** Start lights: 'ready' (red), 'set', 'go' (green) or '' when not showing. */
   start?: '' | 'ready' | 'set' | 'go';
+  /** Seconds until a race's get-in-car / warm-up countdown ends; null outside it. */
+  raceStartIn?: number | null;
+  /** A race is forming up / on its parade laps. */
+  gridding?: boolean;
 }
 
 export interface CarDot {

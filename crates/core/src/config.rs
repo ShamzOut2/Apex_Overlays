@@ -127,7 +127,7 @@ impl Default for Config {
                 o("session", "session", 510, 10, 900, 52),
                 o("tyres", "tyres", 1540, 680, 300, 150),
                 o("flags", "flags", 860, 70, 220, 110),
-                o("startLights", "startLights", 760, 190, 400, 92),
+                o("startLights", "startLights", 760, 190, 400, 110),
                 o("spotter", "spotter", 850, 520, 220, 200),
                 o("pit", "pit", 845, 300, 230, 200),
                 o("safety", "safety", 760, 160, 400, 230),

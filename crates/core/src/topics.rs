@@ -310,6 +310,11 @@ pub struct PlayerOut {
     /// Start lights: "ready" (red), "set", "go" (green) or "" (not showing). Sent with the
     /// player at 60 Hz so the lights go out on the frame they do in the sim.
     pub start: &'static str,
+    /// Seconds until a race session's get-in-car / warm-up countdown ends (the grid forms
+    /// next); None outside it.
+    pub race_start_in: Option<f32>,
+    /// A race session is forming up / on its parade laps (the start comes next).
+    pub gridding: bool,
 }
 
 pub fn player(e: &Engine) -> PlayerOut {
@@ -343,6 +348,9 @@ pub fn player(e: &Engine) -> PlayerOut {
         long_g: round(t.long_accel / 9.81, 2),
         heading: e.focus_heading().map(|h| round(h, 1)),
         start: model::start_lights(t.session_flags),
+        race_start_in: (e.is_race() && matches!(t.session_state, 1 | 2) && t.session_time_remain > 0.0 && t.session_time_remain < 3600.0)
+            .then(|| round(t.session_time_remain as f32, 1)),
+        gridding: e.is_race() && t.session_state == 3,
     }
 }
 

@@ -7,7 +7,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 ## Unreleased
 
 ### New features
-- Start lights overlay: a slim gantry of five light pods that appears only for the race start. Red lights come on, all five red when set, then green (or lights out, if you prefer) for the go, and after two seconds it disappears. Updated 60 times a second, so the lights change on the same frame as in the sim. Hidden for rolling starts, where iRacing shows no lights. Choose 3 to 5 lights, the colours, and whether READY / SET / GO is shown. Turn it on under Overlays (it is added switched off)
+- Start lights overlay: five light pods that appear only for the race start. First a countdown as a warning that the race is about to start (“RACE STARTS IN 10, 9, …”, from 10 seconds by default; it can be turned off), then “GET READY” with the lights dark while the grid forms, then red lights, all five red when set, and green (or lights out, if you prefer) for the go, after which it disappears. Updated 60 times a second, so the lights change on the same frame as in the sim. The lights have no background, so nothing else shows on screen. Choose 3 to 5 lights, the colours, and whether the wording is shown. Turn it on under Overlays (it is added switched off)
 - Apex Overlays is now a tool by Apex Labs: a new app icon (taskbar, tray, installer and browser tabs), the Apex Labs logo in the settings window and the update pop-up (light or dark lettering to suit your theme), and Apex Labs as the publisher in Windows
 
 ### Improvements
