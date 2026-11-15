@@ -139,7 +139,7 @@ fn reconcile(app: &AppHandle) {
     let visible = core.hub.visible.load(Ordering::Relaxed);
     let mut wanted = Vec::new();
     let mut hwnds = HashMap::new();
-    for o in cfg.overlays.iter().filter(|o| o.enabled) {
+    for o in cfg.overlays.iter().filter(|o| o.enabled && !apex_core::config::HIDDEN_KINDS.contains(&o.kind.as_str())) {
         let label = label_for(&o.id);
         wanted.push(label.clone());
         let win = match app.get_webview_window(&label) {

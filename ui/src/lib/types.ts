@@ -49,6 +49,8 @@ export interface Session {
   classes: ClassInfo[];
   incidents: number;
   incidentLimit: number | null;
+  /** Every incident count that brings a penalty or the disqualification, in order. */
+  incidentLimits?: number[];
   numCars: number;
   league: string | null;
   leagueId: number;

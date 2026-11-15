@@ -208,6 +208,8 @@ pub struct SessionOut<'a> {
     pub classes: Vec<ClassOut>,
     pub incidents: i32,
     pub incident_limit: Option<i32>,
+    /// Every incident count that brings a penalty or the disqualification, in order.
+    pub incident_limits: Vec<i32>,
     pub num_cars: usize,
     pub league: Option<&'a str>,
     /// iRacing league of the current session (0 if not a league session).
@@ -233,7 +235,7 @@ pub fn session(e: &Engine) -> SessionOut<'_> {
         track_country: &e.info.track_country,
         session_type: def.map(|d| d.kind.as_str()).unwrap_or(""),
         session_name: def.map(|d| d.name.as_str()).unwrap_or(""),
-        track_state: def.map(|d| d.rubber.as_str()).unwrap_or(""),
+        track_state: e.info.rubber_state(t.session_num),
         session_state: model::session_state_label(t.session_state),
         is_race: e.is_race(),
         time_remain: (time_total.is_some() && t.session_time_remain >= 0.0 && t.session_time_remain < 1e6).then(|| round(t.session_time_remain as f32, 1)),
@@ -265,6 +267,7 @@ pub fn session(e: &Engine) -> SessionOut<'_> {
             .collect(),
         incidents: t.incidents,
         incident_limit: e.info.incident_limit,
+        incident_limits: e.info.incident_limits(),
         num_cars: e.order.len(),
         league: e.resolver.league_name(),
         league_id: e.info.league_id,

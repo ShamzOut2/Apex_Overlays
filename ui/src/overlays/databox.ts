@@ -1,11 +1,11 @@
 import { h, show, text, toggle } from '../lib/dom';
 import * as f from '../lib/format';
 import type { OverlayDef } from '../lib/overlay';
-import { fieldValue, sessionType } from '../lib/sessionFields';
+import { fieldValue, incidentTone, limitsAhead, sessionType } from '../lib/sessionFields';
 import type { Battle, Fuel, Relative, Session, TopicMap } from '../lib/types';
 
 type Latest = Partial<TopicMap>;
-type Out = { v: string; tone?: 'good' | 'bad' | '' };
+type Out = { v: string; tone?: 'good' | 'bad' | ''; inc?: { now: number; limits: number[] } };
 
 interface Field {
   id: string;
@@ -44,7 +44,17 @@ export const FIELDS: Field[] = [
   { id: 'classPosition', group: 'Race', label: 'Class position', get: (d) => (d.player?.classPosition ? { v: `P${d.player.classPosition}` } : null) },
   { id: 'gapAhead', group: 'Race', label: 'Gap to car ahead', get: (d, o) => { const a = (d.battle as Battle | undefined)?.overall.ahead; return a ? { v: a.gapLaps ? `${a.gapLaps}L` : (a.gap ?? 0).toFixed(Math.max(1, o.dec)) } : null; } },
   { id: 'gapBehind', group: 'Race', label: 'Gap to car behind', get: (d, o) => { const b = (d.battle as Battle | undefined)?.overall.behind; return b ? { v: b.gapLaps ? `${b.gapLaps}L` : (b.gap ?? 0).toFixed(Math.max(1, o.dec)) } : null; } },
-  { id: 'incidents', group: 'Race', label: 'Incidents', get: (d) => (d.player ? { v: `${d.player.incidents}x` } : null) },
+  {
+    id: 'incidents',
+    group: 'Race',
+    label: 'Incidents',
+    get: (d) => {
+      if (!d.player) return null;
+      const s = d.session as Session | undefined;
+      const limits = s?.incidentLimits ?? (s?.incidentLimit ? [s.incidentLimit] : []);
+      return { v: `${d.player.incidents}x`, inc: { now: d.player.incidents, limits } };
+    },
+  },
   { id: 'irDelta', group: 'Race', label: 'iRating gain/loss (est.)', get: (d) => signedTone(focusRow(d)?.irDelta, 0) },
   { id: 'srDelta', group: 'Race', label: 'SR gain/loss (est.)', get: (d) => signedTone(focusRow(d)?.srDelta, 2) },
   { id: 'points', group: 'Race', label: 'League points', get: (d) => num(focusRow(d)?.points, 0) },
@@ -104,9 +114,30 @@ export const databox: OverlayDef = {
     if (!s.useThemeColor) value.style.color = s.valueColor as string;
     show(label, s.showLabel as boolean);
     root.append(label, value);
+    // Incidents: the count (green, orange, red on the way to the next limit; blinking when a
+    // limit is reached) and the limits still ahead.
+    const incNow = h('span', 'inc-now');
+    const incRest = h('span', 'inc-rest');
+    let lastInc: number | null = null;
     return {
       update() {
         const out = field.get(ctx.latest, { units: ctx.units, dec: s.decimals as number });
+        if (out?.inc) {
+          const { now, limits } = out.inc;
+          if (incNow.parentElement !== value) value.replaceChildren(incNow, incRest);
+          text(incNow, `${now}x`);
+          text(incRest, limitsAhead(now, limits).map((l) => ` / ${l}x`).join(''));
+          const tone = incidentTone(now, limits);
+          for (const t of ['ok', 'warn', 'bad']) toggle(incNow, `inc-${t}`, tone === t);
+          if (lastInc != null && limits.some((l) => l > (lastInc as number) && l <= now)) {
+            // Restart the blink.
+            incNow.classList.remove('inc-blink');
+            void incNow.offsetWidth;
+            incNow.classList.add('inc-blink');
+          }
+          lastInc = now;
+          return;
+        }
         text(value, out?.v ?? '–');
         toggle(value, 'good', !!s.colorDeltas && out?.tone === 'good');
         toggle(value, 'bad', !!s.colorDeltas && out?.tone === 'bad');

@@ -12,7 +12,7 @@ import { labsLogo } from './control/brand';
 
 // General first, then the overlays and everything else.
 const byId = (id: string) => PAGES.find((p) => p.id === id)!;
-const pages: Page[] = [byId('general'), byId('overlays'), byId('theme'), byId('strategy'), leaguesPage, raceControlPage, byId('garage61'), byId('streaming')];
+const pages: Page[] = [byId('general'), byId('overlays'), byId('theme'), byId('strategy'), leaguesPage, raceControlPage, byId('streaming')];
 
 const nav = h('nav');
 const brand = h('div', 'brand');
@@ -98,7 +98,6 @@ listen((t) => {
       if (current().id === 'leagues' && !(document.activeElement instanceof HTMLInputElement)) render();
     }
   }
-  if (t === 'garage61' && current().id === 'garage61') render();
   if ((t === 'trackmap' || t === 'vr') && current().id === 'general') render();
   if (t === 'update' && (promptKind === 'update' || (!promptMode && current().id === 'general'))) render();
   // Race control lists live flags: refresh every couple of seconds unless the user is typing.

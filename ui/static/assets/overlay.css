@@ -406,6 +406,12 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .databox.label-left.align-right { justify-content: flex-end; }
 .databox .db-label { color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; white-space: nowrap; }
 .databox .db-value { font-weight: 800; line-height: 1.05; white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* Incidents: green under half way to the next limit, orange to three quarters, then red. */
+.inc-now.inc-ok { color: var(--good); }
+.inc-now.inc-warn { color: var(--warn); }
+.inc-now.inc-bad { color: var(--bad); }
+.inc-now.inc-blink { animation: inc-blink 0.45s ease-in-out 5; }
+@keyframes inc-blink { 50% { opacity: 0.1; } }
 .databox .db-label { overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 100%; }
 
 /* Flags and penalty box next to driver names */

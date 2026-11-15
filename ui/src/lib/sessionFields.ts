@@ -119,7 +119,7 @@ export function fieldValue(id: string, d: Session, u: f.Units, o: FieldOpts = {}
     case 'cars':
       return `${d.numCars}${o.compact ? ' cars' : ''}`;
     case 'incidents':
-      return d.incidentLimit ? `${d.incidents}/${d.incidentLimit}x` : `${d.incidents}x`;
+      return incidentText(d.incidents, d.incidentLimits ?? (d.incidentLimit ? [d.incidentLimit] : []));
     case 'flags':
       return d.flags.map((x) => x.replace(/([A-Z])/g, ' $1').toLowerCase()).join(', ');
     case 'league':
@@ -139,6 +139,29 @@ export function trackState(raw: string | undefined, compact = false): string {
     return `Rubber: ${short}`;
   }
   return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+/** Incident limits still ahead of `now`: the ones already reached drop out. */
+export function limitsAhead(now: number, limits: number[]): number[] {
+  return limits.filter((l) => l > now);
+}
+
+/** "9x / 10x / 20x": incidents now, then each limit still ahead. */
+export function incidentText(now: number, limits: number[]): string {
+  return [`${now}x`, ...limitsAhead(now, limits).map((l) => `${l}x`)].join(' / ');
+}
+
+/** How close `now` is to the next limit, counted from the last one reached (or 0): under half
+ *  way 'ok', under three quarters 'warn', else 'bad'; past every limit 'bad'; '' when there are
+ *  none. */
+export function incidentTone(now: number, limits: number[]): 'ok' | 'warn' | 'bad' | '' {
+  if (!limits.length) return '';
+  const next = limitsAhead(now, limits)[0];
+  if (next == null) return 'bad';
+  const reached = limits.filter((l) => l <= now);
+  const prev = reached.length ? reached[reached.length - 1] : 0;
+  const share = (now - prev) / (next - prev);
+  return share < 0.5 ? 'ok' : share < 0.75 ? 'warn' : 'bad';
 }
 
 /** Data attribute used to colour the flags field. */

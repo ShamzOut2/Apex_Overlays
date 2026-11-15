@@ -8,6 +8,10 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 use tokio::sync::watch;
 
+/// Overlay kinds held back for now (Garage 61, until the integration is ready): never opened
+/// as windows, whatever a config or layout says. Their code and settings stay.
+pub const HIDDEN_KINDS: &[&str] = &["garage61"];
+
 /// Bumped when [`Config::migrate`] has something new to do.
 pub const CONFIG_VERSION: u32 = 2;
 

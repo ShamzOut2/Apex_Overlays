@@ -1,7 +1,7 @@
 import { h, show, style, text, toggle } from '../lib/dom';
 import * as f from '../lib/format';
 import type { OverlayDef } from '../lib/overlay';
-import type { DeltaRefs, G61Reference, Garage61, Player, Status } from '../lib/types';
+import type { DeltaRefs, G61Reference, Player, Status } from '../lib/types';
 
 /** Reference lap time at a lap distance (0–1), interpolated. */
 function refAt(ref: G61Reference, pct: number): number {
@@ -22,8 +22,8 @@ export const delta: OverlayDef = {
   kind: 'delta',
   name: 'Delta bar',
   description:
-    'Live delta to a reference lap: your best this session, your all-time best (laps recorded by the app and your Garage 61 best), the fastest lap in one of your Garage 61 teams or all of them, or the fastest on Garage 61. Shows the delta, a bar, your predicted lap time and whether you are gaining or losing.',
-  topics: ['player', 'delta', 'garage61', 'status'],
+    'Live delta to a reference lap: your best this session or your all-time best for the car and track. Shows the delta, a bar, your predicted lap time and whether you are gaining or losing.',
+  topics: ['player', 'delta', 'status'],
   size: [420, 96],
   commonDefaults: { hideWhenNotDriving: true },
   settings: [
@@ -34,18 +34,11 @@ export const delta: OverlayDef = {
       default: 'allTime',
       options: [
         ['session', 'My best lap this session'],
-        ['allTime', 'My all-time best (fastest of my laps here and on Garage 61)'],
-        ['recorded', 'My all-time best recorded by Apex Overlays'],
-        ['g61Personal', 'My Garage 61 best'],
-        ['g61Team', 'Fastest in one of my Garage 61 teams'],
-        ['g61Teams', 'Fastest in all my Garage 61 teams'],
-        ['g61World', 'Fastest on Garage 61 (world)'],
+        ['allTime', 'My all-time best for this car and track'],
       ],
       group: 'Reference lap',
-      help: 'Garage 61 laps need Garage 61 set up (Settings → Garage 61) and only laps whose telemetry you can see can be compared with',
+      help: 'All-time bests are laps you drove with Apex Overlays running, kept per car and track',
     },
-    { key: 'team', when: (v) => v.reference === 'g61Team', label: 'Team', type: 'text', default: '', choices: 'g61Teams', placeholder: 'Set up Garage 61 to list your teams', group: 'Reference lap', help: 'For “Fastest in one of my Garage 61 teams”' },
-    { key: 'fallback', when: (v) => v.reference !== 'session', label: 'Until that lap is available, use my best this session', type: 'bool', default: true, group: 'Reference lap' },
     { key: 'showRef', label: 'Reference lap (who and what time)', type: 'bool', default: true, group: 'What to show' },
     { key: 'showPredicted', label: 'Predicted lap time', type: 'bool', default: true, group: 'What to show' },
     { key: 'showTrend', label: 'Gaining / losing arrow', type: 'bool', default: true, group: 'What to show' },
@@ -83,59 +76,19 @@ export const delta: OverlayDef = {
     show(ref, !!s.showRef);
 
     let mine: DeltaRefs | null = null;
-    let g61: Garage61 | null = null;
     let editing = false;
     let lap = -1;
     let invalid = true;
     const history: [number, number][] = [];
 
-    const g61Ref = (key: string): [G61Reference | null, string] => {
-      if (!g61 || g61.status !== 'ok') return [null, g61?.message || 'Garage 61 is not set up'];
-      return [g61.references?.[key] ?? null, g61.referenceNotes?.[key] ?? 'loading…'];
-    };
-
     const pick = (): Pick => {
-      const team = s.team as string;
-      let chosen: Pick;
-      switch (s.reference) {
-        case 'session':
-          chosen = { ref: mine?.session ?? null, label: 'My best this session', note: 'no clean lap yet this session' };
-          break;
-        case 'recorded':
-          chosen = { ref: mine?.allTime ?? null, label: 'My all-time best', note: 'no clean lap recorded for this car and track yet' };
-          break;
-        case 'g61Personal': {
-          const [r, note] = g61Ref('personal');
-          chosen = { ref: r, label: 'My Garage 61 best', note };
-          break;
-        }
-        case 'g61Teams': {
-          const [r, note] = g61Ref('teams');
-          chosen = { ref: r, label: `Teams’ best · ${r?.driver ?? ''}`, note };
-          break;
-        }
-        case 'g61Team': {
-          const name = g61?.teams?.find((t) => t.slug === team)?.name ?? team;
-          const [r, note] = team ? g61Ref(`team:${team}`) : [null, 'choose a team in the settings'];
-          chosen = { ref: r, label: `${name} best · ${r?.driver ?? ''}`, note };
-          break;
-        }
-        case 'g61World': {
-          const [r, note] = g61Ref('world');
-          chosen = { ref: r, label: `Garage 61 fastest · ${r?.driver ?? ''}`, note };
-          break;
-        }
-        default: {
-          // The fastest of everything that is yours.
-          const [g] = g61Ref('personal');
-          const all = [mine?.allTime, mine?.session, g].filter((r): r is G61Reference => !!r);
-          const best = all.sort((a, b) => a.lapTime - b.lapTime)[0] ?? null;
-          chosen = { ref: best, label: best === g ? 'My all-time best (Garage 61)' : 'My all-time best', note: 'no clean lap yet' };
-        }
+      if (s.reference === 'session') {
+        const ref = mine?.session ?? null;
+        return { ref, label: 'My best this session', note: ref ? '' : 'no clean lap yet this session' };
       }
-      if (chosen.ref) return { ...chosen, note: '' };
-      if (s.fallback && s.reference !== 'session' && mine?.session) return { ref: mine.session, label: 'My best this session', note: `${chosen.label.replace(/ · $/, '')}: ${chosen.note}` };
-      return chosen;
+      // All-time: the faster of the saved best and this session's.
+      const best = [mine?.allTime, mine?.session].filter((r): r is G61Reference => !!r).sort((x, y) => x.lapTime - y.lapTime)[0] ?? null;
+      return { ref: best, label: 'My all-time best', note: best ? '' : 'no clean lap recorded for this car and track yet' };
     };
 
     const fmt = (v: number) => {
@@ -192,7 +145,6 @@ export const delta: OverlayDef = {
     return {
       update(topic, data) {
         if (topic === 'delta') mine = data as DeltaRefs;
-        if (topic === 'garage61') g61 = data as Garage61;
         if (topic === 'status') editing = !!(data as Status).editMode;
         if (topic === 'player') onPlayer(data as Player);
         sample();

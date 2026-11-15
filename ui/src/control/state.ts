@@ -48,7 +48,7 @@ export const client = new Client((t, d) => {
   }
   listeners.forEach((l) => l(t));
 });
-client.subscribe('config', 'status', 'session', 'garage61', 'update', 'vr');
+client.subscribe('config', 'status', 'session', 'update', 'vr');
 
 /** Live data only some pages show: received only while one of them is open. */
 const PAGE_TOPICS: Record<string, TopicName[]> = { leagues: ['standings'], racecontrol: ['standings'], general: ['trackmap', 'player', 'monitor'] };
