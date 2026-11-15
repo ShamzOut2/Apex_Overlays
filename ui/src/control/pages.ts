@@ -280,15 +280,19 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
   /** Position and size, plus copying the transparency to every overlay. */
   const sizeExtras = () => {
     const geo = h('div', 'geo');
+    // While the overlays show in VR, these are the VR position and size (the screen ones stay).
+    const inVr = state.vr?.status === 'on';
+    const screenRect = () => ({ x: o.x, y: o.y, width: o.width, height: o.height });
     for (const k of ['x', 'y', 'width', 'height'] as const) {
       const l = h('label', 'inline', { x: 'Left', y: 'Top', width: 'Width', height: 'Height' }[k]);
       const i = h('input');
       i.type = 'number';
-      i.value = String(o[k]);
+      i.value = String(inVr ? (o.vrRect ?? o)[k] : o[k]);
       i.oninput = () => {
         const v = parseInt(i.value, 10);
         if (Number.isFinite(v)) {
-          o[k] = v;
+          if (inVr) o.vrRect = { ...(o.vrRect ?? screenRect()), [k]: v };
+          else o[k] = v;
           save();
         }
       };
@@ -297,9 +301,20 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
     }
     const box = h('div', 'size-extras');
     box.append(
-      h('div', 'field-name', 'Position and size (pixels)'),
+      h('div', 'field-name', inVr ? 'Position and size in VR (pixels)' : 'Position and size (pixels)'),
       geo,
       h('p', 'dim small', 'Easier: press Edit mode at the top and drag the overlay on screen.'),
+    );
+    if (inVr) box.append(h('p', 'dim small', 'You are in VR: moving or resizing the overlay only changes where it is in VR. Its screen position is kept for when you leave VR.'));
+    else if (o.vrRect)
+      box.append(
+        h('p', 'dim small', 'This overlay has its own position in VR (it was moved while in VR).'),
+        button('Use the screen position in VR too', () => {
+          o.vrRect = null;
+          save();
+        }),
+      );
+    box.append(
       button('Use this overlay’s transparency for every overlay', () => {
         for (const other of state.config!.overlays) other.settings = { ...other.settings, opacity: values.opacity, bgOpacity: values.bgOpacity };
         save();
@@ -1290,6 +1305,22 @@ function vrCard(): HTMLElement {
     error: `VR is not working: ${v?.message ?? ''}`,
   };
   c.append(h('div', `notice${v?.status === 'on' ? ' good' : ''}`, v ? (line[v.status] ?? v.status) : 'VR works in the Apex Overlays desktop app on Windows, with SteamVR or any OpenXR runtime.'));
+  // Separate VR positions: moving overlays in VR leaves the screen layout alone.
+  const ownVr = cfg.overlays.filter((o) => o.vrRect).length;
+  c.append(
+    h(
+      'p',
+      'dim small',
+      'While the overlays show in VR, moving or resizing them (in Edit mode) only changes their VR positions. Your screen layout stays exactly as it was and comes back when you leave VR.',
+    ),
+  );
+  if (ownVr)
+    c.append(
+      button(`Reset VR positions to the screen layout (${ownVr} overlay${ownVr === 1 ? '' : 's'})`, () => {
+        for (const o of cfg.overlays) o.vrRect = null;
+        save();
+      }),
+    );
   c.append(
     h(
       'p',

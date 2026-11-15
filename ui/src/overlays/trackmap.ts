@@ -122,10 +122,13 @@ export const trackmap: OverlayDef = {
       return [pts[i][0] + (pts[j][0] - pts[i][0]) * k, pts[i][1] + (pts[j][1] - pts[i][1]) * k];
     };
 
+    const noLanes: string[] = [];
     const lanes = () => {
+      // Only the flat style with lanes uses them: don't build the list every frame otherwise.
+      if (!(mode === 'flat' && s.flatLanes)) return noLanes;
       const ids: string[] = [];
       for (const c of cars?.cars ?? []) if (!ids.includes(c.cls)) ids.push(c.cls);
-      return mode === 'flat' && s.flatLanes ? ids : [];
+      return ids;
     };
 
     /** Draws the static track into an offscreen canvas (only on resize / map change). */
@@ -333,45 +336,68 @@ export const trackmap: OverlayDef = {
       });
     };
 
+    // The track with its sector colours, sector lines and pit labels: drawn again only when one of
+    // them changes (a few times a lap), then copied under the cars each frame. Tracing the sector
+    // colours point by point on every frame was most of the overlay's work and garbage.
+    let deco: HTMLCanvasElement | null = null;
+    const leaders = new Map<string, CarDot>();
+    const list: CarDot[] = [];
+    let decoKey = '';
+    let decoBase: HTMLCanvasElement | null = null;
+
     const draw = () => {
       if (fitCanvas(canvas) || !base) buildBase();
       const w = canvas.width;
       const hh = canvas.height;
-      g.clearRect(0, 0, w, hh);
-      g.drawImage(base!, 0, 0);
       const laneIds = lanes();
       const nl = Math.max(1, laneIds.length);
-      g.lineCap = 'butt';
-      g.lineJoin = 'round';
-      if (s.sectorPerformance && cars?.sectorTimes) {
-        const st = cars.sectorTimes;
-        const colors = sectorColors(st);
+      const st = s.sectorPerformance ? cars?.sectorTimes : undefined;
+      const colors = st ? sectorColors(st) : [];
+      const key = `${w}x${hh}|${nl}|${colors.join()}|${st?.starts.join() ?? ''}|${sectorStarts().join()}`;
+      if (!deco || key !== decoKey || decoBase !== base) {
+        deco ??= document.createElement('canvas');
+        // Setting the size also clears it.
+        deco.width = w;
+        deco.height = hh;
+        const d = deco.getContext('2d')!;
+        d.drawImage(base!, 0, 0);
+        d.lineCap = 'butt';
+        d.lineJoin = 'round';
         colors.forEach((color, i) => {
-          if (color) paintSegment(g, st.starts[i], st.starts[i + 1] ?? 1, color, nl);
+          if (color && st) paintSegment(d, st.starts[i], st.starts[i + 1] ?? 1, color, nl);
         });
+        drawTicks(d, nl);
+        decoKey = key;
+        decoBase = base;
       }
-      drawTicks(g, nl);
+      g.clearRect(0, 0, w, hh);
+      g.drawImage(deco, 0, 0);
       if (!cars) return;
-      const leaders = new Set<number>();
-      const seen = new Set<string>();
-      for (const c of [...cars.cars].sort((a, b) => a.pos - b.pos)) {
-        if (!seen.has(c.cls)) {
-          seen.add(c.cls);
-          leaders.add(c.i);
-        }
+      // Each class's leader (the lowest position), for the leader ring.
+      leaders.clear();
+      for (const c of cars.cars) {
+        const b = leaders.get(c.cls);
+        if (!b || c.pos < b.pos) leaders.set(c.cls, c);
       }
       const focus = cars.focus;
       // Your car (or the one being watched): the theme's highlight or a colour of your own.
       const mine = s.playerThemeColor === false && s.playerColor ? (s.playerColor as string) : (t.playerColor as string);
-      // Focus car last so it is drawn on top.
-      const list: CarDot[] = [...cars.cars].sort((a, b) => (a.i === focus ? 1 : b.i === focus ? -1 : b.pos - a.pos));
+      // Focus car last so it is drawn on top (one list, reused every frame).
+      list.length = 0;
+      for (const c of cars.cars) list.push(c);
+      list.sort((a, b) => (a.i === focus ? 1 : b.i === focus ? -1 : b.pos - a.pos));
       const font = Math.max(8, (s.dotSize as number) * 1.15) * dpr();
       family ||= getComputedStyle(root).getPropertyValue('--font') || 'sans-serif';
+      const fontNormal = `700 ${font}px ${family}`;
+      const fontFocus = `700 ${font * 1.1}px ${family}`;
+      let curFont = '';
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       for (const c of list) {
         const isFocus = c.i === focus;
-        const [x, y] = locate(c.p, Math.max(0, laneIds.indexOf(c.cls)), nl);
+        const at = locate(c.p, nl > 1 ? Math.max(0, laneIds.indexOf(c.cls)) : 0, nl);
+        const x = at[0];
+        const y = at[1];
         const r = (s.dotSize as number) * dpr() * (isFocus ? (s.playerScale as number) : 1);
         g.globalAlpha = s.dimPitCars && c.pit ? 0.4 : 1;
         g.beginPath();
@@ -381,7 +407,7 @@ export const trackmap: OverlayDef = {
         g.lineWidth = 1.5 * dpr();
         g.strokeStyle = c.off ? (t.warnColor as string) : 'rgba(0,0,0,0.85)';
         g.stroke();
-        if (s.leaderRing && leaders.has(c.i)) {
+        if (s.leaderRing && leaders.get(c.cls) === c) {
           g.beginPath();
           g.arc(x, y, r + 2.5 * dpr(), 0, Math.PI * 2);
           g.strokeStyle = '#ffffff';
@@ -390,7 +416,11 @@ export const trackmap: OverlayDef = {
         }
         const label = s.label === 'number' ? c.n : s.label === 'position' ? String(c.pos) : s.label === 'classPosition' ? String(c.cpos) : '';
         if (label) {
-          g.font = `700 ${font * (isFocus ? 1.1 : 1)}px ${family}`;
+          const f = isFocus ? fontFocus : fontNormal;
+          if (curFont !== f) {
+            g.font = f;
+            curFont = f;
+          }
           g.fillStyle = isFocus ? onColor(mine) : s.colorBy === 'single' ? onColor(s.carColor as string) : onColor(c.c);
           g.fillText(label, x, y + 0.5);
         }

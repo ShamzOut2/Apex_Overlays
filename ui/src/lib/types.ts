@@ -419,6 +419,8 @@ export interface OverlayInstance {
   width: number;
   height: number;
   settings: Record<string, unknown>;
+  /** Its own position and size in VR, once moved there (the screen ones otherwise). */
+  vrRect?: { x: number; y: number; width: number; height: number } | null;
 }
 
 export interface ClassRules {

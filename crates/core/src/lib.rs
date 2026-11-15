@@ -254,6 +254,7 @@ struct Keys {
     map: Option<(u64, i32, i64)>,
     car: Option<(u64, i64, i32, i32)>,
     delta: Option<u64>,
+    drivers: Option<u64>,
     /// Ticks published, for topics sent at a lower rate.
     tick: u64,
 }
@@ -287,6 +288,13 @@ fn publish(e: &Engine, hub: &Hub, keys: &mut Keys, force: bool) {
                 continue;
             }
             keys.delta = Some(e.laps.revision);
+        }
+        if t == Topic::Drivers {
+            // Rebuilt only when the drivers' details are (each session info update).
+            if keys.drivers == Some(e.statics_rev) && !force {
+                continue;
+            }
+            keys.drivers = Some(e.statics_rev);
         }
         if t == Topic::Car {
             let key = (e.car_revision, e.info.subsession_id, e.info.player_car_idx, e.tel.session_num);

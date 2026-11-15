@@ -9,6 +9,14 @@ export function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text 
 }
 
 export function text(el: HTMLElement, value: string) {
+  // An element holding just text: compare and change that text node. Reading textContent
+  // builds a new string every time (for every cell of every table, many times a second), and
+  // setting it replaces the node.
+  const t = el.firstChild;
+  if (t && t === el.lastChild && t.nodeType === Node.TEXT_NODE) {
+    if ((t as Text).data !== value) (t as Text).data = value;
+    return;
+  }
   if (el.textContent !== value) el.textContent = value;
 }
 

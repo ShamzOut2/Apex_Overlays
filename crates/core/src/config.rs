@@ -110,6 +110,7 @@ impl Default for Config {
             width: w,
             height: h,
             settings: serde_json::json!({}),
+            vr_rect: None,
         };
         Self {
             version: CONFIG_VERSION,
@@ -177,6 +178,16 @@ impl Default for ServerConfig {
     }
 }
 
+/// An overlay window's position and size (logical pixels).
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Rect {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
 pub struct OverlayInstance {
@@ -189,6 +200,23 @@ pub struct OverlayInstance {
     pub width: u32,
     pub height: u32,
     pub settings: serde_json::Value,
+    /// Where the overlay goes while the overlays show in VR, once it has been moved or resized
+    /// there; until then (None) VR uses the screen position. Moving it in VR changes only this,
+    /// so the screen layout is just as it was after VR.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vr_rect: Option<Rect>,
+}
+
+impl OverlayInstance {
+    /// The screen position and size, or (`vr`) the VR one when it has its own.
+    pub fn geometry(&self, vr: bool) -> Rect {
+        let screen = Rect { x: self.x, y: self.y, width: self.width, height: self.height };
+        if vr {
+            self.vr_rect.unwrap_or(screen)
+        } else {
+            screen
+        }
+    }
 }
 
 impl Default for OverlayInstance {
@@ -203,6 +231,7 @@ impl Default for OverlayInstance {
             width: 400,
             height: 200,
             settings: serde_json::json!({}),
+            vr_rect: None,
         }
     }
 }
@@ -701,6 +730,20 @@ mod tests {
     }
 
     use super::*;
+
+    #[test]
+    fn vr_position_is_separate_from_the_screen_one() {
+        let mut o = OverlayInstance { x: 10, y: 20, width: 300, height: 100, ..Default::default() };
+        // Not moved in VR yet: VR uses the screen position.
+        assert_eq!(o.geometry(true), o.geometry(false));
+        // Nothing extra is saved until there is a VR position.
+        assert!(!serde_json::to_string(&o).unwrap().contains("vrRect"));
+        o.vr_rect = Some(Rect { x: 500, y: 600, width: 200, height: 80 });
+        assert_eq!(o.geometry(false), Rect { x: 10, y: 20, width: 300, height: 100 });
+        assert_eq!(o.geometry(true), Rect { x: 500, y: 600, width: 200, height: 80 });
+        let back: OverlayInstance = serde_json::from_str(&serde_json::to_string(&o).unwrap()).unwrap();
+        assert_eq!(back, o);
+    }
 
     #[test]
     fn partial_config_fills_defaults() {

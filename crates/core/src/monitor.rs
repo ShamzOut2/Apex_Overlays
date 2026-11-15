@@ -47,7 +47,8 @@ fn tree(sys: &System, root: Pid) -> HashSet<Pid> {
     loop {
         let before = set.len();
         for (pid, p) in sys.processes() {
-            if p.parent().is_some_and(|parent| set.contains(&parent)) {
+            // Threads are listed as processes on Linux: they are part of their process already.
+            if p.thread_kind().is_none() && p.parent().is_some_and(|parent| set.contains(&parent)) {
                 set.insert(*pid);
             }
         }
@@ -74,6 +75,13 @@ pub fn spawn(hub: Arc<Hub>) {
         };
         let mut last = (Instant::now(), counters(&hub));
         let mut warm = false;
+        // The app's own processes, found from the whole process list only every few seconds:
+        // reading CPU and memory of every process on the PC each second was itself a cost.
+        // The list is kept in its own System: refreshing every process there without CPU
+        // would reset the CPU readings of ours.
+        let mut list = System::new();
+        let mut pids: Vec<Pid> = vec![];
+        let mut found_at: Option<Instant> = None;
         loop {
             std::thread::sleep(Duration::from_secs(1));
             let now = (Instant::now(), counters(&hub));
@@ -85,9 +93,14 @@ pub fn spawn(hub: Arc<Hub>) {
                 warm = false;
                 continue;
             }
-            sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::nothing().with_cpu().with_memory());
+            if found_at.is_none_or(|t| t.elapsed() > Duration::from_secs(5)) {
+                // Who is who (parents), without reading every process's CPU and memory.
+                list.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::nothing());
+                pids = tree(&list, me).into_iter().collect();
+                found_at = Some(Instant::now());
+            }
+            sys.refresh_processes_specifics(ProcessesToUpdate::Some(&pids), true, ProcessRefreshKind::nothing().with_cpu().with_memory());
             sys.refresh_cpu_usage();
-            let pids = tree(&sys, me);
             let (mut cpu_app, mut cpu_win, mut mem_app, mut mem_win) = (0.0f32, 0.0f32, 0u64, 0u64);
             for pid in &pids {
                 let Some(p) = sys.process(*pid) else { continue };
@@ -140,6 +153,37 @@ mod tests {
         let me = sysinfo::get_current_pid().unwrap();
         let t = tree(&sys, me);
         assert!(t.contains(&me));
+        assert!(sys.process(me).is_some_and(|p| p.memory() > 0));
+    }
+
+    #[test]
+    fn measures_cpu_reading_only_its_own_processes() {
+        // As the monitor does: the process list without CPU or memory, then only ours with them.
+        let (mut sys, mut list) = (System::new(), System::new());
+        let me = sysinfo::get_current_pid().unwrap();
+        list.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::nothing());
+        let pids: Vec<Pid> = tree(&list, me).into_iter().collect();
+        sys.refresh_processes_specifics(ProcessesToUpdate::Some(&pids), true, ProcessRefreshKind::nothing().with_cpu().with_memory());
+        sys.refresh_cpu_usage();
+        let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let busy = {
+            let stop = stop.clone();
+            std::thread::spawn(move || {
+                let mut x = 0u64;
+                while !stop.load(Ordering::Relaxed) {
+                    x = std::hint::black_box(x.wrapping_mul(31).wrapping_add(7));
+                }
+            })
+        };
+        std::thread::sleep(Duration::from_millis(400));
+        // The process list is read again every few seconds: that must not lose the reading.
+        list.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::nothing());
+        sys.refresh_processes_specifics(ProcessesToUpdate::Some(&pids), true, ProcessRefreshKind::nothing().with_cpu().with_memory());
+        sys.refresh_cpu_usage();
+        stop.store(true, Ordering::Relaxed);
+        busy.join().unwrap();
+        let cpu = sys.process(me).map(|p| p.cpu_usage()).unwrap_or(0.0);
+        assert!(cpu > 20.0, "busy thread measured at {cpu}%");
         assert!(sys.process(me).is_some_and(|p| p.memory() > 0));
     }
 }

@@ -239,7 +239,9 @@ const onColors = new Map<string, string>();
 
 /** Dark or light text, whichever reads better on `hex` (cached: overlays ask every frame). */
 export function onColor(hex: string, dark = '#0b0e13', light = '#ffffff'): string {
-  const key = `${hex}|${dark}|${light}`;
+  // The usual dark / light pair is looked up by the colour alone (no key string to build).
+  const plain = dark === '#0b0e13' && light === '#ffffff';
+  const key = plain ? hex : `${hex}|${dark}|${light}`;
   let v = onColors.get(key);
   if (v === undefined) {
     const c = rgb(hex);
