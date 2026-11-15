@@ -577,6 +577,9 @@ pub struct GameSet {
     pub overlays: Vec<OverlayInstance>,
     pub layouts: Vec<Layout>,
     pub active_layout: String,
+    /// The VR screen layout (distance, width, height, offset; see `VrConfig`), so each game's
+    /// overlays sit where suits that game in the headset. VR on/off and how stay shared.
+    pub vr_screen: Option<[f64; 4]>,
 }
 
 impl Config {
@@ -588,13 +591,22 @@ impl Config {
             return false;
         }
         if !self.layout_game.is_empty() {
-            let current = GameSet { overlays: self.overlays.clone(), layouts: self.layouts.clone(), active_layout: self.active_layout.clone() };
+            let v = &self.vr;
+            let current = GameSet {
+                overlays: self.overlays.clone(),
+                layouts: self.layouts.clone(),
+                active_layout: self.active_layout.clone(),
+                vr_screen: Some([v.distance, v.width, v.height, v.offset]),
+            };
             self.game_sets.insert(self.layout_game.clone(), current);
         }
         if let Some(set) = self.game_sets.remove(game) {
             self.overlays = set.overlays;
             self.layouts = set.layouts;
             self.active_layout = set.active_layout;
+            if let Some([distance, width, height, offset]) = set.vr_screen {
+                (self.vr.distance, self.vr.width, self.vr.height, self.vr.offset) = (distance, width, height, offset);
+            }
             // Overlays added in versions since this set was last used.
             self.add_new_kinds();
         }
@@ -785,14 +797,18 @@ mod tests {
         // LMU for the first time: a copy of the current set to start from.
         assert!(c.switch_game("lmu"));
         assert_eq!((c.overlays.len(), c.overlays[0].x, c.layouts.len()), (n, 111, 1));
-        // Changes in LMU stay in LMU.
+        // Changes in LMU stay in LMU, the VR screen layout too (VR on/off stays shared).
         c.overlays[0].x = 222;
+        c.vr.distance = 1.5;
+        c.vr.enabled = true;
         c.overlays.truncate(3);
         c.layouts.clear();
         assert!(c.switch_game("iracing"));
         assert_eq!((c.overlays.len(), c.overlays[0].x, c.layouts.len()), (n, 111, 1), "iRacing's set is back as it was");
+        assert_eq!((c.vr.distance, c.vr.enabled), (0.9, true), "iRacing's VR screen distance, VR still on");
         assert!(c.switch_game("lmu"));
         assert_eq!((c.overlays[0].x, c.layouts.len()), (222, 0), "and LMU's");
+        assert_eq!(c.vr.distance, 1.5);
         // Overlays added in a newer version join a set brought back in (switched off).
         assert!(c.overlays.len() >= 3 && c.overlays.iter().any(|o| o.kind == "startLights" && !o.enabled));
         // Saved and loaded with the config.

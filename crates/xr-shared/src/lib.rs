@@ -67,7 +67,9 @@ impl Shared {
 /// Name of the shared memory the layer writes back to the app (created by the app, which
 /// lives longer than any game; the layer opens it for writing).
 pub const STATUS_NAME: &str = "Local\\ApexOverlaysOpenXRStatus";
-pub const STATUS_VERSION: u32 = 1;
+/// 2 adds `app` (the game's program). The app still reads version 1 (from a layer loaded into a
+/// game before an update), without it.
+pub const STATUS_VERSION: u32 = 2;
 
 /// What the layer reports while it runs inside a game: that it is there (and so the game is
 /// in OpenXR mode), which OpenXR runtime it is on, and anything that stops the overlays.
@@ -88,11 +90,14 @@ pub struct LayerStatus {
     pub runtime: [u8; 64],
     /// Why the overlays are off or were dropped, NUL-terminated UTF-8 ("" = none).
     pub problem: [u8; 128],
+    /// The game the layer is running in: its program's file name without ".exe"
+    /// (e.g. "iRacingSim64DX11", "Le Mans Ultimate"), NUL-terminated UTF-8.
+    pub app: [u8; 64],
 }
 
 impl Default for LayerStatus {
     fn default() -> Self {
-        Self { magic: MAGIC, version: STATUS_VERSION, alive_ms: 0, shown: 0, api: 0, runtime: [0; 64], problem: [0; 128] }
+        Self { magic: MAGIC, version: STATUS_VERSION, alive_ms: 0, shown: 0, api: 0, runtime: [0; 64], problem: [0; 128], app: [0; 64] }
     }
 }
 

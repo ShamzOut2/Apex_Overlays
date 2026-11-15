@@ -118,6 +118,8 @@ struct Status {
     tried: Option<Instant>,
     /// The texts last written (they are only rewritten when they change).
     written: Option<(String, String)>,
+    /// The game's program name (see `LayerStatus::app`).
+    app: String,
 }
 
 impl Status {
@@ -145,8 +147,10 @@ impl Status {
                 let mut text = LayerStatus::default();
                 put_text(&mut text.runtime, runtime);
                 put_text(&mut text.problem, problem);
+                put_text(&mut text.app, &self.app);
                 std::ptr::write_volatile(std::ptr::addr_of_mut!((*p).runtime), text.runtime);
                 std::ptr::write_volatile(std::ptr::addr_of_mut!((*p).problem), text.problem);
+                std::ptr::write_volatile(std::ptr::addr_of_mut!((*p).app), text.app);
                 std::ptr::write_volatile(std::ptr::addr_of_mut!((*p).magic), MAGIC);
                 std::ptr::write_volatile(std::ptr::addr_of_mut!((*p).version), STATUS_VERSION);
                 self.written = Some((runtime.to_string(), problem.to_string()));
@@ -375,7 +379,11 @@ unsafe extern "system" fn create_api_layer_instance(
     let runtime = catch_unwind(|| unsafe { runtime_name(next_gipa, inst) }).ok().flatten().unwrap_or_default();
     let problem = if next.is_none() { "the layer could not find the runtime's functions".to_string() } else { String::new() };
     if let Ok(mut s) = STATE.lock() {
-        *s = Some(State { next, sessions: vec![], runtime: runtime.clone(), problem, status: Status::default() });
+        // Which game this is, so the app can name it (iRacing, Le Mans Ultimate...).
+        let app = std::env::current_exe().ok().and_then(|p| p.file_stem().map(|s| s.to_string_lossy().into_owned())).unwrap_or_default();
+        let mut status = Status::default();
+        status.app = app;
+        *s = Some(State { next, sessions: vec![], runtime: runtime.clone(), problem, status });
     }
     log(&format!("Apex Overlays layer {} loaded ({LAYER_NAME}) on the {runtime} runtime", env!("CARGO_PKG_VERSION")));
     xr::Result::SUCCESS

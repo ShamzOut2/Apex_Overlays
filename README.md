@@ -14,16 +14,15 @@ whichever game you start, or the one you pick under *Settings → General → Ga
 does all the race maths once in a small native core (Rust), and draws each overlay as a minimal web page
 in a transparent, click-through window. The same pages work as **OBS browser sources** for streaming.
 
-| Relative | Standings (with league classes) | Track map |
-|---|---|---|
-| ![Relative](docs/images/relative.png) | ![Standings](docs/images/standings.png) | ![Track map](docs/images/trackmap.png) |
+![Apex Overlays: track map, standings, relative, weather forecast, start lights, driver inputs and fuel](docs/promo/apex-overlays-hero-1920x1080.png)
 
-| Fuel calculator | Battle box | Tyre advisor |
-|---|---|---|
-| ![Fuel](docs/images/fuel.png) | ![Battle](docs/images/battle.png) | ![Tyres](docs/images/tyres.png) |
+| Relative and standings | Track map |
+|---|---|
+| ![Relative and standings](docs/promo/apex-overlays-timing-1600x900.png) | ![Track map](docs/promo/apex-overlays-track-map-1600x900.png) |
 
-![Driver inputs](docs/images/inputs.png)
-![Session info](docs/images/session.png)
+| Weather forecast and start lights | iRacing and Le Mans Ultimate |
+|---|---|
+| ![Weather forecast and start lights](docs/promo/apex-overlays-weather-and-start-lights-1600x900.png) | ![The settings window](docs/promo/apex-overlays-two-games-1600x900.png) |
 
 ## Overlays
 
@@ -37,13 +36,16 @@ in a transparent, click-through window. The same pages work as **OBS browser sou
 | **Battle box** | The car ahead and behind — in the race overall, in your class, or physically nearest on track (pick per overlay): gap, how fast it is closing (s/lap), laps until you catch them (or they catch you), and their last lap against yours. |
 | **Flags** | A digital (LED-style) flag panel showing the flags out right now — green, yellow and waving yellow, caution, blue, white, chequered, red, black, meatball, furled black, debris, crossed flags, one-lap-to-green, 5/10 to go and more — plus start lights. Every flag can be switched on or off. |
 | **Weather** | Live weather with a wind compass that turns with your car (or the car you are watching when spectating or in a replay), showing head/tail and crosswind, plus track and air temperature, humidity, pressure, sky, rain and wetness. |
+| **Weather forecast** | The weather now and to come in 4 or 5 tiles, every 15 or 30 minutes or every hour: sky, temperature and chance of rain, glowing blue when rain is likely. Le Mans Ultimate publishes a forecast for each session; iRacing shares only the conditions now, which it shows. |
+| **Start lights** | Realistic start lights that appear only for the start: an optional countdown, red lights, all red when set, then green (or lights out). Rolling starts get amber pace-lap lights, “1 LAP TO GREEN” and a green “GO”. |
+| **Delta bar** | Live delta to your best lap this session or your all-time best for the car and track, with a bar, your predicted lap time and whether you are gaining or losing. |
+| **Safety alert** | Appears only when it matters: a yellow or a car with the meatball ahead, a faster class closing from behind, or a car ahead serving a slow-down. |
 | **Data box** | A small box with one value of your choice (speed, delta, fuel, position, gaps, track temperature, iRating change…). Add as many as you like, each with its own size and look. |
 | **Tyre advisor** | Tells you when to change between slicks and wets (**BOX FOR WETS / BOX FOR SLICKS**). It combines track wetness, the rain trend, what your class is running and the wet/dry lap-time crossover, and explains why. |
 | **Session info** | Track and air temperature (with trend), wetness, rain, declared wet, wind, humidity, sky, time or laps remaining, sim clock, SOF, incidents and flags. You can pick and order any of these fields. |
 | **Spotter** | Left and right bars that stay invisible until a car is alongside you. A block shows where the other car overlaps yours (ahead or behind), and the bar turns red when you are three wide or have two cars on one side. |
 | **Pit lane** | Appears when you head for the pits. On the way in, a **BRAKE** sign lights up when it is time to brake for the pit entry line, with the distance to it. In the lane: your speed against the limit and a pit limiter light (solid green when on, flashing red when off). In your box: **WAIT** while you are serviced (with repair time) and a flashing **GO** when done. Then a **PIT LANE EXIT** sign with the distance to the line, and a flashing reminder to switch the limiter off once you cross it. Hides itself 5 s after you leave (adjustable). The pit lines are learned from cars crossing them and remembered per track. |
 | **Incident tracker** | Every incident you pick up: what it most likely was (off track, loss of control, hitting a wall, contact with a car), the points, your total against the limit, and who you hit (marked ✓ when their count went up too). Each one has a **replay button** that jumps the iRacing replay to a few seconds before it; the buttons only work (and the overlay only takes mouse clicks) while a replay is playing. |
-| **Garage 61** | A **live delta to your Garage 61 best lap** (or the fastest lap in your teams), with sector-by-sector deltas, plus your personal best and your teams' leaderboard for the current car and track. Laps can be limited to a period (all time, this season, last 30 days…) and to similar conditions (track temperature, dry or wet). The reference lap's telemetry is downloaded once and kept as a few kB on disk. |
 
 ### Relative and standings columns
 

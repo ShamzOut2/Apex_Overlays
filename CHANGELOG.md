@@ -4,6 +4,12 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 1.0.0
+
+### Improvements
+- VR in Le Mans Ultimate: the overlays show in the headset in LMU as in iRacing, drawn inside the game in OpenXR (with Virtual Desktop, Quest Link, Pimax, SteamVR’s OpenXR…) or as SteamVR overlays, picked automatically. The VR status names the game the overlays are showing in (“Connected to Le Mans Ultimate through OpenXR on Virtual Desktop”)
+- Each game keeps its own VR screen layout (distance, size, raise/lower, left/right) along with its own overlays and VR positions, switching with the game; VR on or off and how stay the same for both
+
 ## 0.9.9
 
 ### New features

@@ -1380,7 +1380,7 @@ function vrCard(): HTMLElement {
             ['openxr', 'OpenXR only (no SteamVR needed)'],
             ['steamvr', 'SteamVR overlays only'],
           ],
-          help: 'Automatic draws inside iRacing when it runs in OpenXR mode (Virtual Desktop, Quest Link, Pimax, Varjo, SteamVR…), otherwise uses SteamVR overlays',
+          help: 'Automatic draws inside the game when it runs in OpenXR (iRacing or Le Mans Ultimate, with Virtual Desktop, Quest Link, Pimax, Varjo, SteamVR…), otherwise uses SteamVR overlays',
         },
         { key: 'distance', label: 'Screen layout: distance in front', type: 'number', default: 0.9, min: 0.2, max: 5, step: 0.05, unit: 'm', help: 'Overlays placed “as on my screen” sit on an imaginary screen this far away' },
         { key: 'width', label: 'Screen layout: width', type: 'number', default: 1.2, min: 0.2, max: 6, step: 0.05, unit: 'm' },
@@ -1427,12 +1427,17 @@ function vrCard(): HTMLElement {
     h(
       'p',
       'dim small',
-      'Virtual Desktop: in the Virtual Desktop Streamer, set the OpenXR runtime to VDXR, then pick OpenXR as iRacing’s VR mode. No SteamVR needed; the status above says when the overlays are showing inside iRacing.',
+      'Virtual Desktop: in the Virtual Desktop Streamer, set the OpenXR runtime to VDXR, then pick OpenXR as iRacing’s VR mode. No SteamVR needed; the status above says when the overlays are showing inside the game, and which game.',
     ),
     h(
       'p',
       'dim small',
-      'OpenXR: the first time, Windows asks for permission to register Apex Overlays’ OpenXR layer, so every game can load it. Restart iRacing after turning VR on. It works alongside other OpenXR layers such as NextLevelXR or OpenXR Toolkit (Direct3D 11 and 12).',
+      'Le Mans Ultimate: works the same way, in OpenXR (the overlays are drawn inside the game) or through SteamVR. Each game keeps its own overlays, VR positions and screen layout distance and size, so you can set LMU up differently from iRacing; they switch with the game.',
+    ),
+    h(
+      'p',
+      'dim small',
+      'OpenXR: the first time, Windows asks for permission to register Apex Overlays’ OpenXR layer, so every game can load it. Restart the game after turning VR on. It works alongside other OpenXR layers such as NextLevelXR or OpenXR Toolkit (Direct3D 11 and 12).',
     ),
     h(
       'p',
