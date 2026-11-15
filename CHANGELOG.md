@@ -4,6 +4,11 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### Improvements
+- Driver inputs: engine RPM can be shown under the speed (Elements → RPM, off by default). It turns the shift lights’ “shift now” colour at the car’s shift point
+
 ## 0.9.7
 
 ### Fixes

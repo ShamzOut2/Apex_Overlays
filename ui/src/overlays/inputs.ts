@@ -9,7 +9,7 @@ const WHEEL_SVG = `<svg viewBox="-50 -50 100 100"><circle r="42" fill="none" str
 export const inputs: OverlayDef = {
   kind: 'inputs',
   name: 'Driver inputs',
-  description: 'Throttle, brake and clutch bars with a scrolling input trace, steering wheel, gear and speed. Updates every telemetry tick.',
+  description: 'Throttle, brake and clutch bars with a scrolling input trace, steering wheel, gear, speed and RPM. Updates every telemetry tick.',
   topics: ['player', 'session', 'car'],
   size: [420, 140],
   settings: [
@@ -49,6 +49,7 @@ export const inputs: OverlayDef = {
     { key: 'showWheel', label: 'Steering wheel', type: 'bool', default: true, group: 'Elements' },
     { key: 'showGear', label: 'Gear', type: 'bool', default: true, group: 'Elements' },
     { key: 'showSpeed', label: 'Speed', type: 'bool', default: true, group: 'Elements' },
+    { key: 'showRpm', label: 'RPM', type: 'bool', default: false, group: 'Elements', help: 'Engine RPM under the speed. It turns the “shift now” colour at the car’s shift point' },
     {
       key: 'valuePosition', when: (v) => v.showBars !== false,
       label: 'Percent values',
@@ -104,13 +105,16 @@ export const inputs: OverlayDef = {
     wheel.style.color = s.wheelColor as string;
     const gear = h('div', 'gear');
     const spd = h('div', 'speed');
-    side.append(wheel, gear, spd);
+    const rpm = h('div', 'rpm');
+    rpm.style.setProperty('--rpm-shift', s.shiftFlashColor as string);
+    side.append(wheel, gear, spd, rpm);
     show(canvas, s.showTrace as boolean);
     show(bars, s.showBars as boolean);
     show(wheel, s.showWheel as boolean);
     show(gear, s.showGear as boolean);
     show(spd, s.showSpeed as boolean);
-    show(side, (s.showWheel || s.showGear || s.showSpeed) as boolean);
+    show(rpm, !!s.showRpm);
+    show(side, (s.showWheel || s.showGear || s.showSpeed || s.showRpm) as boolean);
     main.append(canvas, bars, side);
     root.append(lights, main);
 
@@ -217,6 +221,12 @@ export const inputs: OverlayDef = {
         text(gear, p.gear === -1 ? 'R' : p.gear === 0 ? 'N' : String(p.gear));
         text(spd, `${Math.round(f.speed(p.speed, ctx.units))}`);
         spd.dataset.unit = f.speedUnit(ctx.units);
+        if (s.showRpm) {
+          text(rpm, String(Math.max(0, Math.round(p.rpm))));
+          // At the shift point: the shift lights' "shift now" point when known, else iRacing's.
+          const at = plan(p.gear)?.flashAt || p.shiftRpm;
+          toggle(rpm, 'shift', at > 0 && p.rpm >= at);
+        }
 
         if (s.showTrace) trace.push(p);
       },

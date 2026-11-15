@@ -225,6 +225,9 @@ body.preview { background: #2a2f38 repeating-conic-gradient(#323843 0 25%, #2a2f
 .inputs .gear { font-size: 1.6em; font-weight: 800; line-height: 1.1; }
 .inputs .speed { font-size: 0.95em; color: var(--dim); }
 .inputs .speed::after { content: ' ' attr(data-unit); font-size: 0.8em; }
+.inputs .rpm { font-size: 0.95em; color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.inputs .rpm::after { content: ' rpm'; font-size: 0.8em; }
+.inputs .rpm.shift { color: var(--rpm-shift); font-weight: 700; }
 
 /* Battle box */
 .panel.battle { padding: 0.35em; gap: 0.35em; }
