@@ -305,6 +305,8 @@ export interface TrackMap {
   trackId: number;
   trackName: string;
   points: [number, number][] | null;
+  /** The pit lane as dashes (each from one end to the other), official maps only. */
+  pit?: [[number, number], [number, number]][];
   source: string | null;
   recording: boolean;
   progress: number;

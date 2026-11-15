@@ -25,6 +25,10 @@ pub struct TrackMap {
     /// See [`MAP_VERSION`] (0 in files written before it existed).
     #[serde(default)]
     pub version: u32,
+    /// The pit lane, as the dashes iRacing's map draws it (each from one end to the other),
+    /// in the same unit box as `points`. Official maps only.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pit: Vec<[[f32; 2]; 2]>,
 }
 
 impl TrackMap {
@@ -211,7 +215,14 @@ impl Recorder {
             p[0] -= err[0] * k;
             p[1] -= err[1] * k;
         }
-        let map = TrackMap { track_id: self.track_id, name: self.track_name.clone(), points: normalise(&pts), source: "recorded".into(), version: MAP_VERSION };
+        let map = TrackMap {
+            track_id: self.track_id,
+            name: self.track_name.clone(),
+            points: normalise(&pts),
+            source: "recorded".into(),
+            version: MAP_VERSION,
+            pit: vec![],
+        };
         if let Some(p) = self.path(self.track_id) {
             if let Some(dir) = p.parent() {
                 let _ = std::fs::create_dir_all(dir);
@@ -267,22 +278,36 @@ fn fill_gaps(bins: &[Option<[f64; 2]>]) -> Vec<[f64; 2]> {
 
 /// Scale into a unit box preserving aspect ratio, centred. Y is flipped for screen space.
 pub fn normalise(pts: &[[f64; 2]]) -> Vec<[f32; 2]> {
-    let (mut minx, mut miny, mut maxx, mut maxy) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
-    for p in pts {
-        minx = minx.min(p[0]);
-        maxx = maxx.max(p[0]);
-        miny = miny.min(p[1]);
-        maxy = maxy.max(p[1]);
+    let f = Frame::of(pts);
+    pts.iter().map(|p| f.apply(*p)).collect()
+}
+
+/// The unit box of an outline, so other points (the pit lane) can be placed with it.
+#[derive(Debug, Clone, Copy)]
+pub struct Frame {
+    min: [f64; 2],
+    span: f64,
+    off: [f64; 2],
+}
+
+impl Frame {
+    pub fn of(pts: &[[f64; 2]]) -> Self {
+        let (mut minx, mut miny, mut maxx, mut maxy) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+        for p in pts {
+            minx = minx.min(p[0]);
+            maxx = maxx.max(p[0]);
+            miny = miny.min(p[1]);
+            maxy = maxy.max(p[1]);
+        }
+        let span = (maxx - minx).max(maxy - miny).max(1e-9);
+        Self { min: [minx, miny], span, off: [(span - (maxx - minx)) / 2.0, (span - (maxy - miny)) / 2.0] }
     }
-    let span = (maxx - minx).max(maxy - miny).max(1e-9);
-    let (ox, oy) = ((span - (maxx - minx)) / 2.0, (span - (maxy - miny)) / 2.0);
-    pts.iter()
-        .map(|p| {
-            let x = (p[0] - minx + ox) / span;
-            let y = 1.0 - (p[1] - miny + oy) / span;
-            [(x * 1e4).round() as f32 / 1e4, (y * 1e4).round() as f32 / 1e4]
-        })
-        .collect()
+
+    pub fn apply(&self, p: [f64; 2]) -> [f32; 2] {
+        let x = (p[0] - self.min[0] + self.off[0]) / self.span;
+        let y = 1.0 - (p[1] - self.min[1] + self.off[1]) / self.span;
+        [(x * 1e4).round() as f32 / 1e4, (y * 1e4).round() as f32 / 1e4]
+    }
 }
 
 #[cfg(test)]
@@ -349,7 +374,7 @@ mod tests {
     #[test]
     fn old_recordings_are_turned_round() {
         // Recorded before version 2: x was north, y (down) was 1 - east.
-        let old = TrackMap { track_id: 1, name: "T".into(), points: vec![[0.9, 0.2]], source: "recorded".into(), version: 0 };
+        let old = TrackMap { track_id: 1, name: "T".into(), points: vec![[0.9, 0.2]], source: "recorded".into(), version: 0, pit: vec![] };
         let new = old.clone().upgraded();
         // East 0.8, north 0.9: x 0.8, y 0.1.
         let p = new.points[0];
@@ -365,7 +390,7 @@ mod library_tests {
     use super::*;
 
     fn map(id: i64, source: &str) -> TrackMap {
-        TrackMap { track_id: id, name: "T".into(), points: vec![[0.0, 0.0]; BINS], source: source.into(), version: MAP_VERSION }
+        TrackMap { track_id: id, name: "T".into(), points: vec![[0.0, 0.0]; BINS], source: source.into(), version: MAP_VERSION, pit: vec![] }
     }
 
     #[test]

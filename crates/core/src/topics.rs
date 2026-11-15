@@ -994,6 +994,8 @@ pub struct TrackMapOut<'a> {
     pub track_id: i64,
     pub track_name: &'a str,
     pub points: Option<&'a [[f32; 2]]>,
+    /// The pit lane as dashes (official maps), in the same unit box as `points`.
+    pub pit: &'a [[[f32; 2]; 2]],
     pub source: Option<&'a str>,
     pub recording: bool,
     pub progress: f32,
@@ -1011,6 +1013,7 @@ pub fn trackmap(e: &Engine) -> TrackMapOut<'_> {
         track_id: e.info.track_id,
         track_name: &e.info.track_display_name,
         points: e.map.shown(e.cfg.track_outline != "recorded").map(|m| m.points.as_slice()),
+        pit: e.map.shown(e.cfg.track_outline != "recorded").map(|m| m.pit.as_slice()).unwrap_or(&[]),
         source: e.map.shown(e.cfg.track_outline != "recorded").map(|m| m.source.as_str()),
         recording: e.map.recording(),
         progress: round(e.map.progress(), 2),

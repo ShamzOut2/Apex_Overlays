@@ -4,6 +4,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_bristol/101-bristol/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -13,6 +14,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_vegas/103-vegas-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -22,6 +24,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_phoenix/104-phoenix-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -31,6 +34,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_phoenix/105-phoenix-road/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -40,6 +44,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_stafford/11-stafford-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -49,6 +54,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_vegas/110-vegas-legends/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -58,6 +64,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_vegas/111-vegas-roadlong/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -67,6 +74,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_vegas/112-vegas-roadshort/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -76,6 +84,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_vegas/113-vegas-inflegends/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -85,6 +94,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_vegas/114-vegas-roadcombined/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -94,6 +104,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_darlington/115-darlington/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -103,6 +114,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_talladega/116-talladega/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -112,6 +124,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_texas/117-texas-infieldrclong/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -121,6 +134,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_texas/118-texas-infieldrcshorta/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -130,6 +144,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_texas/119-texas-infieldrcshortb/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -139,6 +154,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oxford/12-oxford-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -148,6 +164,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_texas/120-texas-legendsoval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -157,6 +174,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_texas/121-texas-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -166,6 +184,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_texas/122-texas-roadcourse/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -175,6 +194,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_chicagoland/123-chicagoland/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -184,6 +204,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_michigan/124-michigan/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -193,6 +214,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_roadatlanta/126-roadatlanta-club/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -202,6 +224,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_roadatlanta/127-roadatlanta-full/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -211,6 +234,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_roadatlanta/128-roadatlanta-short/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -220,6 +244,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_newhampshire/129-newhampshire-chicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -229,6 +254,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_newhampshire/130-newhampshire-northoval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -238,6 +264,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_newhampshire/131-newhampshire-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -247,6 +274,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_newhampshire/132-newhampshire-southoval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -256,6 +284,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_indianapolis/133-indianapolis-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -265,6 +294,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_indianapolis/134-indianapolis-road/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -274,6 +304,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_indianapolis/135-indianapolis-motogp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -283,6 +314,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_pocono/136-pocono-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -292,6 +324,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_pocono/137-pocono-east/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -301,6 +334,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_pocono/138-pocono-south/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -310,6 +344,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_pocono/139-pocono-north/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -319,6 +354,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_southboston/14-southboston/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -328,6 +364,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_pocono/140-pocono-international/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -337,6 +374,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_summit/142-summit-jefferson-rev/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -346,6 +384,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_skidpad/143-skidpad/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -355,6 +394,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_mosport/144-mosport/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -364,6 +404,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_brandshatch/145-brandshatch-grandprix/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -373,6 +414,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_brandshatch/146-brandshatch-indy/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -382,6 +424,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_zandvoort/147-zandvoort-chicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -391,6 +434,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_zandvoort/148-zandvoort-club/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -400,6 +444,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_zandvoort/149-zandvoort-grandprix/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -409,6 +454,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_concordhalf/15-concordhalf/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -418,6 +464,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_zandvoort/150-zandvoort-national/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -427,6 +474,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_zandvoort/151-zandvoort-oostelijk/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -436,6 +484,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_phillipisland/152-phillipisland/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -445,6 +494,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_midohio/153-midohio-full/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -454,6 +504,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_midohio/154-midohio-chicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -463,6 +514,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_midohio/155-midohio-short/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -472,6 +524,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_midohio/156-midohio-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -481,6 +534,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_midohio/157-midohio-altoval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -490,6 +544,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lagunaseca/158-lagunaseca-school/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -499,6 +554,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_summit/159-summit-summit-raceway-school/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -508,6 +564,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lakeland/16-lakeland/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -517,6 +574,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_thompson/161-thompson/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -526,6 +584,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_dover/162-dover/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -535,6 +594,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_spa/163-spa-up/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -544,6 +604,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_spa/164-spa-low/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -553,6 +614,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_spa/165-spa-combined/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -562,6 +624,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_okayama/166-okayama-full/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -571,6 +634,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_okayama/167-okayama-short/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -580,6 +644,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_suzuka/168-suzuka-grandprix/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -589,6 +654,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_iowa/169-iowa-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -598,6 +664,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lanier/17-lanier/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -607,6 +674,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_iowa/170-iowa-road/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -616,6 +684,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_iowa/171-iowa-legends/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -625,6 +694,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_iowa/172-iowa-inflegends/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -634,6 +704,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_suzuka/173-suzuka-moto/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -643,6 +714,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_suzuka/174-suzuka-east/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -652,6 +724,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_suzuka/175-suzuka-west/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -661,6 +734,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_suzuka/176-suzuka-westchicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -670,6 +744,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_indianapolis/178-indianapolis-ovalindypit/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -679,6 +754,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_longbeach/179-longbeach/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -688,6 +764,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_roadamerica/18-roadamerica-full/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -697,6 +774,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oulton/180-oulton-international/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -706,6 +784,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oulton/181-oulton-fosters/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -715,6 +794,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oulton/182-oulton-island/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -724,6 +804,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oulton/183-oulton-intbrittens/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -733,6 +814,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oulton/184-oulton-inthislop/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -742,6 +824,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oulton/185-oulton-intnochicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -751,6 +834,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oulton/186-oulton-fosterswithhislop/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -760,6 +844,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oulton/187-oulton-islandhistoric/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -769,6 +854,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_kentucky/188-kentucky-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -778,6 +864,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_kentucky/189-kentucky-legend/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -787,6 +874,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_irwindale/19-irwindale-inner/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -796,6 +884,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_newsmyrna/190-newsmyrna/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -805,6 +894,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_daytona_2011/191-daytona-2011-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -814,6 +904,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_daytona_2011/192-daytona-2011-road/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -823,6 +914,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_daytona_2011/193-daytona-2011-bike/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -832,6 +924,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_daytona_2011/194-daytona-2011-short/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -841,6 +934,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_twinring/195-twinring-fullrc/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -850,6 +944,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_twinring/196-twinring-east/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -859,6 +954,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_twinring/197-twinring-west/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -868,6 +964,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_twinring/198-twinring-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -877,6 +974,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_zolder/199-zolder-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -886,6 +984,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_homestead/20-homestead-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -895,6 +994,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_zolder/200-zolder-alt/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -904,6 +1004,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_langley/201-langley/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -913,6 +1014,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oran/202-oran-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -922,6 +1024,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_rockingham/203-rockingham-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -931,6 +1034,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_rockingham/204-rockingham-road/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -940,6 +1044,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_rockingham/205-rockingham-infroad/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -949,6 +1054,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_rockingham/206-rockingham-shortroad/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -958,6 +1064,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oran/207-oran-north/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -967,6 +1074,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oran/208-oran-south/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -976,6 +1084,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oran/209-oran-northa/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -985,6 +1094,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_homestead/21-homestead-roada/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -994,6 +1104,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oran/210-oran-northb/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1003,6 +1114,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oran/211-oran-moto/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1012,6 +1124,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_interlagos/212-interlagos-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1021,6 +1134,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_interlagos/213-interlagos-moto/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1030,6 +1144,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_kansas/214-kansas-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1039,6 +1154,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_kansas/215-kansas-full/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1048,6 +1164,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_kansas/216-kansas-short/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1057,6 +1174,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_irwindale/217-irwindale-figureeight/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1066,6 +1184,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_montreal/218-montreal/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1075,6 +1194,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_bathurst/219-bathurst/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1084,6 +1204,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_homestead/22-homestead-roadb/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1093,6 +1214,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_newjersey/220-newjersey-full/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1102,6 +1224,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_newjersey/221-newjersey-chicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1111,6 +1234,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_newhampshire/222-newhampshire-legends/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1120,6 +1244,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_newjersey/223-newjersey-firstchicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1129,6 +1254,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_newjersey/224-newjersey-secondchicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1138,6 +1264,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_california/225-california-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1147,6 +1274,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_california/226-california-competition/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1156,6 +1284,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_california/227-california-moto/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1165,6 +1294,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_california/228-california-interiora/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1174,6 +1304,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_cota/229-cota-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1183,6 +1314,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_irwindale/23-irwindale-outer/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1192,6 +1324,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_cota/230-cota-east/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1201,6 +1334,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_cota/231-cota-west/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1210,6 +1344,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_irp/232-irp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1219,6 +1354,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_donington/233-donington-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1228,6 +1364,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_donington/234-donington-national/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1237,6 +1374,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_gateway/238-gateway-road/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1246,6 +1384,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_monza/239-monza-full/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1255,6 +1394,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_summit/24-summit-summit-short/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1264,6 +1404,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_monza/240-monza-historic/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1273,6 +1414,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_monza/241-monza-junior/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1282,6 +1424,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_monza/242-monza-nochicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1291,6 +1434,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_monza/243-monza-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1300,6 +1444,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_monza/244-monza-gpsecondchicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1309,6 +1454,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_monza/245-monza-ovalleft/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1318,6 +1464,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_monza/246-monza-historicsecondchicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1327,6 +1474,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_monza/247-monza-combinedchicanes/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1336,6 +1484,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_fiveflags/248-fiveflags/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1345,6 +1494,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_nurburgring_nordschleife/249-nurburgring-nordschleife/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1354,6 +1504,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_nurburgring_gp/250-nurburgring-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1363,6 +1514,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_nurburgring_combined/252-nurburgring-combined/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1372,6 +1524,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_nurburgring_nordschleife/253-nurburgring-nordschleifetourist/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1381,6 +1534,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_nurburgring_gp/255-nurburgring-gpnochicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1390,6 +1544,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_southernnational/256-southernnational/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1399,6 +1554,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_nurburgring_gp/257-nurburgring-gpshort/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1408,6 +1564,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_nurburgring_gp/259-nurburgring-sprintchicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1417,6 +1574,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_daytona_2011/26-daytona-road/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1426,6 +1584,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_nurburgring_gp/260-nurburgring-sprintshort/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1435,6 +1594,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_nurburgring_gp/261-nurburgring-mullenbachschleife/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1444,6 +1604,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_nurburgring_combined/262-nurburgring-combinedshortb/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1453,6 +1614,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_nurburgring_combined/263-nurburgring-combinedshorta/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1462,6 +1624,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_nurburgring_combined/264-nurburgring-combinedlong/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1471,6 +1634,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_imola/266-imola-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1480,6 +1644,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_imola/267-imola-moto/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1489,6 +1654,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lemans/268-lemans-full/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1498,6 +1664,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lemans/269-lemans-nochicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1507,6 +1674,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_daytona_2011/27-daytona-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1516,6 +1684,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_bullring/271-bullring/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1525,6 +1694,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_eldora/273-eldora/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1534,6 +1704,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_williamsgrove/274-williamsgrove/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1543,6 +1714,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lakeland/275-lakeland-dirt/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1552,6 +1724,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_michigan_2018/276-michigan-2018/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1561,6 +1734,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_pocono_2016/277-pocono-2016/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1570,6 +1744,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_volusia/279-volusia/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1579,6 +1754,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_daytona_2011/28-daytona-bike/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1588,6 +1764,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_myrtlebeach/286-myrtlebeach/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1597,6 +1774,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_bristol/287-bristol-dirt/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1606,6 +1784,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lanier/288-lanier-dirt/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1615,6 +1794,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_daytona_2011/29-daytona-short/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1624,6 +1804,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_brandshatch/290-brandshatch-rallycross/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1633,6 +1814,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_daytona/293-daytona-rallycross-long/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1642,6 +1824,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_iowa/295-iowa-rallycross/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1651,6 +1834,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_daytona/296-daytona-rallycross-short/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1660,6 +1844,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_snetterton/297-snetterton-300/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1669,6 +1854,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_snetterton/298-snetterton-200/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1678,6 +1864,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_snetterton/299-snetterton-100/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1687,6 +1874,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_irwindale/30-irwindale-outerinner/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1696,6 +1884,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_limaland/303-limaland/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1705,6 +1894,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_irp/304-irp-rallycross/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1714,6 +1904,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_knoxville/305-knoxville/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1723,6 +1914,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_phoenix/306-phoenix-rallycross/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1732,6 +1924,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_sonoma/312-sonoma-rallycross/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1741,6 +1934,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_charlottedirt/314-charlottedirt/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1750,6 +1944,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_belleisle/319-belleisle/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1759,6 +1954,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_kokomo/320-kokomo/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1768,6 +1964,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_atlanta/322-atlanta-rallycross-short/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1777,6 +1974,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_atlanta/323-atlanta-rallycross-long/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1786,6 +1984,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_tsukuba/324-tsukuba-2kfull/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1795,6 +1994,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_tsukuba/325-tsukuba-2kchicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1804,6 +2004,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_tsukuba/326-tsukuba-2kshort/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1813,6 +2014,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_tsukuba/327-tsukuba-1kfull/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1822,6 +2024,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_tsukuba/328-tsukuba-1kouter/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1831,6 +2034,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_tsukuba/329-tsukuba-1kchicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1840,6 +2044,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_martinsville/33-martinsville/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1849,6 +2054,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_chilibowl/331-chilibowl/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1858,6 +2064,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_wildwest/332-wildwest-full/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1867,6 +2074,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_tsukuba/333-tsukuba-1kfullreverse/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1876,6 +2084,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_wildhorse/334-wildhorse/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1885,6 +2094,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_silverstone_2019/341-silverstone-2019-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1894,6 +2104,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_silverstone_2019/342-silverstone-2019-international/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1903,6 +2114,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_silverstone_2019/343-silverstone-2019-national/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1912,6 +2124,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_fairbury/344-fairbury/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1921,6 +2134,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_barcelona/345-barcelona-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1930,6 +2144,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_barcelona/346-barcelona-national/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1939,6 +2154,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_barcelona/347-barcelona-club/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1948,6 +2164,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_barcelona/348-barcelona-moto/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1957,6 +2174,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_barcelona/349-barcelona-historic/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1966,6 +2184,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lernerville/351-lernerville/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1975,6 +2194,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_limerock_2019/352-limerock-2019-classic/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1984,6 +2204,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_limerock_2019/353-limerock-2019-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -1993,6 +2214,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_limerock_2019/354-limerock-2019-chicanes/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2002,6 +2224,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_limerock_2019/355-limerock-2019-chicanewestb/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2011,6 +2234,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_texas_2020/357-texas-2020-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2020,6 +2244,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lankebanen/358-lankebanen-hellrx/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2029,6 +2254,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lankebanen/359-lankebanen-club/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2038,6 +2264,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lankebanen/360-lankebanen-rallyshort/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2047,6 +2274,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lankebanen/361-lankebanen-road-roadshort/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2056,6 +2284,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_homestead/362-homestead-ovalindy/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2065,6 +2294,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lankebanen/363-lankebanen-road-roadlong/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2074,6 +2304,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_texas_2020/364-texas-2020-legendsoval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2083,6 +2314,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_bristol/365-bristol-fullpit/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2092,6 +2324,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_northwilkesboro/366-northwilkesboro/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2101,6 +2334,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_kentucky_2020/371-kentucky-2020-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2110,6 +2344,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_weedsport/373-weedsport/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2119,6 +2354,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_nashville/374-nashville-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2128,6 +2364,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_nashville/380-nashville-mini/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2137,6 +2374,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_daytona_2011/381-daytona-2011-roadnascar2020/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2146,6 +2384,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_crandon/382-crandon-full/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2155,6 +2394,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_crandon/383-crandon-short/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2164,6 +2404,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_iracingss/384-iracingss/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2173,6 +2414,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_barcelona/386-barcelona-rallycross/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2182,6 +2424,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_cedarlake/387-cedarlake/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2191,6 +2434,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_irwindale/388-irwindale-figureeightjump/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2200,6 +2444,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_hockenheim/390-hockenheim-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2209,6 +2454,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_hockenheim/391-hockenheim-nationala/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2218,6 +2464,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_hockenheim/392-hockenheim-nationalb/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2227,6 +2474,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_hockenheim/393-hockenheim-shorta/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2236,6 +2484,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_hockenheim/394-hockenheim-shortb/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2245,6 +2494,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_hockenheim/395-hockenheim-outer/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2254,6 +2504,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_barkriver/396-barkriver/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2263,6 +2514,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_mtwashington/398-mtwashington-climb/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2272,6 +2524,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_mtwashington/399-mtwashington-reverse/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2281,6 +2534,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_nashvilless/400-nashvilless/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2290,6 +2544,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_spielberg/403-spielberg-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2299,6 +2554,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_spielberg/404-spielberg-national/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2308,6 +2564,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_chicago/405-chicago/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2317,6 +2574,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_spielberg/407-spielberg-north/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2326,6 +2584,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_silverstone/41-silverstone-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2335,6 +2594,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_hungaroring/413-hungaroring/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2344,6 +2604,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_hickory/414-hickory/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2353,6 +2614,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_phoenix_2021/418-phoenix-2021-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2362,6 +2624,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_phoenix_2021/419-phoenix-2021-ovalopen/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2371,6 +2634,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_silverstone/42-silverstone-historicgp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2380,6 +2644,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_knockhill/423-knockhill-international/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2389,6 +2654,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_knockhill/424-knockhill-internationalrev/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2398,6 +2664,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_knockhill/425-knockhill-national/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2407,6 +2674,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_knockhill/426-knockhill-nationalrev/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2416,6 +2684,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_knockhill/427-knockhill-rallycross/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2425,6 +2694,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_hockenheim/428-hockenheim-pec-peceast/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2434,6 +2704,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_hockenheim/429-hockenheim-pec-pecouter/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2443,6 +2714,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_silverstone/43-silverstone-international/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2452,6 +2724,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_hockenheim/430-hockenheim-pec-pecwest/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2461,6 +2734,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_hockenheim/431-hockenheim-pec-pechandling/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2470,6 +2744,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_watkinsglen/432-watkinsglen-2021-classic/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2479,6 +2754,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_watkinsglen/433-watkinsglen-2021-cupcircuit/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2488,6 +2764,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_watkinsglen/434-watkinsglen-2021-fullcourse/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2497,6 +2774,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_watkinsglen/435-watkinsglen-2021-fullnoloop/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2506,6 +2784,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_knockhill/436-knockhill-trioval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2515,6 +2794,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lacoliseum/437-lacoliseum/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2524,6 +2804,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_pevely/438-pevely/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2533,6 +2814,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_winton/439-winton-national/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2542,6 +2824,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_silverstone/44-silverstone-national/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2551,6 +2834,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_winton/440-winton-club/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2560,6 +2844,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_bristol/442-bristol-dirt-2022/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2569,6 +2854,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_sandown/443-sandown/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2578,6 +2864,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_fuji/444-fuji-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2587,6 +2874,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_fuji/445-fuji-nochicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2596,6 +2884,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_portroyal/446-portroyal/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2605,6 +2894,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_atlanta/447-atlanta-2022-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2614,6 +2904,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_indianapolis/448-indianapolis-2022-road/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2623,6 +2914,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oschersleben/449-oschersleben-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2632,6 +2924,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_silverstone/45-silverstone-southern/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2641,6 +2934,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_rudskogen/451-rudskogen/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2650,6 +2944,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_wheatland/452-wheatland/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2659,6 +2954,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_indianapolis/453-indianapolis-2022-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2668,6 +2964,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oschersleben/454-oschersleben-alt/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2677,6 +2974,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oschersleben/455-oschersleben-bcourse/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2686,6 +2984,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oschersleben/456-oschersleben-ccourse/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2695,6 +2994,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lincoln/462-lincoln/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2704,6 +3004,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_magnycours/463-magnycours-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2713,6 +3014,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_virginia/465-virginia-2022-full/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2722,6 +3024,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_virginia/466-virginia-2022-grand/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2731,6 +3034,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_virginia/467-virginia-2022-north/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2740,6 +3044,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_virginia/468-virginia-2022-south/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2749,6 +3054,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_virginia/469-virginia-2022-patriot/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2758,6 +3064,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_lagunaseca/47-lagunaseca/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2767,6 +3074,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_daytona/470-daytona-rallycross-long-nojoker/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2776,6 +3084,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_daytona/471-daytona-rallycross-short-nojoker/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2785,6 +3094,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_phoenix/472-phoenix-rallycross-nojoker/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2794,6 +3104,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_jerez/473-jerez-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2803,6 +3114,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_jerez/474-jerez-moto/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2812,6 +3124,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_aragon/475-aragon-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2821,6 +3134,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_aragon/476-aragon-national/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2830,6 +3144,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_aragon/477-aragon-west/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2839,6 +3154,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_aragon/478-aragon-moto/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2848,6 +3164,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_aragon/479-aragon-nationalmoto/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2857,6 +3174,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_aragon/480-aragon-outer/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2866,6 +3184,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_willow/481-willow-international/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2875,6 +3194,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_aragon/482-aragon-tc/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2884,6 +3204,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_chicago/483-chicago-2023/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2893,6 +3214,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_zandvoort/485-zandvoort-2023-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2902,6 +3224,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_zandvoort/486-zandvoort-2023-gpchicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2911,6 +3234,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_zandvoort/487-zandvoort-2023-nationaal/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2920,6 +3244,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_zandvoort/488-zandvoort-2023-oostelijk/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2929,6 +3254,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_ledenon/489-ledenon/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2938,6 +3264,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_kern/493-kern-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2947,6 +3274,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_kern/494-kern-dirt/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2956,6 +3284,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_kern/496-kern-legends/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2965,6 +3294,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_kern/497-kern-dirtmini/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2974,6 +3304,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_mugello/498-mugello-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2983,6 +3314,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_mugello/499-mugello-short/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -2992,6 +3324,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_roadamerica/50-roadamerica-bend/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3001,6 +3334,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_slinger/500-slinger-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3010,6 +3344,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_misano/501-misano-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3019,6 +3354,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_misano/502-misano-gp2007/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3028,6 +3364,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_misano/503-misano-historicgp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3037,6 +3374,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_misano/504-misano-club/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3046,6 +3384,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_misano/505-misano-truck/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3055,6 +3394,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_slinger/506-slinger-figure8/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3064,6 +3404,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_limerock_2019/508-limerock-2019-school/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3073,6 +3414,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_algarve/509-algarve-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3082,6 +3424,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_atlanta/51-atlanta-roadcourse/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3091,6 +3434,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_algarve/510-algarve-gpchicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3100,6 +3444,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_algarve/511-algarve-moto/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3109,6 +3454,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_algarve/512-algarve-motochicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3118,6 +3464,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_millbridge/513-millbridge/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3127,6 +3474,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_kokomo/514-kokomo-tiresout/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3136,6 +3484,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_navarra/515-navarra-speedlong/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3145,6 +3494,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_navarra/516-navarra-speedmedium/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3154,6 +3504,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_navarra/517-navarra-speedshort/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3163,6 +3514,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oswego/518-oswego-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3172,6 +3524,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oswego/519-oswego-mini/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3181,6 +3534,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_atlanta/52-atlanta-legendsoval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3190,6 +3544,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_oswego/520-oswego-dirt/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3199,6 +3554,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_sachsenring/521-sachsenring/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3208,6 +3564,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_indianapolis/522-indianapolis-2022-ovalnascar/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3217,6 +3574,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_spa/523-spa-2024-up/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3226,6 +3584,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_spa/524-spa-2024-low/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3235,6 +3594,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_spa/525-spa-2024-combined/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3244,6 +3604,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_spa/526-spa-2024-bike/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3253,6 +3614,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_cadwell/527-cadwell-full/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3262,6 +3624,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_cadwell/528-cadwell-club/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3271,6 +3634,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_cadwell/529-cadwell-moto/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3280,6 +3644,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_atlanta/53-atlanta-quadoval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3289,6 +3654,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_cadwell/530-cadwell-woodlands/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3298,6 +3664,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_husets/531-husets/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3307,6 +3674,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_thruxton/532-thruxton/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3316,6 +3684,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_miami/533-miami-marinaloop/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3325,6 +3694,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_miami/534-miami-mialoop/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3334,6 +3704,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_miami/535-miami-extendedmialoop/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3343,6 +3714,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_portland/536-portland-full/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3352,6 +3724,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_portland/537-portland-nochicane/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3361,6 +3734,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_miami/538-miami-exmarinaloop/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3370,6 +3744,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_miami/539-miami-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3379,6 +3754,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_thebend/540-thebend-gt/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3388,6 +3764,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_thebend/541-thebend-international/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3397,6 +3774,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_thebend/542-thebend-east/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3406,6 +3784,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_thebend/543-thebend-west/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3415,6 +3794,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_thebend/544-thebend-westplus/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3424,6 +3804,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_thebend/545-thebend-sprint/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3433,6 +3814,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_thebend/546-thebend-southwest/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3442,6 +3824,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_charlotte/550-charlotte-2025-legendsrc2025/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3451,6 +3834,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_charlotte/551-charlotte-2025-legendsrclong/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3460,6 +3844,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_charlotte/552-charlotte-2025-legendsrcshort/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3469,6 +3854,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_charlotte/553-charlotte-2025-roval2019/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3478,6 +3864,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_charlotte/554-charlotte-2025-roval2025/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3487,6 +3874,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_charlotte/555-charlotte-2025-rovalnochicanes/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3496,6 +3884,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_charlotte/556-charlotte-2025-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3505,6 +3894,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_charlotte/557-charlotte-2025-legendsoval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3514,6 +3904,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_charlotte/558-charlotte-2025-rallycrosslong/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3523,6 +3914,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_iowa/559-iowa-2025-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3532,6 +3924,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_gateway/560-gateway-2025-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3541,6 +3934,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_richmond/561-richmond-2025/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3550,6 +3944,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_northwilkesboro/562-northwilkesboro-2025/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3559,6 +3954,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_sonoma/563-sonoma-2025-irl05/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3568,6 +3964,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_sonoma/564-sonoma-2025-irl08/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3577,6 +3974,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_sonoma/565-sonoma-2025-irl12/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3586,6 +3984,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_sonoma/566-sonoma-2025-nascarlong/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3595,6 +3994,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_sonoma/567-sonoma-2025-nascarshort/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3604,6 +4004,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_sonoma/568-sonoma-2025-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3613,6 +4014,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_sonoma/569-sonoma-2025-short/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3622,6 +4024,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_sonoma/570-sonoma-2025-sportscar/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3631,6 +4034,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_sonoma/571-sonoma-2025-sportscaralt/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3640,6 +4044,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_mexicocity/572-mexicocity-gp/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3649,6 +4054,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_mexicocity/573-mexicocity-gphistoric/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3658,6 +4064,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_mexicocity/574-mexicocity-national/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3667,6 +4074,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_mexicocity/575-mexicocity-nationalhistoric/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3676,6 +4084,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_mexicocity/576-mexicocity-ev/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3685,6 +4094,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_mexicocity/577-mexicocity-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3694,6 +4104,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_mexicocity/578-mexicocity-ovalstadium/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3703,6 +4114,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_cota/579-cota-nascarwest/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3712,6 +4124,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_adelaide/580-adelaide/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3721,6 +4134,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_wheatland/581-wheatland-road/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3730,6 +4144,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_winton/582-winton-rallycross/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3739,6 +4154,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_rockingham/583-rockingham-2025-oval/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3748,6 +4164,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_stpete/584-stpete/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3757,6 +4174,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_barber/585-barber-2026/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3766,6 +4184,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_summit/8-summit-jefferson/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3775,6 +4194,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_summit/9-summit-summit-raceway/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3784,6 +4204,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_milwaukee/94-milwaukee/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3793,6 +4214,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_sebring/95-sebring-international/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3802,6 +4224,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_sebring/96-sebring-modified/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }
@@ -3811,6 +4234,7 @@
     "track_map": "https://members-assets.iracing.com/public/track-maps/tracks_sebring/97-sebring-club/",
     "track_map_layers": {
       "active": "active.svg",
+      "pitroad": "pitroad.svg",
       "start-finish": "start-finish.svg",
       "turns": "turns.svg"
     }

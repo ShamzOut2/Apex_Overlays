@@ -38,6 +38,11 @@ html, body {
   color: var(--text);
   font-family: var(--font);
   font-size: var(--font-size);
+  /* Theme → Keep overlay sizes when changing font: --fsa scales only the letters (em sizes,
+     and so the overlay's layout, stay as they are) and --lh keeps the standard font's line
+     spacing, so rows keep their height whatever the font. */
+  font-size-adjust: var(--fsa, none);
+  line-height: var(--lh, normal);
   font-weight: var(--weight, 500);
   font-stretch: var(--font-stretch, normal);
   font-variant-numeric: tabular-nums;
@@ -301,6 +306,8 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 /* Extra columns */
 .c-flag { font-size: 1.05em; line-height: 1; overflow: visible; }
+/* Flags are pictures in a font: keep them their size whatever the text font's fit. */
+.c-flag, .flag, .flag-emoji { font-size-adjust: none; }
 .make-logo { height: 1.15em; max-width: 100%; object-fit: contain; vertical-align: middle; }
 .make-logo.plate { background: rgba(255, 255, 255, 0.9); border-radius: 3px; padding: 0.08em 0.15em; }
 /* Without the plate, a thin light outline keeps black logos (BMW, Porsche…) readable on dark overlays. */

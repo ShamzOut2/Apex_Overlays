@@ -43,6 +43,14 @@ export const THEME: SettingDef[] = [
     help: 'Every overlay uses it; the settings window keeps its own font',
     group: 'Text',
   },
+  {
+    key: 'fontFit',
+    label: 'Keep overlay sizes when changing font',
+    type: 'bool',
+    default: true,
+    help: 'Each font’s text is sized to take the room the standard font’s does, so overlays, rows and columns stay the same size',
+    group: 'Text',
+  },
   { key: 'fontFamily', when: (v) => v.font === 'custom', label: 'Custom font', type: 'text', default: STANDARD_FONT, help: 'Any font installed on this PC, e.g. Arial Narrow; list a few, separated by commas', group: 'Text' },
   { key: 'fontSize', label: 'Base font size', type: 'number', default: 13, min: 8, max: 32, step: 0.5, unit: 'px', group: 'Text' },
   { key: 'fontWeight', label: 'Font weight', type: 'select', default: '500', options: [['400', 'Regular'], ['500', 'Medium'], ['600', 'Semi bold'], ['700', 'Bold']], group: 'Text' },
@@ -74,6 +82,71 @@ export function themeValues(stored: Values | undefined): Values {
   const t = merge(THEME, stored);
   if (stored?.font == null && typeof stored?.fontFamily === 'string' && stored.fontFamily.trim() && stored.fontFamily !== STANDARD_FONT) t.font = 'custom';
   return t;
+}
+
+/** How much bigger or smaller a font's text is drawn so it takes the room the standard
+ *  font's does (from Apex Commentator): the width of typical overlay text and how tall its
+ *  letters are, the tighter of the two (a wide font is made smaller to fit the columns, a
+ *  small one bigger as far as its letters fit the rows), and the standard font's line spacing
+ *  as a multiple of this font's size, so rows keep their height. Measured once the font has
+ *  loaded; null until then. */
+type Fit = { size: number; line: number | null; ex: number | null };
+const fits = new Map<string, Fit | null>();
+const SAMPLE = 'P12 Hamilton L. VERSTAPPEN Norris 1:23.456 +12.345 GAP INT LAP 14 / 30 Leader';
+
+function measureFit(family: string, stretch: string): Fit {
+  const c = document.createElement('canvas').getContext('2d');
+  if (!c) return { size: 1, line: null, ex: null };
+  const size = (fam: string, st: string) => {
+    c.font = `${st === 'condensed' ? 'condensed ' : ''}700 100px ${fam}`;
+    const m = c.measureText(SAMPLE);
+    // Capitals, digits and descenders: how tall the letters are.
+    const g = c.measureText('HQgjpy0189');
+    // x-height, as a share of the font size (what font-size-adjust works from).
+    const x = c.measureText('x').actualBoundingBoxAscent / 100 || null;
+    return {
+      x,
+      w: m.width,
+      h: (g.actualBoundingBoxAscent || 0) + (g.actualBoundingBoxDescent || 0) || null,
+      line: ((m.fontBoundingBoxAscent || 0) + (m.fontBoundingBoxDescent || 0)) / 100 || null,
+    };
+  };
+  const std = size(STANDARD_FONT, 'normal');
+  const mine = size(family, stretch);
+  if (!mine.w || !std.w) return { size: 1, line: null, ex: null };
+  let k = std.w / mine.w;
+  if (std.h && mine.h) k = Math.min(k, std.h / mine.h);
+  k = Math.round(Math.min(1.5, Math.max(0.6, k)) * 1000) / 1000;
+  // Only the letters are drawn k times as big (font-size-adjust: the x-height k times this
+  // font's own), so everything sized in em (rows, columns, padding) keeps its size; lines
+  // are spaced as the standard font's.
+  return { size: k, line: std.line ? Math.round(std.line * 1000) / 1000 : null, ex: mine.x ? Math.round(k * mine.x * 1000) / 1000 : null };
+}
+
+/** Size the overlay text of `el` to fit (see `fits`), now or once the font has loaded. */
+function fitFont(el: HTMLElement, id: string, family: string, stretch: string) {
+  const set = (f: Fit) => {
+    if (f.ex) el.style.setProperty('--fsa', String(f.ex));
+    else el.style.removeProperty('--fsa');
+    if (f.line) el.style.setProperty('--lh', String(f.line));
+    else el.style.removeProperty('--lh');
+  };
+  const key = `${id}|${family}|${stretch}`;
+  const known = fits.get(key);
+  if (known) return set(known);
+  set({ size: 1, line: null, ex: null });
+  if (known === null) return; // still loading
+  fits.set(key, null);
+  const first = family.split(',')[0].trim();
+  const loading = typeof document !== 'undefined' && document.fonts ? Promise.all([400, 600, 700].map((w) => document.fonts.load(`${w} 40px ${first}`))) : Promise.resolve();
+  loading
+    .catch(() => undefined)
+    .then(() => {
+      const f = measureFit(family, stretch);
+      fits.set(key, f);
+      // Only if this font is still the one in use.
+      if (el.dataset.fontKey === key) set(f);
+    });
 }
 
 /** CSS font family and width for the overlays. */
@@ -190,13 +263,23 @@ export function applyTheme(stored: Values | undefined, el: HTMLElement, override
   const font = overlayFont(t);
   s.setProperty('--font', `'Twemoji Country Flags', ${font.family}`);
   s.setProperty('--font-stretch', font.stretch);
+  // Text sized so a font takes the standard font's room (the overlay keeps its size).
+  if (t.fontFit !== false && t.font !== 'standard') {
+    el.dataset.fontKey = `${t.font}|${font.family}|${font.stretch}`;
+    fitFont(el, t.font as string, font.family, font.stretch);
+  } else {
+    delete el.dataset.fontKey;
+    s.removeProperty('--fsa');
+    s.removeProperty('--lh');
+  }
   s.setProperty('--font-size', `${((t.fontSize as number) * (overrides.scale ?? 100)) / 100}px`);
   s.setProperty('--weight', t.fontWeight as string);
   s.setProperty('--text', text);
   s.setProperty('--dim', t.dimColor as string);
   s.setProperty('--bg', rgba(t.background as string, bgOpacity / 100));
   s.setProperty('--bg-solid', t.background as string);
-  s.setProperty('--header', rgba(t.headerBackground as string, Math.min(1, bgOpacity / 100 + 0.1)));
+  // A see-through background takes the header strip with it (otherwise it is a touch stronger).
+  s.setProperty('--header', rgba(t.headerBackground as string, bgOpacity <= 0 ? 0 : Math.min(1, bgOpacity / 100 + 0.1)));
   s.setProperty('--accent', t.accent as string);
   s.setProperty('--player', t.playerColor as string);
   s.setProperty('--player-bg', rgba(t.playerColor as string, 0.16));
@@ -217,7 +300,10 @@ export function applyTheme(stored: Values | undefined, el: HTMLElement, override
   s.setProperty('--subtle', rgba(text, 0.06));
   s.setProperty('--track', rgba(text, 0.1));
   s.setProperty('--row-pad', `${t.rowPadding}em`);
-  s.setProperty('--border', t.border ? `1px solid ${rgba(text, 0.09)}` : 'none');
+  // The outline fades with the background, and goes with it, so a see-through overlay has no
+  // light frame round it.
+  const outline = 0.09 * Math.min(1, bgOpacity / 80);
+  s.setProperty('--border', t.border && outline > 0.005 ? `1px solid ${rgba(text, outline)}` : 'none');
   s.setProperty('--shadow', t.shadow ? (isLight(t.background as string) ? '0 1px 1px rgba(255,255,255,0.6)' : '0 1px 2px rgba(0,0,0,0.8)') : 'none');
   s.setProperty('--opacity', String(((t.overlayOpacity as number) / 100) * ((overrides.opacity ?? 100) / 100)));
   return t;

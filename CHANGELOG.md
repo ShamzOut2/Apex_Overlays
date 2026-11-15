@@ -10,7 +10,13 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - Apex Overlays is now a tool by Apex Labs: a new app icon (taskbar, tray, installer and browser tabs), the Apex Labs logo in the settings window and the update pop-up (light or dark lettering to suit your theme), and Apex Labs as the publisher in Windows
 
 ### Improvements
+- Theme → “Keep overlay sizes when changing font” (on by default): each font’s letters are sized to take the room the standard font’s do, and lines keep the standard spacing, so overlays, rows and columns stay exactly the same size whatever font you choose (as in Apex Commentator)
+- Track map: the pit lane, drawn beside the track as on iRacing’s map (official maps; 407 of 421 layouts have one). It can be turned off or recoloured under Track
 - Update pop-up: when you are a few versions behind, it now lists what is new in every version since yours (newest first, each under its version number), not only the latest one. The Updates card on the General page does the same
+
+### Fixes
+- Delta bar: it could count down to zero over the lap. iRacing’s lap timer still shows the previous lap’s time for a moment after the line, and the recorded reference lap took that as its time for most of the lap. Laps are now timed from the moment the lap begins, and broken reference laps saved before are thrown away (the next clean lap replaces them). The bar also ignores that moment just after the line
+- Overlays with a see-through background no longer have a light outline round them: the outline and the header strip fade with the background
 
 ## 0.9.5
 

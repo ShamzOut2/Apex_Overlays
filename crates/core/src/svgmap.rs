@@ -4,7 +4,7 @@
 //! travel. The line is resampled by distance so that point i sits at lap fraction i / BINS,
 //! like a recorded outline.
 
-use crate::engine::trackmap::{normalise, TrackMap, BINS, MAP_VERSION};
+use crate::engine::trackmap::{Frame, TrackMap, BINS, MAP_VERSION};
 
 type P = [f64; 2];
 type M = [f64; 6];
@@ -238,13 +238,15 @@ fn attr<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
 struct Svg {
     /// Polylines of every shape, in document coordinates.
     shapes: Vec<Vec<P>>,
+    /// For each shape, the ids of the groups it is in ("/pitroad", "/gt_circuit/mergeline").
+    groups: Vec<String>,
     /// Text labels and where they are.
     texts: Vec<(String, P)>,
 }
 
 fn parse(svg: &str) -> Svg {
     let mut out = Svg::default();
-    parse_into(svg, svg, ID, 0, &mut out);
+    parse_into(svg, svg, ID, 0, "", &mut out);
     out
 }
 
@@ -263,8 +265,9 @@ fn element_by_id<'a>(doc: &'a str, id: &str) -> Option<(&'a str, &'a str)> {
 }
 
 /// Shapes and texts of `svg` (part of `doc`, where `<use>` looks symbols up), placed by `base`.
-fn parse_into(doc: &str, svg: &str, base: M, depth: u32, out: &mut Svg) {
+fn parse_into(doc: &str, svg: &str, base: M, depth: u32, group: &str, out: &mut Svg) {
     let mut stack: Vec<M> = vec![base];
+    let mut groups: Vec<String> = vec![group.to_string()];
     let mut i = 0;
     while let Some(o) = svg[i..].find('<') {
         let s = i + o;
@@ -274,6 +277,7 @@ fn parse_into(doc: &str, svg: &str, base: M, depth: u32, out: &mut Svg) {
         if let Some(close) = tag.strip_prefix('/') {
             if close.trim_start().starts_with("g") && stack.len() > 1 {
                 stack.pop();
+                groups.pop();
             }
             continue;
         }
@@ -283,7 +287,11 @@ fn parse_into(doc: &str, svg: &str, base: M, depth: u32, out: &mut Svg) {
         let f = |k: &str| attr(tag, k).and_then(|v| numbers(v).first().copied());
         let tr = |pts: Vec<P>| pts.into_iter().map(|p| apply(&m, p)).collect::<Vec<_>>();
         match name.as_str() {
-            "g" if !selfclose => stack.push(m),
+            "g" if !selfclose => {
+                stack.push(m);
+                let id = attr(tag, "id").or_else(|| attr(tag, "data-name")).unwrap_or("").to_ascii_lowercase();
+                groups.push(format!("{}/{id}", groups.last().map(String::as_str).unwrap_or("")));
+            }
             // Definitions are only drawn where a <use> places them.
             "defs" | "symbol" if !selfclose => {
                 if let Some(k) = svg[i..].find(&format!("</{name}")) {
@@ -305,9 +313,9 @@ fn parse_into(doc: &str, svg: &str, base: M, depth: u32, out: &mut Svg) {
                 if content.is_empty() {
                     // A single element: parse its own tag.
                     let one = format!("<{target}>");
-                    parse_into(doc, &one, place, depth + 1, out);
+                    parse_into(doc, &one, place, depth + 1, groups.last().map(String::as_str).unwrap_or(""), out);
                 } else {
-                    parse_into(doc, content, place, depth + 1, out);
+                    parse_into(doc, content, place, depth + 1, groups.last().map(String::as_str).unwrap_or(""), out);
                 }
             }
             "path" => {
@@ -360,6 +368,10 @@ fn parse_into(doc: &str, svg: &str, base: M, depth: u32, out: &mut Svg) {
                 i = end;
             }
             _ => {}
+        }
+        // Every shape added here is in the innermost group open now.
+        while out.groups.len() < out.shapes.len() {
+            out.groups.push(groups.last().cloned().unwrap_or_default());
         }
     }
 }
@@ -592,7 +604,60 @@ fn turn_numbers(texts: Vec<(String, P)>) -> Vec<(u32, P)> {
 
 /// Build the outline from the SVG layers. `t1_hint`: lap fraction of turn 1 when known (e.g.
 /// from Lovely Track Data), the most reliable way to tell the direction of travel.
-pub fn build(track_id: i64, name: &str, active: &str, start_finish: Option<&str>, turns: Option<&str>, t1_hint: Option<f32>) -> Option<TrackMap> {
+/// The pit lane from the pit road layer: each dash of it as its two ends, in the outline's
+/// unit box. Merge lines and rallycross joker laps are left out.
+fn pit_lane(svg: &str, frame: &Frame) -> Vec<[[f32; 2]; 2]> {
+    let s = parse(svg);
+    let grouped = s.groups.iter().any(|g| g.contains("pit"));
+    let mut out = vec![];
+    for (shape, g) in s.shapes.iter().zip(&s.groups) {
+        if shape.len() < 2 || g.contains("merge") || g.contains("joker") || (grouped && !g.contains("pit")) {
+            continue;
+        }
+        // A dash is a thin capsule: its two ends are its two points furthest apart.
+        let mut best = (0.0, shape[0], shape[0]);
+        for (i, a) in shape.iter().enumerate() {
+            for b in &shape[i + 1..] {
+                let d = (a[0] - b[0]).hypot(a[1] - b[1]);
+                if d > best.0 {
+                    best = (d, *a, *b);
+                }
+            }
+        }
+        if best.0 < 1.0 {
+            continue;
+        }
+        // SVG y points down, as for the outline.
+        out.push([frame.apply([best.1[0], -best.1[1]]), frame.apply([best.2[0], -best.2[1]])]);
+        if out.len() >= 800 {
+            break;
+        }
+    }
+    out
+}
+
+/// The outline (already y-up) in its unit box, with the pit lane placed in the same box.
+fn finish_map(track_id: i64, name: &str, pts: &[[f64; 2]], pit_road: Option<&str>) -> TrackMap {
+    let frame = Frame::of(pts);
+    TrackMap {
+        track_id,
+        name: name.to_string(),
+        points: pts.iter().map(|p| frame.apply(*p)).collect(),
+        source: "iracing".into(),
+        version: MAP_VERSION,
+        pit: pit_road.map(|p| pit_lane(p, &frame)).unwrap_or_default(),
+    }
+}
+
+pub fn build(
+    track_id: i64,
+    name: &str,
+    active: &str,
+    start_finish: Option<&str>,
+    turns: Option<&str>,
+    t1_hint: Option<f32>,
+    pit_road: Option<&str>,
+) -> Option<TrackMap> {
     let mut line = parse(active).shapes.into_iter().max_by(|a, b| length(a).total_cmp(&length(b)))?;
     if line.len() < 4 {
         return None;
@@ -638,7 +703,7 @@ pub fn build(track_id: i64, name: &str, active: &str, start_finish: Option<&str>
                 [p[0], -p[1]]
             })
             .collect();
-        return Some(TrackMap { track_id, name: name.to_string(), points: normalise(&pts), source: "iracing".into(), version: MAP_VERSION });
+        return Some(finish_map(track_id, name, &pts, pit_road));
     }
     let (s0, arrow) = sf.unwrap_or((0.0, None));
     // Turn labels: the lowest number is turn 1.
@@ -690,7 +755,7 @@ pub fn build(track_id: i64, name: &str, active: &str, start_finish: Option<&str>
             [p[0], -p[1]]
         })
         .collect();
-    Some(TrackMap { track_id, name: name.to_string(), points: normalise(&pts), source: "iracing".into(), version: MAP_VERSION })
+    Some(finish_map(track_id, name, &pts, pit_road))
 }
 
 /// Where the published index of iRacing's track maps lives (track id → map folder and
@@ -714,7 +779,7 @@ const MIRROR_URL: &str = "https://raw.githubusercontent.com/meowmachine/racing-t
 const BUNDLED_INDEX: &str = include_str!("../../../data/iracing-track-maps.json");
 
 /// The map layers the outline is built from.
-const LAYERS: [&str; 3] = ["active", "start-finish", "turns"];
+const LAYERS: [&str; 4] = ["active", "start-finish", "turns", "pitroad"];
 
 /// A folder path made safe for a URL (its folders have spaces, e.g. "Dirt Oval").
 fn url_path(path: &str) -> String {
@@ -787,8 +852,8 @@ pub fn spawn(
     use serde_json::Value;
     use std::time::{Duration, Instant, SystemTime};
     let _ = std::thread::Builder::new().name("trackmaps".into()).spawn(move || {
-        // Built outlines, per track (v2: rebuilt with the ribbon, symbol and turn-number fixes).
-        let dir = data_dir.join("trackmaps").join("iracing-v2");
+        // Built outlines, per track (v3: with the pit lane).
+        let dir = data_dir.join("trackmaps").join("iracing-v3");
         let assets_file = data_dir.join("iracing").join("track-assets.json");
         let index_file = data_dir.join("iracing").join("published-track-maps.json");
         let catalogue_file = data_dir.join("iracing").join("track-map-catalogue.json");
@@ -982,7 +1047,7 @@ pub fn spawn(
             let hint = read(&data_dir.join("corners").join(format!("{id}.v2.json")))
                 .and_then(|v| serde_json::from_value::<crate::corners::TrackData>(v).ok())
                 .and_then(|d| d.corners.iter().find(|c| c.number == 1).map(|c| c.start));
-            match build(id, &name, &active, layer("start-finish").as_deref(), layer("turns").as_deref(), hint) {
+            match build(id, &name, &active, layer("start-finish").as_deref(), layer("turns").as_deref(), hint, layer("pitroad").as_deref()) {
                 Some(m) => {
                     let _ = std::fs::create_dir_all(&dir);
                     let _ = std::fs::write(&cache, serde_json::to_string(&m).unwrap_or_default());
@@ -1017,7 +1082,7 @@ mod tests {
                 bad.push(format!("{id}: no active layer"));
                 continue;
             };
-            match build(id.parse().unwrap(), id, &active, layer("start-finish").as_deref(), layer("turns").as_deref(), None) {
+            match build(id.parse().unwrap(), id, &active, layer("start-finish").as_deref(), layer("turns").as_deref(), None, layer("pitroad").as_deref()) {
                 Some(m) if m.points.len() == BINS => std::fs::write(out.join(format!("{id}.json")), serde_json::to_string(&m).unwrap()).unwrap(),
                 Some(m) => bad.push(format!("{id}: {} points", m.points.len())),
                 None => bad.push(format!("{id}: no outline")),
@@ -1066,7 +1131,7 @@ mod tests {
 
     #[test]
     fn builds_outline_from_layers() {
-        let m = build(1, "Test", ACTIVE, Some(SF), Some(TURNS), None).unwrap();
+        let m = build(1, "Test", ACTIVE, Some(SF), Some(TURNS), None, None).unwrap();
         assert_eq!(m.points.len(), BINS);
         // Starts at the start/finish line (top middle) and heads right.
         let (p0, p1) = (screen(&m, 0), screen(&m, 20));
@@ -1077,15 +1142,15 @@ mod tests {
         assert!(q[0] > 0.95, "{q:?}");
         // Turns numbered the other way round (turn 1 bottom left): the map runs anticlockwise.
         let rev = r#"<svg><text x="45" y="155">1</text><text x="255" y="155">2</text><text x="255" y="45">3</text></svg>"#;
-        let r = build(1, "Test", ACTIVE, Some(SF), Some(rev), None).unwrap();
+        let r = build(1, "Test", ACTIVE, Some(SF), Some(rev), None, None).unwrap();
         assert!(screen(&r, 20)[0] < screen(&r, 0)[0]);
         // With only turn 1 labelled, a Lovely hint decides: turn 1 two thirds round the lap
         // only fits clockwise.
         let only1 = r#"<svg><text x="45" y="155">1</text></svg>"#;
-        let h = build(1, "Test", ACTIVE, Some(SF), Some(only1), Some(0.66)).unwrap();
+        let h = build(1, "Test", ACTIVE, Some(SF), Some(only1), Some(0.66), None).unwrap();
         assert!(screen(&h, 20)[0] > screen(&h, 0)[0]);
         // The turn numbers outrank the hint (its first corner is not always iRacing's turn 1).
-        let n = build(1, "Test", ACTIVE, Some(SF), Some(rev), Some(0.66)).unwrap();
+        let n = build(1, "Test", ACTIVE, Some(SF), Some(rev), Some(0.66), None).unwrap();
         assert!(screen(&n, 20)[0] < screen(&n, 0)[0]);
     }
 
@@ -1098,7 +1163,7 @@ mod tests {
             <symbol id="Track_Direction" viewBox="0 0 100 40"><polygon points="100 20 0 0 23 20 0 40 100 20"/></symbol></defs>
             <use width="100" height="40" transform="translate(160 30) scale(.4)" xlink:href="#Track_Direction"/>
             <use width="10" height="70" transform="translate(147.5 32.5) scale(.5)" xlink:href="#Start_Finish_Line"/></svg>"##;
-        let m = build(1, "Test", ACTIVE, Some(sf), Some(TURNS), None).unwrap();
+        let m = build(1, "Test", ACTIVE, Some(sf), Some(TURNS), None, None).unwrap();
         assert!((screen(&m, 0)[0] - 0.5).abs() < 0.01, "{:?}", screen(&m, 0));
     }
 
@@ -1133,7 +1198,7 @@ mod tests {
         let d = pts.iter().enumerate().map(|(i, p)| format!("{}{},{}", if i == 0 { "M" } else { "L" }, p[0], p[1])).collect::<String>() + "Z";
         let ribbon = format!(r#"<svg><path d="{d}"/></svg>"#);
         let sf = r#"<svg><line x1="150" y1="45" x2="150" y2="55"/></svg>"#;
-        let m = build(1, "Test", &ribbon, Some(sf), Some(r#"<svg><text x="255" y="45">1</text><text x="255" y="155">2</text></svg>"#), None).unwrap();
+        let m = build(1, "Test", &ribbon, Some(sf), Some(r#"<svg><text x="255" y="45">1</text><text x="255" y="155">2</text></svg>"#), None, None).unwrap();
         // Half a lap in is the bottom middle (on a doubled outline it would be back at the start).
         let h = screen(&m, BINS / 2);
         assert!((h[0] - 0.5).abs() < 0.03 && h[1] > 0.6, "{h:?}");

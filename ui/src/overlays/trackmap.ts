@@ -55,6 +55,8 @@ export const trackmap: OverlayDef = {
     { key: 'cornerBackground', when: (v) => v.cornerLabels !== 'none', label: 'Label background', type: 'bool', default: true, group: 'Corners' },
     { key: 'cornerOffset', when: (v) => v.cornerLabels !== 'none', label: 'Distance from track', type: 'number', default: 14, min: 0, max: 60, unit: 'px', group: 'Corners' },
     { key: 'straightLabels', label: 'Straight names (Mulsanne, Kemmel…)', type: 'bool', default: false, group: 'Corners', help: 'From Lovely Track Data, where the track has them' },
+    { key: 'showPitRoad', label: 'Pit lane', type: 'bool', default: true, group: 'Track', help: 'Drawn beside the track as on iRacing’s map (official maps)' },
+    { key: 'pitRoadColor', when: (v) => v.showPitRoad !== false, label: 'Pit lane colour', type: 'color', default: '#9aa3b5', group: 'Track' },
     { key: 'showPitLane', label: 'Pit entry and exit', type: 'bool', default: true, group: 'Track', help: 'Marks where the pit lane leaves and rejoins the track (Lovely Track Data)' },
     { key: 'pitColor', when: (v) => v.showPitLane !== false, label: 'Pit entry/exit colour', type: 'color', default: '#4da3ff', group: 'Track' },
     { key: 'dotSize', label: 'Car size', type: 'number', default: 7, min: 2, max: 30, unit: 'px', group: 'Cars' },
@@ -158,6 +160,19 @@ export const trackmap: OverlayDef = {
         path.closePath();
       }
       const tw = (s.trackWidth as number) * dpr();
+      // Pit lane under the track: iRacing's dashes, placed like the outline.
+      if (mode === 'full' && s.showPitRoad !== false && map?.pit?.length) {
+        const pit = new Path2D();
+        for (const [a, z] of map.pit) {
+          const p = transform(a, w, hh);
+          const q = transform(z, w, hh);
+          pit.moveTo(p[0], p[1]);
+          pit.lineTo(q[0], q[1]);
+        }
+        b.strokeStyle = s.pitRoadColor as string;
+        b.lineWidth = Math.max(1.5 * dpr(), tw * 0.45);
+        b.stroke(pit);
+      }
       if ((s.outlineWidth as number) > 0) {
         b.strokeStyle = s.outlineColor as string;
         b.lineWidth = tw + (s.outlineWidth as number) * 2 * dpr();

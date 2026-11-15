@@ -176,6 +176,9 @@ export const delta: OverlayDef = {
       }
       if (pl.onPitRoad || !pl.onTrack) invalid = true;
       const live = p.ref && !invalid && pl.lapTime > 0 ? pl.lapTime - refAt(p.ref, pl.lapPct) : null;
+      // Just after the line iRacing's lap timer still shows the previous lap's time for a
+      // moment: keep the last delta rather than flash a delta of a whole lap.
+      if (live != null && p.ref && pl.lapPct < 0.1 && live > p.ref.lapTime * 0.5) return;
       draw(live, p);
     };
 
