@@ -63,5 +63,11 @@
 
 ## Data budget
 
-The relative with 21 rows is about 6 KB per frame and the standings with 20 cars about 10 KB, all over localhost. Topics nobody subscribes to cost nothing.
-The track outline (about 8 KB) is only re-sent when it changes.
+Topics nobody subscribes to cost nothing, and a topic whose payload has not changed is not re-sent.
+
+Each car's fixed details (number, name, team, car, class, licence, iRating, country, make) are on the `drivers` topic,
+sent only when they change (each session info update at most). The rows of `relative`, `standings`, `safety` and `battle`
+carry just the car index, `isPlayer`, `isFocus` and live data; `ui/src/lib/client.ts` fills the details into them before
+any page sees them, so overlays read rows as if everything were there. The relative only sends as many cars either side
+as the relative overlays show (4 by default, at most 10). With 19 cars that is about 4.5 KB per relative message and
+12.5 KB per standings message. The track outline (about 8 KB) is only re-sent when it changes.

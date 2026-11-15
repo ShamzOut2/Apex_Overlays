@@ -8,7 +8,20 @@ import { chip, contrast, type Col } from '../lib/table';
 import type { Driver, Extras } from '../lib/types';
 
 /** ISO code → flag emoji (rendered by the bundled flag font). Handles GB-SCT style UK nations. */
+const flags = new Map<string, string>();
+
+/** The flag emoji for a country code (cached: tables ask for every row on every update). */
 export function flagEmoji(code: string): string {
+  let f = flags.get(code);
+  if (f === undefined) {
+    f = makeFlag(code);
+    if (flags.size > 400) flags.clear();
+    flags.set(code, f);
+  }
+  return f;
+}
+
+function makeFlag(code: string): string {
   if (!code) return '';
   // iRacing's "Global" flair.
   if (code === 'GLOBE') return '\u{1F310}';

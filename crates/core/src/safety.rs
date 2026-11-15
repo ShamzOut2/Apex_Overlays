@@ -16,9 +16,9 @@ const MAX: usize = 4;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Hazard<'a> {
+pub struct Hazard {
     #[serde(flatten)]
-    pub d: DriverOut<'a>,
+    pub d: DriverOut,
     /// Lap times, flags, penalty, incidents… as in the standings.
     #[serde(flatten)]
     pub x: Extras,
@@ -38,9 +38,9 @@ pub struct Hazard<'a> {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Approach<'a> {
+pub struct Approach {
     #[serde(flatten)]
-    pub d: DriverOut<'a>,
+    pub d: DriverOut,
     #[serde(flatten)]
     pub x: Extras,
     /// Seconds behind you on track, and metres.
@@ -59,9 +59,9 @@ pub struct Approach<'a> {
 /// A car ahead serving a slow-down penalty: a chance to pass it.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Overtake<'a> {
+pub struct Overtake {
     #[serde(flatten)]
-    pub d: DriverOut<'a>,
+    pub d: DriverOut,
     #[serde(flatten)]
     pub x: Extras,
     /// Seconds and metres ahead of you.
@@ -76,10 +76,10 @@ pub struct Overtake<'a> {
 }
 
 #[derive(Serialize, Default)]
-pub struct SafetyOut<'a> {
-    pub hazards: Vec<Hazard<'a>>,
-    pub approaching: Vec<Approach<'a>>,
-    pub overtakes: Vec<Overtake<'a>>,
+pub struct SafetyOut {
+    pub hazards: Vec<Hazard>,
+    pub approaching: Vec<Approach>,
+    pub overtakes: Vec<Overtake>,
 }
 
 fn round(v: f32, digits: i32) -> f32 {
@@ -102,7 +102,7 @@ fn class_pace(e: &Engine, idx: usize) -> Option<f32> {
     e.classes.iter().find(|c| &c.key.id == class).and_then(|c| c.best_lap).map(|b| b.1)
 }
 
-pub fn build(e: &Engine) -> SafetyOut<'_> {
+pub fn build(e: &Engine) -> SafetyOut {
     let t = &e.tel;
     let Some(focus) = t.focus_idx() else { return SafetyOut::default() };
     let me = &t.cars[focus];

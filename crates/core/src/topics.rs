@@ -8,6 +8,9 @@ use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Topic {
+    /// Each car's fixed details (name, team, car, class, licence...), sent only when they
+    /// change; the timing rows carry just the car index and the client fills them in.
+    Drivers,
     Session,
     Player,
     Cars,
@@ -26,7 +29,9 @@ pub enum Topic {
 }
 
 impl Topic {
-    pub const ALL: [Topic; 15] = [
+    // Drivers first: when they change, they reach the clients before the rows that use them.
+    pub const ALL: [Topic; 16] = [
+        Topic::Drivers,
         Topic::Session,
         Topic::Player,
         Topic::Cars,
@@ -46,6 +51,7 @@ impl Topic {
 
     pub fn name(self) -> &'static str {
         match self {
+            Topic::Drivers => "drivers",
             Topic::Session => "session",
             Topic::Player => "player",
             Topic::Cars => "cars",
@@ -75,7 +81,7 @@ impl Topic {
             Topic::Standings | Topic::Battle => 6,
             Topic::Session | Topic::Fuel | Topic::Tyres | Topic::Incidents => 15,
             // Only re-sent when they change (see `publish`).
-            Topic::TrackMap | Topic::Car | Topic::Delta => 1,
+            Topic::TrackMap | Topic::Car | Topic::Delta | Topic::Drivers => 1,
         }
     }
 
@@ -104,6 +110,7 @@ impl Topic {
 
     pub fn build(self, e: &Engine) -> String {
         let r = match self {
+            Topic::Drivers => serde_json::to_string(&drivers(e)),
             Topic::Session => serde_json::to_string(&session(e)),
             Topic::Player => serde_json::to_string(&player(e)),
             Topic::Cars => serde_json::to_string(&cars(e)),
@@ -483,10 +490,25 @@ pub fn cars(e: &Engine) -> CarsOut<'_> {
     }
 }
 
-/// Fields shared by relative and standings rows.
+/// Fields shared by relative, standings, safety and battle rows: which car, and whether it
+/// is yours or the one being watched. Its fixed details come on the `drivers` topic (see
+/// `DriverInfo`): the rows are sent many times a second, those only when they change.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct DriverOut<'a> {
+pub struct DriverOut {
+    pub idx: usize,
+    pub is_player: bool,
+    pub is_focus: bool,
+}
+
+pub fn driver(e: &Engine, s: &Static) -> DriverOut {
+    DriverOut { idx: s.idx, is_player: s.idx as i32 == e.tel.player_idx, is_focus: Some(s.idx) == e.tel.focus_idx() }
+}
+
+/// A car's fixed details, merged into its rows by the client (ui/src/lib/client.ts).
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DriverInfo<'a> {
     pub idx: usize,
     pub number: &'a str,
     pub name: &'a str,
@@ -507,12 +529,19 @@ pub struct DriverOut<'a> {
     /// ISO country code for the flag ("" if unknown).
     pub country: &'a str,
     pub make: &'a str,
-    pub is_player: bool,
-    pub is_focus: bool,
 }
 
-pub fn driver<'a>(e: &Engine, s: &'a Static) -> DriverOut<'a> {
-    DriverOut {
+#[derive(Serialize)]
+pub struct DriversOut<'a> {
+    pub cars: Vec<DriverInfo<'a>>,
+}
+
+pub fn drivers(e: &Engine) -> DriversOut<'_> {
+    DriversOut { cars: e.statics.iter().flatten().map(driver_info).collect() }
+}
+
+pub fn driver_info(s: &Static) -> DriverInfo<'_> {
+    DriverInfo {
         idx: s.idx,
         number: &s.number,
         name: &s.name,
@@ -531,8 +560,6 @@ pub fn driver<'a>(e: &Engine, s: &'a Static) -> DriverOut<'a> {
         flair: &s.flair,
         country: &s.country,
         make: &s.make,
-        is_player: s.idx as i32 == e.tel.player_idx,
-        is_focus: Some(s.idx) == e.tel.focus_idx(),
     }
 }
 
@@ -619,9 +646,9 @@ pub fn extras(e: &Engine, idx: usize) -> Extras {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct RelRow<'a> {
+pub struct RelRow {
     #[serde(flatten)]
-    pub d: DriverOut<'a>,
+    pub d: DriverOut,
     #[serde(flatten)]
     pub x: Extras,
     /// On-track gap to the focus car (positive = ahead).
@@ -641,11 +668,19 @@ pub struct RelRow<'a> {
 }
 
 #[derive(Serialize)]
-pub struct RelativeOut<'a> {
-    pub rows: Vec<RelRow<'a>>,
+pub struct RelativeOut {
+    pub rows: Vec<RelRow>,
 }
 
-pub fn relative(e: &Engine) -> RelativeOut<'_> {
+/// How many cars either side of you the relative needs: as many as the relative overlay showing
+/// the most does (any relative overlay, as a disabled one may still be used in OBS), at most 10.
+pub fn relative_side(cfg: &crate::config::Config) -> usize {
+    const MAX: usize = 10;
+    let wanted = |o: &crate::config::OverlayInstance, key: &str| o.settings.get(key).and_then(|v| v.as_f64()).map_or(4, |v| v.max(0.0).ceil() as usize);
+    cfg.overlays.iter().filter(|o| o.kind == "relative").map(|o| wanted(o, "carsAhead").max(wanted(o, "carsBehind"))).max().unwrap_or(MAX).min(MAX)
+}
+
+pub fn relative(e: &Engine) -> RelativeOut {
     let t = &e.tel;
     let Some(focus) = t.focus_idx() else { return RelativeOut { rows: vec![] } };
     let race = e.is_race();
@@ -684,17 +719,17 @@ pub fn relative(e: &Engine) -> RelativeOut<'_> {
         .collect();
     rows.sort_by(|a, b| b.gap.total_cmp(&a.gap));
     let me = rows.iter().position(|r| r.d.idx == focus).unwrap_or(0);
-    const SIDE: usize = 10;
-    let start = me.saturating_sub(SIDE);
-    let end = (me + SIDE + 1).min(rows.len());
+    let side = relative_side(&e.cfg);
+    let start = me.saturating_sub(side);
+    let end = (me + side + 1).min(rows.len());
     RelativeOut { rows: rows.drain(start..end).collect() }
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct StandRow<'a> {
+pub struct StandRow {
     #[serde(flatten)]
-    pub d: DriverOut<'a>,
+    pub d: DriverOut,
     #[serde(flatten)]
     pub x: Extras,
     pub position: i32,
@@ -721,11 +756,11 @@ pub struct StandRow<'a> {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct StandClass<'a> {
+pub struct StandClass {
     #[serde(flatten)]
     pub class: ClassOut,
     pub best_lap: Option<f32>,
-    pub rows: Vec<StandRow<'a>>,
+    pub rows: Vec<StandRow>,
 }
 
 #[derive(Serialize)]
@@ -733,7 +768,7 @@ pub struct StandClass<'a> {
 pub struct StandingsOut<'a> {
     pub is_race: bool,
     pub focus_class: Option<&'a str>,
-    pub classes: Vec<StandClass<'a>>,
+    pub classes: Vec<StandClass>,
 }
 
 pub fn standings(e: &Engine) -> StandingsOut<'_> {
@@ -889,9 +924,9 @@ pub fn fuel_out(e: &Engine) -> FuelOut<'_> {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct BattleCar<'a> {
+pub struct BattleCar {
     #[serde(flatten)]
-    pub d: DriverOut<'a>,
+    pub d: DriverOut,
     pub position: i32,
     pub class_position: i32,
     pub gap: Option<f32>,
@@ -908,24 +943,24 @@ pub struct BattleCar<'a> {
 }
 
 #[derive(Serialize, Default)]
-pub struct BattlePair<'a> {
-    pub ahead: Option<BattleCar<'a>>,
-    pub behind: Option<BattleCar<'a>>,
+pub struct BattlePair {
+    pub ahead: Option<BattleCar>,
+    pub behind: Option<BattleCar>,
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct BattleOut<'a> {
+pub struct BattleOut {
     /// Same class (position battle), overall order, and nearest on track.
-    pub class: BattlePair<'a>,
-    pub overall: BattlePair<'a>,
-    pub track: BattlePair<'a>,
+    pub class: BattlePair,
+    pub overall: BattlePair,
+    pub track: BattlePair,
     pub my_last_lap: Option<f32>,
     pub my_best_lap: Option<f32>,
     pub max_gap: f32,
 }
 
-pub fn battle_out(e: &Engine) -> BattleOut<'_> {
+pub fn battle_out(e: &Engine) -> BattleOut {
     let t = &e.tel;
     let mut out = BattleOut {
         class: Default::default(),
@@ -1061,12 +1096,33 @@ mod tests {
             let s = t.build(&e);
             assert!(s.starts_with('{'), "{}: {s}", t.name());
         }
+        // The default relative shows 4 cars either side: 5 of these 6 (the focus car is first).
+        assert_eq!(relative(&e).rows.len(), 5);
+        // With no relative overlay to size it, every car (as before).
+        e.cfg.overlays.clear();
         let rel = relative(&e);
         assert_eq!(rel.rows.len(), 6);
         assert!(rel.rows.windows(2).all(|w| w[0].gap >= w[1].gap));
         let st = standings(&e);
         assert_eq!(st.classes.len(), 2);
         assert_eq!(st.classes.iter().map(|c| c.rows.len()).sum::<usize>(), 6);
+    }
+
+    #[test]
+    fn relative_sends_only_the_cars_its_overlays_show() {
+        use crate::config::{Config, OverlayInstance};
+        let rel = |settings: serde_json::Value| OverlayInstance { kind: "relative".into(), settings, ..Default::default() };
+        // Default settings: 4 ahead and 4 behind.
+        assert_eq!(relative_side(&Config { overlays: vec![rel(serde_json::json!({}))], ..Default::default() }), 4);
+        // The relative showing the most decides; never more than 10.
+        let two = Config {
+            overlays: vec![rel(serde_json::json!({"carsAhead": 2, "carsBehind": 6})), rel(serde_json::json!({"carsAhead": 3}))],
+            ..Default::default()
+        };
+        assert_eq!(relative_side(&two), 6);
+        assert_eq!(relative_side(&Config { overlays: vec![rel(serde_json::json!({"carsBehind": 40}))], ..Default::default() }), 10);
+        // No relative overlay (another app reading the topic): everything, as before.
+        assert_eq!(relative_side(&Config { overlays: vec![], ..Default::default() }), 10);
     }
 
     #[test]

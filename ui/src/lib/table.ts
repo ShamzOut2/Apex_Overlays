@@ -84,7 +84,8 @@ export class Table<R> {
         row.cells.forEach((c) => text(c, ''));
         return;
       }
-      for (const [cls, on] of Object.entries(classes(r))) toggle(row.el, cls, on);
+      const cls = classes(r);
+      for (const k in cls) toggle(row.el, k, cls[k]);
       before?.(row.el, r);
       this.cols.forEach((c, j) => c.render(row.cells[j], r));
     });
@@ -110,9 +111,17 @@ export function chip(cell: HTMLElement, label: string, bg: string, fg?: string) 
     cell.append(el);
   }
   text(el, label);
-  if (el.style.background !== bg) el.style.background = bg;
+  // Compared with what was last set: reading the style back builds a new string each time.
+  const c = el as HTMLElement & { _bg?: string; _fg?: string };
+  if (c._bg !== bg) {
+    el.style.background = bg;
+    c._bg = bg;
+  }
   const color = fg ?? contrast(bg);
-  if (el.style.color !== color) el.style.color = color;
+  if (c._fg !== color) {
+    el.style.color = color;
+    c._fg = color;
+  }
 }
 
 export const contrast = (hex: string) => onColor(hex);

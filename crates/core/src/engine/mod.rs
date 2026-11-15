@@ -160,6 +160,8 @@ pub struct Engine {
     pub cfg: Config,
     pub resolver: Resolver,
     pub statics: Vec<Option<Static>>,
+    /// Bumped whenever `statics` is rebuilt, so the `drivers` topic is only re-sent then.
+    pub statics_rev: u64,
     pub hist: Vec<CarHist>,
     pub order: Vec<Row>,
     pub classes: Vec<ClassSummary>,
@@ -210,6 +212,7 @@ impl Engine {
             resolver: Resolver::default(),
             cfg,
             statics: vec![None; MAX_CARS],
+            statics_rev: 0,
             hist: vec![CarHist::default(); MAX_CARS],
             order: vec![],
             classes: vec![],
@@ -598,6 +601,7 @@ impl Engine {
             }
         }
         self.statics = statics;
+        self.statics_rev += 1;
     }
 
     /// Forget everything about the current session (simulator closed).

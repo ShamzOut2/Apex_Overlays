@@ -185,6 +185,32 @@ mod imp {
         }
     }
 
+    /// Whether SteamVR's server is running. A quick look at the process list, made before
+    /// asking OpenVR: its start-up loads SteamVR's client library each time, which showed up
+    /// as a CPU spike every few seconds while VR was on but SteamVR was not running.
+    fn steamvr_running() -> bool {
+        use windows::Win32::Foundation::CloseHandle;
+        use windows::Win32::System::Diagnostics::ToolHelp::{CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS};
+        const NAME: &str = "vrserver.exe";
+        unsafe {
+            // If the list cannot be read, ask OpenVR as before.
+            let Ok(snap) = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) else { return true };
+            let mut e = PROCESSENTRY32W { dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32, ..Default::default() };
+            let mut found = false;
+            let mut more = Process32FirstW(snap, &mut e).is_ok();
+            while more {
+                let len = e.szExeFile.iter().position(|&c| c == 0).unwrap_or(e.szExeFile.len());
+                if len == NAME.len() && String::from_utf16_lossy(&e.szExeFile[..len]).eq_ignore_ascii_case(NAME) {
+                    found = true;
+                    break;
+                }
+                more = Process32NextW(snap, &mut e).is_ok();
+            }
+            let _ = CloseHandle(snap);
+            found
+        }
+    }
+
     /// Start OpenVR as an overlay app, only if SteamVR is already running (a background-app
     /// probe first, so enabling VR never starts SteamVR by itself).
     fn start(api: &Api) -> Result<Vr, String> {
@@ -681,7 +707,9 @@ mod imp {
                     gfx_dev = gfx().ok();
                 }
                 if let (Some(a), Some(_)) = (&api, &gfx_dev) {
-                    vr = start(a).ok();
+                    if steamvr_running() {
+                        vr = start(a).ok();
+                    }
                 }
             }
             let use_xr = match cfg.vr.mode.as_str() {
@@ -861,6 +889,10 @@ mod imp {
                             continue;
                         }
                     }
+                }
+                if !steamvr_running() {
+                    publish(&app, &mut status, "waiting", "SteamVR is not running", 0);
+                    continue;
                 }
                 match start(api.as_ref().unwrap()) {
                     Ok(v) => vr = Some(v),

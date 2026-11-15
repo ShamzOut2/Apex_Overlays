@@ -6,6 +6,11 @@ Each version groups its changes under `### New features`, `### Improvements` and
 
 ## Unreleased
 
+### Performance
+- Less CPU and fewer periodic spikes. The relative, standings, safety alert and battle box no longer resend every driver’s name, team, car, class and licence many times a second: those details are sent once (and again only when they change), so the relative sends about a third of the data it did and the standings two thirds. The relative only sends as many cars as your relative overlays show. The overlays create far less garbage to clean up (the clean-ups were the spikes): the track map draws the track and its sector colours once and reuses them instead of redrawing them every frame, and the timing tables stop re-reading their text, colours and flags on every update
+- With VR switched on but SteamVR not running, the app no longer starts up SteamVR’s client every 5 seconds just to find it is not there (a CPU spike every few seconds): it first checks whether SteamVR is running
+- The Monitoring readings (Settings → General and the performance widget) no longer read the CPU and memory of every program on the PC each second, only Apex Overlays’ own, so watching the numbers no longer adds to them
+
 ### Improvements
 - VR: overlays have their own positions in VR. While they show in the headset, moving or resizing them (in Edit mode or with the position boxes) only changes where they are in VR; your screen layout stays exactly as it was and comes back when you leave VR. Settings → General → VR can reset the VR positions to the screen layout, and each overlay can go back to its screen position in VR on its own
 - Driver inputs: engine RPM can be shown in large bold figures under the shift lights (Elements → RPM, off by default). It turns the shift lights’ “shift now” colour and glows at the car’s shift point
