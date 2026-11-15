@@ -75,6 +75,8 @@ pub struct PitTracker {
     was_on_pit: bool,
     /// Last time the player was on the pit entry road.
     approach_at: Option<f64>,
+    /// The player's lap fraction and the time, last tick (to tell driving from being moved).
+    last: Option<(f32, f64)>,
 }
 
 impl PitTracker {
@@ -146,8 +148,18 @@ impl PitTracker {
             self.box_since = None;
             self.service_seen = false;
         }
-        if !on_pit && self.was_on_pit && t.driving() {
-            self.exit_at = Some(now);
+        // Driven across the line: a small step forward since the last tick, at speed. Being
+        // put on the grid from the pit box (or reset, towed) moves the car without driving and
+        // is no pit exit, so no "turn off the pit limiter" then.
+        let pct = t.lap_dist_pct;
+        let drove = t.speed > 2.0
+            && self.last.is_some_and(|(was, at)| {
+                let step = (pct - was + 1.5).rem_euclid(1.0) - 0.5;
+                (0.0..0.5).contains(&(now - at)) && was >= 0.0 && pct >= 0.0 && (0.0..0.005).contains(&step)
+            });
+        self.last = Some((pct, now));
+        if !on_pit && self.was_on_pit {
+            self.exit_at = (t.driving() && drove).then_some(now);
         }
         self.was_on_pit = on_pit;
         if in_box {
@@ -250,6 +262,14 @@ mod tests {
         let o = run(&mut p, 0.0402, false, surface::ON_TRACK, &none);
         assert_eq!(o.phase, "out");
         assert!((p.learned().1.unwrap() - 0.0401).abs() < 1e-4);
+        // Back in the box, then put on the grid (moved, not driven out): no pit exit banner.
+        run(&mut p, 0.99, true, surface::IN_PIT_STALL, &none);
+        let o = run(&mut p, 0.80, false, surface::ON_TRACK, &|x| {
+            x.speed = 0.0;
+            x.engine_warnings = LIMITER;
+        });
+        assert_ne!(o.phase, "out", "gridding is no pit exit");
+        assert_eq!(o.since_exit, None);
         // Saved for next time.
         let again = PitTracker::new(Some(file));
         assert_eq!(again.all.get(&7).map(|l| l.entry.len()), Some(1));
