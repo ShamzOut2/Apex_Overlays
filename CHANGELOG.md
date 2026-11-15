@@ -17,6 +17,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 ### Fixes
 - Delta bar: it could count down to zero over the lap. iRacing’s lap timer still shows the previous lap’s time for a moment after the line, and the recorded reference lap took that as its time for most of the lap. Laps are now timed from the moment the lap begins, and broken reference laps saved before are thrown away (the next clean lap replaces them). The bar also ignores that moment just after the line
 - Overlays with a see-through background no longer have a light outline round them: the outline and the header strip fade with the background
+- Manufacturer logos no longer have a white glow round them. They now use Apex Commentator’s versions, made for dark overlays (light lettering for Audi, Toyota, Nissan, McLaren, Porsche, Volkswagen and others), so they need no outline. The optional plate behind them is now dark, for light themes or a see-through overlay over bright scenery
 
 ## 0.9.5
 

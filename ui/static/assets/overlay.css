@@ -308,10 +308,11 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .c-flag { font-size: 1.05em; line-height: 1; overflow: visible; }
 /* Flags are pictures in a font: keep them their size whatever the text font's fit. */
 .c-flag, .flag, .flag-emoji { font-size-adjust: none; }
+/* Manufacturer logos are drawn for dark overlays (light lettering, as in Apex Commentator), so
+   they sit on the overlay as they are; the optional plate is dark, for light themes and bright
+   scenes. */
 .make-logo { height: 1.15em; max-width: 100%; object-fit: contain; vertical-align: middle; }
-.make-logo.plate { background: rgba(255, 255, 255, 0.9); border-radius: 3px; padding: 0.08em 0.15em; }
-/* Without the plate, a thin light outline keeps black logos (BMW, Porsche…) readable on dark overlays. */
-.make-logo:not(.plate) { filter: drop-shadow(0 0 0.6px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 0.6px rgba(255, 255, 255, 0.6)); }
+.make-logo.plate { background: rgba(11, 14, 19, 0.85); border-radius: 3px; padding: 0.08em 0.15em; }
 .make-badge { display: inline-block; padding: 0 0.3em; border-radius: 3px; background: var(--subtle); color: var(--dim); font-size: 0.75em; font-weight: 700; letter-spacing: 0.03em; text-shadow: none; }
 .c-stint.outlap { color: var(--warn); font-size: 0.8em; font-weight: 700; }
 .c-stint.inpit { color: var(--pit); font-size: 0.8em; font-weight: 700; }

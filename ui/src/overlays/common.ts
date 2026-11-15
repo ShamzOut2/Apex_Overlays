@@ -280,7 +280,7 @@ export const COLUMN_STYLE_SETTINGS = [
     help: 'Logos for iRacing’s manufacturers are built in; your own images in the data folder under logos/ (e.g. porsche.png) take priority',
     group: 'Column style',
   },
-  { key: 'makePlate', when: (v: Values) => columnOn(v, 'make') && v.makeStyle === 'logo', label: 'Light background behind manufacturer logos', type: 'bool' as const, default: false, group: 'Column style', help: 'Off: logos sit on the overlay with a thin light outline so dark ones stay visible' },
+  { key: 'makePlate', when: (v: Values) => columnOn(v, 'make') && v.makeStyle === 'logo', label: 'Dark background behind manufacturer logos', type: 'bool' as const, default: false, group: 'Column style', help: 'The logos are made for dark overlays; turn this on for light themes or a see-through overlay over bright scenery' },
   {
     key: 'classStyle', when: (v: Values) => columnOn(v, 'class'),
     label: 'Class column',
