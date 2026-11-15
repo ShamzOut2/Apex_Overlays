@@ -4,6 +4,12 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 0.9.7
+
+### Fixes
+- Pit lane overlay: being put on the grid for the race start no longer flashes “TURN OFF PIT LIMITER”. Moving from the pit box to the grid is not driving out of the pit lane; only crossing the exit line under your own power counts
+- Taskbar icon: Windows could keep showing the old icon (on a pinned taskbar shortcut especially) after updating. The installer now tells Windows to refresh its icons, and has the app’s icon itself
+
 ## 0.9.6
 
 ### New features
