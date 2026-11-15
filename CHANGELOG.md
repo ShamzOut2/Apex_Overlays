@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 0.9.9
 
 ### New features
 - Weather forecast overlay, for iRacing and Le Mans Ultimate: 4 or 5 tiles (you choose), the weather now and then every 15 or 30 minutes or every hour ahead (you choose), as modern cards with a sky icon (sun or moon by the time of day at the track), temperature and chance of rain, glowing blue when rain is likely. Le Mans Ultimate publishes a forecast for each session, read from the game; iRacing does not share its forecast with apps, so there the overlay shows the conditions now and says so. Turn it on under Overlays (it is added switched off)
