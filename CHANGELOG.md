@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 0.9.8
 
 ### Performance
 - Less CPU and fewer periodic spikes. The relative, standings, safety alert and battle box no longer resend every driver’s name, team, car, class and licence many times a second: those details are sent once (and again only when they change), so the relative sends about a third of the data it did and the standings two thirds. The relative only sends as many cars as your relative overlays show. The overlays create far less garbage to clean up (the clean-ups were the spikes): the track map draws the track and its sector colours once and reuses them instead of redrawing them every frame, and the timing tables stop re-reading their text, colours and flags on every update
