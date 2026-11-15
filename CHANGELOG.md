@@ -18,6 +18,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - Update pop-up: when you are a few versions behind, it now lists what is new in every version since yours (newest first, each under its version number), not only the latest one. The Updates card on the General page does the same
 
 ### Fixes
+- Relative and standings: the IR and Driver column titles are centred over their columns (IR looked right-aligned), and the iRating pills are centred under theirs
 - Delta bar: it could count down to zero over the lap. iRacing’s lap timer still shows the previous lap’s time for a moment after the line, and the recorded reference lap took that as its time for most of the lap. Laps are now timed from the moment the lap begins, and broken reference laps saved before are thrown away (the next clean lap replaces them). The bar also ignores that moment just after the line
 - Overlays with a see-through background no longer have a light outline round them: the outline and the header strip fade with the background
 - Track state: “Carry over” now shows the actual state it carries over (the last state iRacing named in an earlier session of the event)
