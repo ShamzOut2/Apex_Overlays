@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 0.9.6
 
 ### New features
 - Start lights overlay: five realistic start-light housings (LED lamps behind glass lenses, with a visor and glow) that appear only for the race start. First a countdown as a warning that the race is about to start (“RACE STARTS IN 10, 9, …”, from 10 seconds by default; it can be turned off), then “GET READY” with the lights dark while the grid forms, then red lights, all five red when set, and green (or lights out, if you prefer) for the go, after which it disappears. Rolling starts (where iRacing shows no lights) get their own sequence: amber lights with “ROLLING START” on the pace laps, pulsing with “1 LAP TO GREEN” on the last one, and green “GO” when the green flag drops (it can be turned off, and the amber colour changed). Updated 60 times a second, so the lights change on the same frame as in the sim. The lights have no background, so nothing else shows on screen. Choose 3 to 5 lights, the colours, and whether the wording is shown. Turn it on under Overlays (it is added switched off)
