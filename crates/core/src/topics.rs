@@ -307,6 +307,9 @@ pub struct PlayerOut {
     /// Compass heading in degrees of the car being followed (the player, or the camera car
     /// when spectating / in a replay). None when it cannot be known yet.
     pub heading: Option<f32>,
+    /// Start lights: "ready" (red), "set", "go" (green) or "" (not showing). Sent with the
+    /// player at 60 Hz so the lights go out on the frame they do in the sim.
+    pub start: &'static str,
 }
 
 pub fn player(e: &Engine) -> PlayerOut {
@@ -339,6 +342,7 @@ pub fn player(e: &Engine) -> PlayerOut {
         lat_g: round(t.lat_accel / 9.81, 2),
         long_g: round(t.long_accel / 9.81, 2),
         heading: e.focus_heading().map(|h| round(h, 1)),
+        start: model::start_lights(t.session_flags),
     }
 }
 

@@ -76,6 +76,22 @@ pub mod flags {
     }
 }
 
+/// The start lights from the session flags: "ready" (red lights on), "set", "go" (green), or
+/// "" when they are not showing (none, or hidden as in rolling starts).
+pub fn start_lights(session_flags: u32) -> &'static str {
+    if session_flags & flags::START_HIDDEN != 0 {
+        ""
+    } else if session_flags & flags::START_GO != 0 {
+        "go"
+    } else if session_flags & flags::START_SET != 0 {
+        "set"
+    } else if session_flags & flags::START_READY != 0 {
+        "ready"
+    } else {
+        ""
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct CarTel {
     pub lap: i32,
@@ -660,6 +676,15 @@ mod tests {
         let s = SessionInfo::parse(y);
         let c: Vec<&str> = s.drivers.iter().map(|d| d.country.as_str()).collect();
         assert_eq!(c, ["AQ", "GLOBE", "PL"]);
+    }
+
+    #[test]
+    fn start_lights_from_flags() {
+        assert_eq!(start_lights(0), "");
+        assert_eq!(start_lights(flags::START_READY), "ready");
+        assert_eq!(start_lights(flags::START_READY | flags::START_SET), "set");
+        assert_eq!(start_lights(flags::START_SET | flags::START_GO), "go");
+        assert_eq!(start_lights(flags::START_HIDDEN | flags::START_READY), "", "hidden (rolling start)");
     }
 
     #[test]

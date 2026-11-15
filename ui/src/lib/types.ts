@@ -86,6 +86,8 @@ export interface Player {
   longG: number;
   /** Compass heading of the followed car (you, or the camera car when spectating), degrees; null if unknown. */
   heading: number | null;
+  /** Start lights: 'ready' (red), 'set', 'go' (green) or '' when not showing. */
+  start?: '' | 'ready' | 'set' | 'go';
 }
 
 export interface CarDot {
