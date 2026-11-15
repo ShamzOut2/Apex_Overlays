@@ -11,6 +11,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - Apex Overlays is now a tool by Apex Labs: a new app icon (taskbar, tray, installer and browser tabs), the Apex Labs logo in the settings window and the update pop-up (light or dark lettering to suit your theme), and Apex Labs as the publisher in Windows
 
 ### Improvements
+- Relative and standings: when the licence column is hidden, each iRating pill takes the colour of the driver’s licence (A blue, B green, C yellow, D orange, R red, Pro black), so you can still see licences at a glance. On by default; switch it off under Column style
 - Data box, Incidents: shows the incident limits still ahead of you after your count (“9x / 10x / 20x”, then “10x / 20x” once the first is reached), from the session’s penalty and disqualification limits. Your count is green up to half way to the next limit, orange to three quarters, then red, starting again from each limit reached, and it blinks a few times whenever you reach one. The Incidents session field lists the limits the same way
 - Theme → “Keep overlay sizes when changing font” (on by default): each font’s letters are sized to take the room the standard font’s do, and lines keep the standard spacing, so overlays, rows and columns stay exactly the same size whatever font you choose (as in Apex Commentator)
 - Track map: the pit lane, drawn beside the track as on iRacing’s map (official maps; 407 of 421 layouts have one). It can be turned off or recoloured under Track

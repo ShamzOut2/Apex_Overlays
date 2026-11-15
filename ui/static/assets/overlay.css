@@ -491,6 +491,9 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .c-irating { display: flex; align-items: center; justify-content: flex-end; gap: 0.25em; overflow: visible; }
 .ir-pill { display: inline-flex; align-items: center; gap: 0.3em; padding: 0 0.45em; border-radius: 999px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.16); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-size: 0.92em; line-height: 1.35; text-shadow: none; }
 .ir-pill[hidden], .ir-delta[hidden] { display: none; }
+/* In the licence colour (when the licence column is hidden); the ▲▼ take the pill's text colour. */
+.ir-pill.lic { background: color-mix(in srgb, var(--lic) 88%, transparent); border-color: color-mix(in srgb, var(--lic) 60%, #fff 25%); color: var(--lic-fg); font-weight: 700; }
+.ir-pill.lic .ir-delta { color: inherit; }
 .ir-delta { font-size: 0.78em; font-weight: 700; white-space: nowrap; }
 .ir-delta.up { color: var(--good); }
 .ir-delta.down { color: var(--bad); }
