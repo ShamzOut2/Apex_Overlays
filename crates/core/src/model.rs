@@ -76,6 +76,38 @@ pub mod flags {
     }
 }
 
+/// A race's rolling start, from the session state (3 = parade / pace laps, 4 = racing) and
+/// flags: "pacing" on the pace laps, "oneToGreen" on the last one, "green" once the green flag
+/// is out, "" otherwise. Only when iRacing shows no start lights (a standing start has them).
+pub fn rolling_start(session_state: i32, session_flags: u32) -> &'static str {
+    let lights = session_flags & (flags::START_READY | flags::START_SET | flags::START_GO) != 0 && session_flags & flags::START_HIDDEN == 0;
+    if lights {
+        return "";
+    }
+    match session_state {
+        3 if session_flags & flags::ONE_LAP_TO_GREEN != 0 => "oneToGreen",
+        3 => "pacing",
+        4 if session_flags & flags::GREEN != 0 => "green",
+        _ => "",
+    }
+}
+
+/// The start lights from the session flags: "ready" (red lights on), "set", "go" (green), or
+/// "" when they are not showing (none, or hidden as in rolling starts).
+pub fn start_lights(session_flags: u32) -> &'static str {
+    if session_flags & flags::START_HIDDEN != 0 {
+        ""
+    } else if session_flags & flags::START_GO != 0 {
+        "go"
+    } else if session_flags & flags::START_SET != 0 {
+        "set"
+    } else if session_flags & flags::START_READY != 0 {
+        "ready"
+    } else {
+        ""
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct CarTel {
     pub lap: i32,
@@ -372,6 +404,12 @@ pub struct SessionInfo {
     pub league_id: i64,
     pub event_type: String,
     pub incident_limit: Option<i32>,
+    /// Incidents for the first penalty, and for each further one after it (WeekendOptions
+    /// IncidentWarningInitialLimit / IncidentWarningSubsequentLimit); None when unlimited.
+    pub incident_warning: Option<i32>,
+    pub incident_warning_every: Option<i32>,
+    /// The race starts standing (WeekendOptions.StandingStart: 1) or rolling (0); unknown if missing.
+    pub standing_start: Option<bool>,
     /// Pit lane speed limit (km/h, 0 = unknown).
     pub pit_speed_limit_kph: f32,
     pub sessions: Vec<SessionDef>,
@@ -491,6 +529,9 @@ impl SessionInfo {
             league_id: wi.get("LeagueID").i64().unwrap_or(0),
             event_type: wi.get("EventType").string(),
             incident_limit: wi.path("WeekendOptions.IncidentLimit").i64().map(|v| v as i32),
+            incident_warning: wi.path("WeekendOptions.IncidentWarningInitialLimit").i64().map(|v| v as i32).filter(|v| *v > 0),
+            incident_warning_every: wi.path("WeekendOptions.IncidentWarningSubsequentLimit").i64().map(|v| v as i32).filter(|v| *v > 0),
+            standing_start: wi.path("WeekendOptions.StandingStart").i64().map(|v| v != 0),
             pit_speed_limit_kph: {
                 let s = wi.get("TrackPitSpeedLimit").string();
                 let v = wi.get("TrackPitSpeedLimit").f32_or(0.0);
@@ -531,6 +572,41 @@ impl SessionInfo {
                     ..Default::default()
                 })
                 .collect(),
+        }
+    }
+
+    /// The incident counts that bring a penalty or the disqualification, in order: the first
+    /// penalty, each further one after it, and the limit itself (only those that apply).
+    pub fn incident_limits(&self) -> Vec<i32> {
+        let dq = self.incident_limit.filter(|v| *v > 0);
+        let mut out = vec![];
+        if let Some(first) = self.incident_warning {
+            out.push(first);
+            if let Some(every) = self.incident_warning_every {
+                // Up to the disqualification, or a handful ahead when there is none.
+                let mut next = first + every;
+                while out.len() < 50 && dq.is_none_or(|d| next < d) && (dq.is_some() || out.len() < 6) {
+                    out.push(next);
+                    next += every;
+                }
+            }
+        }
+        out.extend(dq);
+        out.retain(|v| dq.is_none_or(|d| *v <= d));
+        out.sort_unstable();
+        out.dedup();
+        out
+    }
+
+    /// The rubber on the track in session `num` as iRacing names it. "Carry over" (whatever
+    /// the session before left) is the state of the latest earlier session that names one;
+    /// "" when none does.
+    pub fn rubber_state(&self, num: i32) -> &str {
+        let named = |s: &&SessionDef| !s.rubber.trim().is_empty() && !s.rubber.trim().eq_ignore_ascii_case("carry over");
+        match self.session(num) {
+            Some(s) if named(&s) => s.rubber.trim(),
+            Some(_) => self.sessions.iter().filter(|s| s.num < num).filter(named).max_by_key(|s| s.num).map(|s| s.rubber.trim()).unwrap_or(""),
+            None => "",
         }
     }
 
@@ -622,6 +698,45 @@ mod tests {
     }
 
     #[test]
+    fn rolling_start_from_state_and_flags() {
+        assert_eq!(rolling_start(3, flags::START_HIDDEN), "pacing");
+        assert_eq!(rolling_start(3, flags::START_HIDDEN | flags::ONE_LAP_TO_GREEN), "oneToGreen");
+        assert_eq!(rolling_start(4, flags::START_HIDDEN | flags::GREEN), "green");
+        assert_eq!(rolling_start(4, 0), "", "racing, no green flag out");
+        assert_eq!(rolling_start(3, flags::START_READY), "", "a standing start has lights");
+        assert_eq!(rolling_start(2, 0), "");
+    }
+
+    #[test]
+    fn start_lights_from_flags() {
+        assert_eq!(start_lights(0), "");
+        assert_eq!(start_lights(flags::START_READY), "ready");
+        assert_eq!(start_lights(flags::START_READY | flags::START_SET), "set");
+        assert_eq!(start_lights(flags::START_SET | flags::START_GO), "go");
+        assert_eq!(start_lights(flags::START_HIDDEN | flags::START_READY), "", "hidden (rolling start)");
+    }
+
+    #[test]
+    fn carry_over_and_incident_limits() {
+        let s = SessionInfo::parse(
+            "WeekendInfo:\n WeekendOptions:\n  IncidentLimit: 25\n  IncidentWarningInitialLimit: 10\n  IncidentWarningSubsequentLimit: 5\n  StandingStart: 0\nSessionInfo:\n Sessions:\n - SessionNum: 0\n   SessionType: Practice\n   SessionTrackRubberState: low usage\n - SessionNum: 1\n   SessionType: Qualify\n   SessionTrackRubberState: carry over\n - SessionNum: 2\n   SessionType: Race\n   SessionTrackRubberState: carry over\n",
+        );
+        // Carry over: what the last session that says left.
+        assert_eq!(s.rubber_state(2), "low usage");
+        assert_eq!(s.rubber_state(0), "low usage");
+        // First penalty at 10, then every 5, disqualified at 25.
+        assert_eq!(s.incident_limits(), vec![10, 15, 20, 25]);
+        let only_dq = SessionInfo { incident_limit: Some(17), ..Default::default() };
+        assert_eq!(only_dq.incident_limits(), vec![17]);
+        let no_dq = SessionInfo { incident_warning: Some(10), incident_warning_every: Some(10), ..Default::default() };
+        assert_eq!(no_dq.incident_limits(), vec![10, 20, 30, 40, 50, 60]);
+        let fresh = SessionInfo::parse("SessionInfo:\n Sessions:\n - SessionNum: 0\n   SessionTrackRubberState: carry over\n");
+        assert_eq!(fresh.rubber_state(0), "", "nothing earlier to carry over from");
+        assert_eq!(s.standing_start, Some(false), "a rolling start");
+        assert_eq!(fresh.standing_start, None);
+    }
+
+    #[test]
     fn parses_session_info() {
         let s = SessionInfo::parse(
             "WeekendInfo:\n TrackID: 9\n TrackDisplayName: Road Atlanta\n TrackLength: 4.08 km\n WeekendOptions:\n  IncidentLimit: unlimited\nSessionInfo:\n Sessions:\n - SessionNum: 0\n   SessionLaps: 20\n   SessionTime: unlimited\n   SessionType: Race\n   SessionTrackRubberState: moderately high usage\nDriverInfo:\n DriverCarIdx: 2\n DriverCarFuelMaxLtr: 100.0\n DriverCarMaxFuelPct: 0.5\n DriverTires:\n - TireIndex: 0\n   TireCompoundType: \"Hard\"\n - TireIndex: 1\n   TireCompoundType: \"Wet\"\n Drivers:\n - CarIdx: 2\n   UserName: Me\n   CarClassColor: 0xff0000\n",
@@ -632,6 +747,8 @@ mod tests {
         assert_eq!(s.sessions[0].time, None);
         assert!(s.sessions[0].is_race());
         assert_eq!(s.sessions[0].rubber, "moderately high usage");
+        assert_eq!(s.rubber_state(0), "moderately high usage");
+        assert!(s.incident_limits().is_empty(), "unlimited");
         assert_eq!(s.fuel_capacity(), 50.0);
         assert_eq!(s.tire_is_wet(1), Some(true));
         assert_eq!(s.tire_is_wet(0), Some(false));

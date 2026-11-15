@@ -139,7 +139,7 @@ fn reconcile(app: &AppHandle) {
     let visible = core.hub.visible.load(Ordering::Relaxed);
     let mut wanted = Vec::new();
     let mut hwnds = HashMap::new();
-    for o in cfg.overlays.iter().filter(|o| o.enabled) {
+    for o in cfg.overlays.iter().filter(|o| o.enabled && !apex_core::config::HIDDEN_KINDS.contains(&o.kind.as_str())) {
         let label = label_for(&o.id);
         wanted.push(label.clone());
         let win = match app.get_webview_window(&label) {
@@ -333,7 +333,16 @@ async fn check_update(app: AppHandle, prompt: bool) {
     };
     match result {
         Ok(Some(update)) => {
-            publish_update(&app, serde_json::json!({ "status": "available", "version": update.version, "notes": update.body.clone().unwrap_or_default() }));
+            // Everything since the installed version (the release puts CHANGELOG.md in
+            // latest.json), newest first; just this release's notes if it is not there.
+            let notes = update.body.clone().unwrap_or_default();
+            let changelog = update.raw_json.get("changelog").and_then(|c| c.as_str()).unwrap_or("");
+            let mut releases = apex_core::changelog::since(changelog, env!("CARGO_PKG_VERSION"), &update.version);
+            if releases.is_empty() {
+                releases.push((update.version.clone(), notes.clone()));
+            }
+            let releases: Vec<_> = releases.into_iter().map(|(version, notes)| serde_json::json!({ "version": version, "notes": notes })).collect();
+            publish_update(&app, serde_json::json!({ "status": "available", "version": update.version, "notes": notes, "releases": releases }));
             let version = update.version.clone();
             *app.state::<Core>().update.lock().await = Some(update);
             let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0);

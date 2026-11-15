@@ -36,7 +36,15 @@ body {
 /* Sidebar */
 nav { display: flex; flex-direction: column; gap: 2px; padding: 18px 12px 14px; background: var(--panel); border-right: 1px solid var(--line); overflow: auto; }
 .brand { display: flex; align-items: center; gap: 10px; padding: 2px 8px 20px; font-size: 16px; }
-.brand-mark { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border-radius: 9px; background: linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #000)); color: var(--accent-text, #fff); font-weight: 800; font-size: 15px; box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent); }
+.brand-mark { display: block; width: 30px; height: 30px; flex: none; border-radius: 8px; box-shadow: 0 4px 14px rgba(181, 61, 255, 0.35); }
+/* Apex Labs logo: the white-lettered version on dark themes, the dark-lettered one on light themes */
+.labs-logo { display: flex; align-items: center; }
+.labs-logo img { display: block; height: 100%; width: auto; }
+.labs-logo .on-light, .ui-light .labs-logo .on-dark { display: none; }
+.ui-light .labs-logo .on-light { display: block; }
+.nav-labs { height: 30px; margin: auto 10px 10px; opacity: 0.85; transition: opacity var(--ease); }
+.nav-labs:hover { opacity: 1; }
+.prompt-labs { height: 22px; margin-top: 14px; opacity: 0.7; justify-content: flex-end; }
 .brand .logo { font-weight: 700; letter-spacing: 0.01em; color: var(--text); }
 .brand .logo b { color: var(--accent); font-weight: 800; }
 .nav-label { padding: 0 10px 6px; color: var(--dim); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -46,7 +54,7 @@ nav a:hover { background: var(--panel-2); color: var(--text); }
 nav a.sel { background: var(--soft); color: var(--text); }
 nav a.sel svg { color: var(--accent); opacity: 1; }
 nav a:focus-visible { outline: none; box-shadow: var(--ring); }
-.conn { display: flex; align-items: flex-start; gap: 8px; margin-top: auto; padding: 10px 12px; font-size: 12px; line-height: 1.4; color: var(--dim); border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); }
+.conn { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; font-size: 12px; line-height: 1.4; color: var(--dim); border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); }
 .conn::before { content: ''; flex: none; width: 8px; height: 8px; margin-top: 4px; border-radius: 50%; background: var(--dim); }
 .conn.up::before { background: var(--good); box-shadow: 0 0 0 0 color-mix(in srgb, var(--good) 60%, transparent); animation: pulse 2.4s ease-out infinite; }
 .conn.down::before { background: var(--bad); }
@@ -245,9 +253,15 @@ body.prompt main { padding: 14px; }
 .update-prompt { margin: 0; }
 .update-prompt h2 { margin-top: 0; }
 .update-prompt .release-notes { max-height: 300px; overflow: auto; margin-bottom: 12px; }
+.update-prompt .release-history { max-height: 250px; overflow: auto; margin-bottom: 12px; padding-right: 4px; }
+.update-prompt .release-history .release-notes { max-height: none; overflow: visible; margin-bottom: 0; }
 .update-prompt h3 { margin: 6px 0 6px; }
 
 /* Release notes: sections with bullet points */
+.release-history { display: flex; flex-direction: column; gap: 14px; }
+.rn-version { display: flex; flex-direction: column; gap: 6px; }
+.rn-version-head { font-weight: 700; font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.rn-version-head::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
 .release-notes { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: var(--r); background: var(--panel-2); border: 1px solid var(--line); }
 .release-notes ul { margin: 0 0 6px; padding-left: 20px; }
 .release-notes li { margin: 3px 0; line-height: 1.45; }

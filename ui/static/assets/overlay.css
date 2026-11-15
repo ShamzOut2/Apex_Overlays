@@ -38,6 +38,11 @@ html, body {
   color: var(--text);
   font-family: var(--font);
   font-size: var(--font-size);
+  /* Theme → Keep overlay sizes when changing font: --fsa scales only the letters (em sizes,
+     and so the overlay's layout, stay as they are) and --lh keeps the standard font's line
+     spacing, so rows keep their height whatever the font. */
+  font-size-adjust: var(--fsa, none);
+  line-height: var(--lh, normal);
   font-weight: var(--weight, 500);
   font-stretch: var(--font-stretch, normal);
   font-variant-numeric: tabular-nums;
@@ -128,8 +133,8 @@ body.preview { background: #2a2f38 repeating-conic-gradient(#323843 0 25%, #2a2f
 .body .row:nth-child(even) { background: var(--row-alt); }
 .row.head { color: var(--dim); text-transform: uppercase; }
 .row.head .cell { font-size: 0.75em; letter-spacing: 0.04em; }
-/* Column titles sit centred over their column (the name, team and car columns read from the left). */
-.row.head .cell:not(.c-name):not(.c-team):not(.c-car) { text-align: center; }
+/* Column titles sit centred over their column (also the flex cells: driver, iRating). */
+.row.head .cell { text-align: center; justify-content: center; }
 .cell { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .cell.right { text-align: right; }
 .cell.center { text-align: center; }
@@ -301,10 +306,13 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 /* Extra columns */
 .c-flag { font-size: 1.05em; line-height: 1; overflow: visible; }
+/* Flags are pictures in a font: keep them their size whatever the text font's fit. */
+.c-flag, .flag, .flag-emoji { font-size-adjust: none; }
+/* Manufacturer logos are drawn for dark overlays (light lettering, as in Apex Commentator), so
+   they sit on the overlay as they are; the optional plate is dark, for light themes and bright
+   scenes. */
 .make-logo { height: 1.15em; max-width: 100%; object-fit: contain; vertical-align: middle; }
-.make-logo.plate { background: rgba(255, 255, 255, 0.9); border-radius: 3px; padding: 0.08em 0.15em; }
-/* Without the plate, a thin light outline keeps black logos (BMW, Porsche…) readable on dark overlays. */
-.make-logo:not(.plate) { filter: drop-shadow(0 0 0.6px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 0.6px rgba(255, 255, 255, 0.6)); }
+.make-logo.plate { background: rgba(11, 14, 19, 0.85); border-radius: 3px; padding: 0.08em 0.15em; }
 .make-badge { display: inline-block; padding: 0 0.3em; border-radius: 3px; background: var(--subtle); color: var(--dim); font-size: 0.75em; font-weight: 700; letter-spacing: 0.03em; text-shadow: none; }
 .c-stint.outlap { color: var(--warn); font-size: 0.8em; font-weight: 700; }
 .c-stint.inpit { color: var(--pit); font-size: 0.8em; font-weight: 700; }
@@ -398,6 +406,12 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .databox.label-left.align-right { justify-content: flex-end; }
 .databox .db-label { color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; white-space: nowrap; }
 .databox .db-value { font-weight: 800; line-height: 1.05; white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* Incidents: green under half way to the next limit, orange to three quarters, then red. */
+.inc-now.inc-ok { color: var(--good); }
+.inc-now.inc-warn { color: var(--warn); }
+.inc-now.inc-bad { color: var(--bad); }
+.inc-now.inc-blink { animation: inc-blink 0.45s ease-in-out 5; }
+@keyframes inc-blink { 50% { opacity: 0.1; } }
 .databox .db-label { overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 100%; }
 
 /* Flags and penalty box next to driver names */
@@ -474,9 +488,12 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .pit-sub { color: var(--dim); font-size: 0.85em; }
 
 /* iRating: frosted pill with the estimated gain / loss beside it */
-.c-irating { display: flex; align-items: center; justify-content: flex-end; gap: 0.25em; overflow: visible; }
+.c-irating { display: flex; align-items: center; justify-content: center; gap: 0.25em; overflow: visible; }
 .ir-pill { display: inline-flex; align-items: center; gap: 0.3em; padding: 0 0.45em; border-radius: 999px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.16); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-size: 0.92em; line-height: 1.35; text-shadow: none; }
 .ir-pill[hidden], .ir-delta[hidden] { display: none; }
+/* In the licence colour (when the licence column is hidden); the ▲▼ take the pill's text colour. */
+.ir-pill.lic { background: color-mix(in srgb, var(--lic) 88%, transparent); border-color: color-mix(in srgb, var(--lic) 60%, #fff 25%); color: var(--lic-fg); font-weight: 700; }
+.ir-pill.lic .ir-delta { color: inherit; }
 .ir-delta { font-size: 0.78em; font-weight: 700; white-space: nowrap; }
 .ir-delta.up { color: var(--good); }
 .ir-delta.down { color: var(--bad); }
@@ -581,3 +598,39 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .fuel.fl-compact .fl-hero { font-size: 2.9em; line-height: 0.85; }
 .fuel.fl-compact .fl-bar { flex: 1; height: 0.95em; }
 .fuel.fl-compact .fl-at { font-size: 2.3em; font-weight: 800; color: var(--tone); min-width: 2.4em; text-align: right; }
+
+/* Start lights: a slim gantry of light pods, two lamps each */
+.panel.start-lights { align-items: center; justify-content: center; gap: 0.45em; padding: 0.6em 0.9em; transition: opacity 0.18s ease-out; }
+.sl-gantry { display: flex; gap: 0.55em; }
+.sl-gantry[hidden], .sl-count[hidden] { display: none; }
+.sl-count { font-size: 3.4em; font-weight: 800; line-height: 1; color: var(--sl-count, #fff); font-variant-numeric: tabular-nums; text-shadow: 0 0.06em 0.3em rgba(0, 0, 0, 0.7); animation: sl-tick 1s ease-out infinite; }
+@keyframes sl-tick { 0% { transform: scale(1.12); opacity: 0.75; } 25% { transform: scale(1); opacity: 1; } }
+/* Each pod is a light housing: brushed-metal edges, matte black face. */
+.sl-pod { display: flex; flex-direction: column; gap: 0.34em; padding: 0.36em 0.32em; border-radius: 0.5em; background: linear-gradient(90deg, #2b2e33, #101215 9%, #0a0b0d 50%, #101215 91%, #2b2e33); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(0, 0, 0, 0.9), 0 0 0 1px #000, 0 0.3em 0.8em rgba(0, 0, 0, 0.55); }
+/* A lamp: a recessed bezel, a grid of LEDs behind a glass lens (with its reflection), and the
+   visor's shadow over the top. Dark: the LEDs only just show through the lens. */
+.sl-lamp { --c: #1b1e23; position: relative; width: 1.55em; height: 1.55em; border-radius: 50%;
+  background:
+    radial-gradient(ellipse 52% 34% at 36% 26%, rgba(255, 255, 255, 0.16), transparent 70%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.07) 28%, transparent 44%) center / 0.2em 0.2em,
+    radial-gradient(circle at 50% 56%, #16191e, #060708 78%);
+  box-shadow: 0 0 0 0.08em #33373e, 0 0 0 0.13em #000, inset 0 0.14em 0.3em rgba(0, 0, 0, 0.9); }
+.sl-lamp::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: linear-gradient(180deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.15) 30%, transparent 45%); pointer-events: none; }
+.sl-pod.red .sl-lamp { --c: var(--sl-red); }
+.sl-pod.green .sl-lamp { --c: var(--sl-green); }
+.sl-pod.amber .sl-lamp { --c: var(--sl-amber); }
+/* Lit: every LED bright, hottest in the middle, and light blooming out of the housing. */
+.sl-pod:is(.red, .green, .amber) .sl-lamp {
+  background:
+    radial-gradient(ellipse 52% 34% at 36% 26%, rgba(255, 255, 255, 0.32), transparent 70%),
+    radial-gradient(circle, color-mix(in srgb, var(--c) 45%, #fff) 26%, transparent 46%) center / 0.2em 0.2em,
+    radial-gradient(circle at 50% 52%, color-mix(in srgb, var(--c) 55%, #fff), var(--c) 42%, color-mix(in srgb, var(--c) 50%, #000) 100%);
+  box-shadow: 0 0 0 0.08em #33373e, 0 0 0 0.13em #000, 0 0 0.5em 0.04em color-mix(in srgb, var(--c) 75%, transparent), 0 0 1.6em 0.1em color-mix(in srgb, var(--c) 28%, transparent); }
+.start-lights.pulse .sl-pod.amber .sl-lamp { animation: sl-pulse 0.9s ease-in-out infinite; }
+@keyframes sl-pulse { 50% { filter: brightness(0.45); box-shadow: none; } }
+.start-lights.pacing .sl-label { color: var(--sl-amber); }
+.sl-label { font-size: 0.78em; font-weight: 800; letter-spacing: 0.32em; color: #e8ebf1; min-height: 1.2em; padding: 0.1em 0.6em 0.1em 0.92em; border-radius: 999px; background: rgba(11, 14, 19, 0.75); }
+.start-lights.go .sl-label { color: var(--sl-green); }
+.sl-label.hidden-label { display: none; }
+/* Counting down: "RACE STARTS IN" above the number. */
+.start-lights.counting .sl-label { order: -1; }

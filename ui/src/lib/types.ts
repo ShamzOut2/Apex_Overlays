@@ -49,6 +49,8 @@ export interface Session {
   classes: ClassInfo[];
   incidents: number;
   incidentLimit: number | null;
+  /** Every incident count that brings a penalty or the disqualification, in order. */
+  incidentLimits?: number[];
   numCars: number;
   league: string | null;
   leagueId: number;
@@ -84,6 +86,14 @@ export interface Player {
   longG: number;
   /** Compass heading of the followed car (you, or the camera car when spectating), degrees; null if unknown. */
   heading: number | null;
+  /** Start lights: 'ready' (red), 'set', 'go' (green) or '' when not showing. */
+  start?: '' | 'ready' | 'set' | 'go';
+  /** Seconds until a race's get-in-car / warm-up countdown ends; null outside it. */
+  raceStartIn?: number | null;
+  /** A race is forming up / on its parade laps. */
+  gridding?: boolean;
+  /** Rolling start: the pace laps, the last one ("one lap to green"), the green flag; '' otherwise. */
+  rolling?: '' | 'pacing' | 'oneToGreen' | 'green';
 }
 
 export interface CarDot {
@@ -305,6 +315,8 @@ export interface TrackMap {
   trackId: number;
   trackName: string;
   points: [number, number][] | null;
+  /** The pit lane as dashes (each from one end to the other), official maps only. */
+  pit?: [[number, number], [number, number]][];
   source: string | null;
   recording: boolean;
   progress: number;
@@ -561,6 +573,8 @@ export interface UpdateState {
   current?: string;
   version?: string;
   notes?: string;
+  /** Every version since the installed one, newest first (`notes` is only the newest's). */
+  releases?: { version: string; notes: string }[];
   progress?: number;
   message?: string;
 }

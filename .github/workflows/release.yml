@@ -68,7 +68,11 @@ jobs:
           $sig = "$($setup.FullName).sig"
           # What's new: this version's section of CHANGELOG.md (shown in the app's update pop-up).
           $notes = "Apex Overlays $env:TAG"
+          # The whole changelog goes into latest.json too, so the app can show every version
+          # someone missed when they are a few versions behind.
+          $changelog = ''
           if (Test-Path CHANGELOG.md) {
+            $changelog = Get-Content CHANGELOG.md -Raw
             $m = [regex]::Match((Get-Content CHANGELOG.md -Raw), "(?ms)^## \[?v?$([regex]::Escape($version))\]?[^\r\n]*\r?\n(.*?)(?=^## |\z)")
             if ($m.Success -and $m.Groups[1].Value.Trim()) { $notes = $m.Groups[1].Value.Trim() }
           }
@@ -82,6 +86,7 @@ jobs:
             $manifest = @{
               version = $version
               notes = $notes
+              changelog = $changelog
               pub_date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
               platforms = @{
                 "windows-x86_64" = @{

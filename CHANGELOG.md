@@ -4,6 +4,29 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 0.9.6
+
+### New features
+- Start lights overlay: five realistic start-light housings (LED lamps behind glass lenses, with a visor and glow) that appear only for the race start. First a countdown as a warning that the race is about to start (“RACE STARTS IN 10, 9, …”, from 10 seconds by default; it can be turned off), then “GET READY” with the lights dark while the grid forms, then red lights, all five red when set, and green (or lights out, if you prefer) for the go, after which it disappears. Rolling starts (where iRacing shows no lights) get their own sequence: amber lights with “ROLLING START” on the pace laps, pulsing with “1 LAP TO GREEN” on the last one, and green “GO” when the green flag drops (it can be turned off, and the amber colour changed). Updated 60 times a second, so the lights change on the same frame as in the sim. The lights have no background, so nothing else shows on screen. Choose 3 to 5 lights, the colours, and whether the wording is shown. Turn it on under Overlays (it is added switched off)
+- Apex Overlays is now a tool by Apex Labs: a new app icon (taskbar, tray, installer and browser tabs), the Apex Labs logo in the settings window and the update pop-up (light or dark lettering to suit your theme), and Apex Labs as the publisher in Windows
+
+### Improvements
+- Relative and standings: when the licence column is hidden, each iRating pill takes the colour of the driver’s licence (A blue, B green, C yellow, D orange, R red, Pro black), so you can still see licences at a glance. On by default; switch it off under Column style
+- Data box, Incidents: shows the incident limits still ahead of you after your count (“9x / 10x / 20x”, then “10x / 20x” once the first is reached), from the session’s penalty and disqualification limits. Your count is green up to half way to the next limit, orange to three quarters, then red, starting again from each limit reached, and it blinks a few times whenever you reach one. The Incidents session field lists the limits the same way
+- Theme → “Keep overlay sizes when changing font” (on by default): each font’s letters are sized to take the room the standard font’s do, and lines keep the standard spacing, so overlays, rows and columns stay exactly the same size whatever font you choose (as in Apex Commentator)
+- Track map: the pit lane, drawn beside the track as on iRacing’s map (official maps; 407 of 421 layouts have one). It can be turned off or recoloured under Track
+- Update pop-up: when you are a few versions behind, it now lists what is new in every version since yours (newest first, each under its version number), not only the latest one. The Updates card on the General page does the same
+
+### Fixes
+- Relative and standings: the IR and Driver column titles are centred over their columns (IR looked right-aligned), and the iRating pills are centred under theirs
+- Delta bar: it could count down to zero over the lap. iRacing’s lap timer still shows the previous lap’s time for a moment after the line, and the recorded reference lap took that as its time for most of the lap. Laps are now timed from the moment the lap begins, and broken reference laps saved before are thrown away (the next clean lap replaces them). The bar also ignores that moment just after the line
+- Overlays with a see-through background no longer have a light outline round them: the outline and the header strip fade with the background
+- Track state: “Carry over” now shows the actual state it carries over (the last state iRacing named in an earlier session of the event)
+- Manufacturer logos no longer have a white glow round them. They now use Apex Commentator’s versions, made for dark overlays (light lettering for Audi, Toyota, Nissan, McLaren, Porsche, Volkswagen and others), so they need no outline. The optional plate behind them is now dark, for light themes or a see-through overlay over bright scenery
+
+### Removed
+- Garage 61, for now, until the integration is ready: its settings page, its overlay and the Garage 61 reference laps of the delta bar (which now compares with your best this session or your all-time best). Your Garage 61 settings are kept for when it comes back
+
 ## 0.9.5
 
 ### New features

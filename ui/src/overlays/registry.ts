@@ -18,10 +18,19 @@ import { safety } from './safety';
 import { session } from './session';
 import { spotter } from './spotter';
 import { standings } from './standings';
+import { startLights } from './startLights';
 import { trackmap } from './trackmap';
 import { tyres } from './tyres';
 import { weather } from './weather';
 
-export const OVERLAYS: OverlayDef[] = [relative, standings, trackmap, inputs, inputGraph, fuel, battle, session, flags, weather, tyres, databox, spotter, safety, delta, pit, incidents, garage61, monitor];
+const ALL: OverlayDef[] = [relative, standings, trackmap, inputs, inputGraph, fuel, battle, session, flags, startLights, weather, tyres, databox, spotter, safety, delta, pit, incidents, garage61, monitor];
 
-export const byKind = (kind: string) => OVERLAYS.find((o) => o.kind === kind);
+/** Overlays held back for now: Garage 61 comes back once the integration is ready. They are
+ *  not offered, listed or opened; their code stays. */
+export const HIDDEN_KINDS = ['garage61'];
+export const hiddenKind = (kind: string) => HIDDEN_KINDS.includes(kind);
+
+/** The overlays offered in the settings. */
+export const OVERLAYS: OverlayDef[] = ALL.filter((o) => !hiddenKind(o.kind));
+
+export const byKind = (kind: string) => ALL.find((o) => o.kind === kind);

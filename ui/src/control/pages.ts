@@ -3,10 +3,10 @@ import * as f from '../lib/format';
 import { commonFor, merge, type SettingDef } from '../lib/settings';
 import { applyUiTheme, PRESETS, THEME, themeValues } from '../lib/theme';
 import type { OverlayInstance, SavedLayout } from '../lib/types';
-import { byKind, OVERLAYS } from '../overlays/registry';
+import { byKind, hiddenKind, OVERLAYS } from '../overlays/registry';
 import { CHOICES, field, form, relevance } from './form';
 import { hotkeyInput } from './hotkey';
-import { releaseNotes } from './releaseNotes';
+import { releaseHistory } from './releaseNotes';
 import { STATS } from '../lib/monitorStats';
 import { client, download, listen, save, state, uid, upload } from './state';
 
@@ -82,7 +82,7 @@ async function readShare(): Promise<ShareFile | null> {
     alert('That file is not an Apex Overlays overlay or layout.');
     return null;
   }
-  const overlays = (d.overlays as SharedOverlay[]).filter((o) => o && typeof o.kind === 'string' && byKind(o.kind));
+  const overlays = (d.overlays as SharedOverlay[]).filter((o) => o && typeof o.kind === 'string' && byKind(o.kind) && !hiddenKind(o.kind));
   if (!overlays.length) {
     alert('That file has no overlays this version of Apex Overlays knows.');
     return null;
@@ -611,7 +611,7 @@ const overlaysPage: Page = {
     };
     const list = h('div', 'ov-list');
     list.append(button('＋ Add overlay', () => addOverlayDialog(addOverlay), 'add-btn'));
-    for (const o of cfg.overlays) {
+    for (const o of cfg.overlays.filter((x) => !hiddenKind(x.kind))) {
       const d = byKind(o.kind);
       const item = h('div', `ov-item${o.id === selected ? ' sel' : ''}${o.enabled ? '' : ' off'}`);
       item.tabIndex = 0;
@@ -967,7 +967,11 @@ function updatesCard(): HTMLElement {
       );
     }
   }
-  if (u?.status === 'available' && u.notes) c.append(h('h3', '', `What’s new in ${u.version}`), releaseNotes(u.notes));
+  if (u?.status === 'available') {
+    const releases = u.releases?.length ? u.releases : u.notes ? [{ version: u.version ?? '', notes: u.notes }] : [];
+    if (releases.length > 1) c.append(h('h3', '', `What’s new in the ${releases.length} versions since yours`), releaseHistory(releases));
+    else if (releases.length) c.append(h('h3', '', `What’s new in ${u.version}`), releaseHistory(releases));
+  }
   return c;
 }
 
@@ -1195,7 +1199,7 @@ function hotkeysCard(): HTMLElement {
     ),
     group(
       'Show / hide one overlay',
-      ...cfg.overlays.map((o) =>
+      ...cfg.overlays.filter((o) => !hiddenKind(o.kind)).map((o) =>
         row(
           o.name || byKind(o.kind)?.name || o.kind,
           () => hk.overlays[o.id] ?? '',
@@ -1458,7 +1462,7 @@ const generalPage: Page = {
       cornersCard(() => this.render(el)),
       card(
         'Backup',
-        h('p', 'dim', 'Export everything (overlays, theme, leagues) to a file, or import a file shared by someone else. Your Garage 61 token is never exported.'),
+        h('p', 'dim', 'Export everything (overlays, theme, leagues) to a file, or import a file shared by someone else.'),
         button('Export settings', () => download('apex-overlays.json', { ...cfg, garage61: { ...cfg.garage61, token: '' } })),
         button('Import settings', async () => {
           const data = (await upload()) as typeof cfg;
@@ -1484,7 +1488,7 @@ const streamingPage: Page = {
   id: 'streaming',
   title: 'Streaming / OBS',
   render(el) {
-    const rows = state.config!.overlays.map((o) => {
+    const rows = state.config!.overlays.filter((o) => !hiddenKind(o.kind)).map((o) => {
       const tr = h('tr');
       const url = overlayUrl(o.id);
       const b = button('Copy', () => copy(url, b));
@@ -1508,4 +1512,6 @@ const streamingPage: Page = {
   },
 };
 
-export const PAGES: Page[] = [overlaysPage, themePage, strategyPage, garage61Page, generalPage, streamingPage];
+// Garage 61 (garage61Page) is held back until the integration is ready.
+export const PAGES: Page[] = [overlaysPage, themePage, strategyPage, generalPage, streamingPage];
+void garage61Page;

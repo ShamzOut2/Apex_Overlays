@@ -4,7 +4,7 @@ import { h, text, toggle } from '../lib/dom';
 import * as f from '../lib/format';
 import { columnOn, type Values } from '../lib/settings';
 import { BADGE_COLORS, classBadge } from '../lib/classBadges';
-import { chip, type Col } from '../lib/table';
+import { chip, contrast, type Col } from '../lib/table';
 import type { Driver, Extras } from '../lib/types';
 
 /** ISO code → flag emoji (rendered by the bundled flag font). Handles GB-SCT style UK nations. */
@@ -150,6 +150,8 @@ function nameCell(c: HTMLElement, name: string, r: NameRow, s: Values) {
 
 export function driverCols<R extends Driver & Partial<Extras>>(s: Values): Col<R>[] {
   const nameStyle = s.nameStyle as string;
+  // No licence column: the iRating pill shows the licence by its colour instead.
+  const licTint = s.irLicenseColor !== false && !columnOn(s, 'license');
   return [
     { id: 'number', label: '#', width: '2.9em', align: 'center', render: (c, r) => chip(c, r.number, r.classColor) },
     { id: 'flag', label: 'Nat', width: '2em', align: 'center', render: (c, r) => text(c, s.flagStyle === 'code' && r.country !== 'GLOBE' ? r.country.replace(/^GB-/, '') : flagEmoji(r.country)) },
@@ -163,7 +165,7 @@ export function driverCols<R extends Driver & Partial<Extras>>(s: Values): Col<R
       align: 'center',
       render: (c, r) => chip(c, r.license.split(' ')[0] + ' ' + (r.license.split(' ')[1] ?? '').slice(0, 3), r.licenseColor),
     },
-    { id: 'irating', label: 'iR', width: s.irGain !== false ? '5em' : '3.2em', align: 'center', render: (c, r) => iratingCell(c, r.irating, s.irGain !== false ? r.irDelta : null) },
+    { id: 'irating', label: 'iR', width: s.irGain !== false ? '5em' : '3.2em', align: 'center', render: (c, r) => iratingCell(c, r.irating, s.irGain !== false ? r.irDelta : null, licTint ? r.licenseColor : null) },
     { id: 'car', label: 'Car', width: 'minmax(3em, 0.7fr)', render: (c, r) => text(c, r.car) },
     {
       id: 'class',
@@ -188,8 +190,9 @@ export function driverCols<R extends Driver & Partial<Extras>>(s: Values): Col<R
   ];
 }
 
-/** iRating in a frosted pill, with the estimated race gain (green ▲) or loss (red ▼) beside it. */
-export function iratingCell(c: HTMLElement, ir: number, delta: number | null | undefined) {
+/** iRating in a frosted pill, with the estimated race gain (green ▲) or loss (red ▼) beside it.
+ *  With `tint` (the driver's licence colour) the pill takes that colour. */
+export function iratingCell(c: HTMLElement, ir: number, delta: number | null | undefined, tint?: string | null) {
   let pill = c.querySelector(':scope > .ir-pill') as HTMLElement | null;
   let val = pill?.querySelector(':scope > .ir-val') as HTMLElement | null;
   let d = pill?.querySelector(':scope > .ir-delta') as HTMLElement | null;
@@ -201,6 +204,17 @@ export function iratingCell(c: HTMLElement, ir: number, delta: number | null | u
     c.replaceChildren(pill);
   }
   text(val, ir > 0 ? f.iRating(ir) : '');
+  const bg = tint && /^#[0-9a-f]{6}$/i.test(tint) ? tint : '';
+  if (pill.style.getPropertyValue('--lic') !== bg) {
+    if (bg) {
+      pill.style.setProperty('--lic', bg);
+      pill.style.setProperty('--lic-fg', contrast(bg));
+    } else {
+      pill.style.removeProperty('--lic');
+      pill.style.removeProperty('--lic-fg');
+    }
+    toggle(pill, 'lic', !!bg);
+  }
   if (pill.hidden !== !(ir > 0)) pill.hidden = !(ir > 0);
   const v = delta == null ? 0 : Math.round(delta);
   text(d, v > 0 ? `▲${v}` : v < 0 ? `▼${-v}` : '');
@@ -280,7 +294,7 @@ export const COLUMN_STYLE_SETTINGS = [
     help: 'Logos for iRacing’s manufacturers are built in; your own images in the data folder under logos/ (e.g. porsche.png) take priority',
     group: 'Column style',
   },
-  { key: 'makePlate', when: (v: Values) => columnOn(v, 'make') && v.makeStyle === 'logo', label: 'Light background behind manufacturer logos', type: 'bool' as const, default: false, group: 'Column style', help: 'Off: logos sit on the overlay with a thin light outline so dark ones stay visible' },
+  { key: 'makePlate', when: (v: Values) => columnOn(v, 'make') && v.makeStyle === 'logo', label: 'Dark background behind manufacturer logos', type: 'bool' as const, default: false, group: 'Column style', help: 'The logos are made for dark overlays; turn this on for light themes or a see-through overlay over bright scenery' },
   {
     key: 'classStyle', when: (v: Values) => columnOn(v, 'class'),
     label: 'Class column',
@@ -296,6 +310,14 @@ export const COLUMN_STYLE_SETTINGS = [
     default: 'match',
     options: BADGE_COLORS,
     help: 'Match: the badge colour closest to the class colour in this session (iRacing’s or your league’s)',
+    group: 'Column style',
+  },
+  {
+    key: 'irLicenseColor', when: (v: Values) => columnOn(v, 'irating') && !columnOn(v, 'license'),
+    label: 'iRating in the licence colour',
+    type: 'bool' as const,
+    default: true,
+    help: 'With the licence column hidden, each iRating pill takes the colour of the driver’s licence (A blue, B green, C yellow, D orange, R red)',
     group: 'Column style',
   },
   {

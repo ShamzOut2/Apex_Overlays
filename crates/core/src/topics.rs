@@ -208,6 +208,8 @@ pub struct SessionOut<'a> {
     pub classes: Vec<ClassOut>,
     pub incidents: i32,
     pub incident_limit: Option<i32>,
+    /// Every incident count that brings a penalty or the disqualification, in order.
+    pub incident_limits: Vec<i32>,
     pub num_cars: usize,
     pub league: Option<&'a str>,
     /// iRacing league of the current session (0 if not a league session).
@@ -233,7 +235,7 @@ pub fn session(e: &Engine) -> SessionOut<'_> {
         track_country: &e.info.track_country,
         session_type: def.map(|d| d.kind.as_str()).unwrap_or(""),
         session_name: def.map(|d| d.name.as_str()).unwrap_or(""),
-        track_state: def.map(|d| d.rubber.as_str()).unwrap_or(""),
+        track_state: e.info.rubber_state(t.session_num),
         session_state: model::session_state_label(t.session_state),
         is_race: e.is_race(),
         time_remain: (time_total.is_some() && t.session_time_remain >= 0.0 && t.session_time_remain < 1e6).then(|| round(t.session_time_remain as f32, 1)),
@@ -265,6 +267,7 @@ pub fn session(e: &Engine) -> SessionOut<'_> {
             .collect(),
         incidents: t.incidents,
         incident_limit: e.info.incident_limit,
+        incident_limits: e.info.incident_limits(),
         num_cars: e.order.len(),
         league: e.resolver.league_name(),
         league_id: e.info.league_id,
@@ -304,6 +307,16 @@ pub struct PlayerOut {
     /// Compass heading in degrees of the car being followed (the player, or the camera car
     /// when spectating / in a replay). None when it cannot be known yet.
     pub heading: Option<f32>,
+    /// Start lights: "ready" (red), "set", "go" (green) or "" (not showing). Sent with the
+    /// player at 60 Hz so the lights go out on the frame they do in the sim.
+    pub start: &'static str,
+    /// Seconds until a race session's get-in-car / warm-up countdown ends (the grid forms
+    /// next); None outside it.
+    pub race_start_in: Option<f32>,
+    /// A race session is forming up / on its parade laps (the start comes next).
+    pub gridding: bool,
+    /// Rolling start: "pacing", "oneToGreen", "green" or "" (see `model::rolling_start`).
+    pub rolling: &'static str,
 }
 
 pub fn player(e: &Engine) -> PlayerOut {
@@ -336,6 +349,12 @@ pub fn player(e: &Engine) -> PlayerOut {
         lat_g: round(t.lat_accel / 9.81, 2),
         long_g: round(t.long_accel / 9.81, 2),
         heading: e.focus_heading().map(|h| round(h, 1)),
+        start: model::start_lights(t.session_flags),
+        race_start_in: (e.is_race() && matches!(t.session_state, 1 | 2) && t.session_time_remain > 0.0 && t.session_time_remain < 3600.0)
+            .then(|| round(t.session_time_remain as f32, 1)),
+        gridding: e.is_race() && t.session_state == 3,
+        // Standing starts have formation laps too: only a rolling start's pace laps count.
+        rolling: if e.is_race() && e.info.standing_start == Some(false) { model::rolling_start(t.session_state, t.session_flags) } else { "" },
     }
 }
 
@@ -994,6 +1013,8 @@ pub struct TrackMapOut<'a> {
     pub track_id: i64,
     pub track_name: &'a str,
     pub points: Option<&'a [[f32; 2]]>,
+    /// The pit lane as dashes (official maps), in the same unit box as `points`.
+    pub pit: &'a [[[f32; 2]; 2]],
     pub source: Option<&'a str>,
     pub recording: bool,
     pub progress: f32,
@@ -1011,6 +1032,7 @@ pub fn trackmap(e: &Engine) -> TrackMapOut<'_> {
         track_id: e.info.track_id,
         track_name: &e.info.track_display_name,
         points: e.map.shown(e.cfg.track_outline != "recorded").map(|m| m.points.as_slice()),
+        pit: e.map.shown(e.cfg.track_outline != "recorded").map(|m| m.pit.as_slice()).unwrap_or(&[]),
         source: e.map.shown(e.cfg.track_outline != "recorded").map(|m| m.source.as_str()),
         recording: e.map.recording(),
         progress: round(e.map.progress(), 2),

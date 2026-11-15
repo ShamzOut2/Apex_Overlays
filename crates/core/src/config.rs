@@ -8,6 +8,10 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 use tokio::sync::watch;
 
+/// Overlay kinds held back for now (Garage 61, until the integration is ready): never opened
+/// as windows, whatever a config or layout says. Their code and settings stay.
+pub const HIDDEN_KINDS: &[&str] = &["garage61"];
+
 /// Bumped when [`Config::migrate`] has something new to do.
 pub const CONFIG_VERSION: u32 = 2;
 
@@ -123,6 +127,7 @@ impl Default for Config {
                 o("session", "session", 510, 10, 900, 52),
                 o("tyres", "tyres", 1540, 680, 300, 150),
                 o("flags", "flags", 860, 70, 220, 110),
+                o("startLights", "startLights", 760, 190, 400, 110),
                 o("spotter", "spotter", 850, 520, 220, 200),
                 o("pit", "pit", 845, 300, 230, 200),
                 o("safety", "safety", 760, 160, 400, 230),
@@ -567,7 +572,7 @@ impl Config {
     /// they appear in the overlay list and the hotkeys straight away.
     pub fn add_new_kinds(&mut self) {
         let defaults = Config::default().overlays;
-        for kind in ["safety", "delta", "inputGraph"] {
+        for kind in ["safety", "delta", "inputGraph", "startLights"] {
             if self.overlays.iter().any(|o| o.kind == kind) {
                 continue;
             }
@@ -746,8 +751,11 @@ mod tests {
         let mut c = Config { overlays: vec![OverlayInstance { id: "safety".into(), kind: "relative".into(), ..Default::default() }], ..Default::default() };
         c.add_new_kinds();
         let added: Vec<_> = c.overlays.iter().skip(1).map(|o| (o.id.as_str(), o.kind.as_str(), o.enabled)).collect();
-        assert_eq!(added, vec![("safety-2", "safety", false), ("delta", "delta", false), ("inputGraph", "inputGraph", false)]);
+        assert_eq!(
+            added,
+            vec![("safety-2", "safety", false), ("delta", "delta", false), ("inputGraph", "inputGraph", false), ("startLights", "startLights", false)]
+        );
         c.add_new_kinds();
-        assert_eq!(c.overlays.len(), 4);
+        assert_eq!(c.overlays.len(), 5);
     }
 }
