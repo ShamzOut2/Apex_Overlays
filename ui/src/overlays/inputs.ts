@@ -49,7 +49,8 @@ export const inputs: OverlayDef = {
     { key: 'showWheel', label: 'Steering wheel', type: 'bool', default: true, group: 'Elements' },
     { key: 'showGear', label: 'Gear', type: 'bool', default: true, group: 'Elements' },
     { key: 'showSpeed', label: 'Speed', type: 'bool', default: true, group: 'Elements' },
-    { key: 'showRpm', label: 'RPM', type: 'bool', default: false, group: 'Elements', help: 'Engine RPM under the speed. It turns the “shift now” colour at the car’s shift point' },
+    { key: 'showRpm', label: 'RPM', type: 'bool', default: false, group: 'Elements', help: 'Engine RPM under the shift lights. It turns the “shift now” colour at the car’s shift point' },
+    { key: 'showSteerAngle', when: (v) => v.showWheel !== false, label: 'Steering angle', type: 'bool', default: false, group: 'Elements', help: 'The wheel’s angle in degrees above the steering wheel, with L or R for the direction' },
     {
       key: 'valuePosition', when: (v) => v.showBars !== false,
       label: 'Percent values',
@@ -107,16 +108,19 @@ export const inputs: OverlayDef = {
     const spd = h('div', 'speed');
     const rpm = h('div', 'rpm');
     rpm.style.setProperty('--rpm-shift', s.shiftFlashColor as string);
-    side.append(wheel, gear, spd, rpm);
+    const angle = h('div', 'steer-angle');
+    side.append(angle, wheel, gear, spd);
     show(canvas, s.showTrace as boolean);
     show(bars, s.showBars as boolean);
     show(wheel, s.showWheel as boolean);
     show(gear, s.showGear as boolean);
     show(spd, s.showSpeed as boolean);
     show(rpm, !!s.showRpm);
-    show(side, (s.showWheel || s.showGear || s.showSpeed || s.showRpm) as boolean);
+    const showAngle = !!s.showSteerAngle && s.showWheel !== false;
+    show(angle, showAngle);
+    show(side, (s.showWheel || s.showGear || s.showSpeed) as boolean);
     main.append(canvas, bars, side);
-    root.append(lights, main);
+    root.append(lights, rpm, main);
 
     /** Lights for the current car: [rpm on, colour] per light plus the shift-now rpm. */
     type Plan = { on: number[]; colors: string[]; flashAt: number; flashColor: string };
@@ -218,6 +222,11 @@ export const inputs: OverlayDef = {
         bar(clutch, p.clutch);
         toggle(brake.wrap, 'abs', !!s.absHighlight && p.abs);
         style(wheel, 'transform', `rotate(${(-p.steering * 180) / Math.PI}deg)`);
+        if (showAngle) {
+          // iRacing's angle is positive to the left.
+          const deg = Math.round((p.steering * 180) / Math.PI);
+          text(angle, deg === 0 ? '0°' : `${Math.abs(deg)}° ${deg > 0 ? 'L' : 'R'}`);
+        }
         text(gear, p.gear === -1 ? 'R' : p.gear === 0 ? 'N' : String(p.gear));
         text(spd, `${Math.round(f.speed(p.speed, ctx.units))}`);
         spd.dataset.unit = f.speedUnit(ctx.units);

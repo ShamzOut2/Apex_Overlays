@@ -219,15 +219,19 @@ body.preview { background: #2a2f38 repeating-conic-gradient(#323843 0 25%, #2a2f
 .inputs .val { font-variant-numeric: tabular-nums; text-align: center; }
 .inputs .val.top { min-width: 1.9em; font-size: 0.72em; font-weight: 700; line-height: 1.15; }
 .inputs .val.inside { position: absolute; bottom: 2px; width: 100%; font-size: 0.65em; }
-.inputs .side { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 4.6em; }
-.inputs .wheel { width: 3.2em; height: 3.2em; }
+/* The wheel takes the room the other readouts leave (up to its full size), so nothing is cut off. */
+.inputs .side { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 4.6em; min-height: 0; }
+.inputs .side > * { flex: none; }
+.inputs .side > .wheel { flex: 1 1 0; width: 100%; min-height: 1.2em; max-height: 3.2em; }
 .inputs .wheel svg { width: 100%; height: 100%; display: block; }
 .inputs .gear { font-size: 1.6em; font-weight: 800; line-height: 1.1; }
 .inputs .speed { font-size: 0.95em; color: var(--dim); }
 .inputs .speed::after { content: ' ' attr(data-unit); font-size: 0.8em; }
-.inputs .rpm { font-size: 0.95em; color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.inputs .rpm::after { content: ' rpm'; font-size: 0.8em; }
-.inputs .rpm.shift { color: var(--rpm-shift); font-weight: 700; }
+/* RPM: its own line under the shift lights, bold on a dark pill so it reads over anything. */
+.inputs .rpm { flex: none; align-self: center; margin: -0.1em 0; padding: 0.02em 0.65em; border-radius: 999px; background: rgba(0, 0, 0, 0.45); font-size: 1.15em; font-weight: 800; line-height: 1.2; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+.inputs .rpm::after { content: ' RPM'; font-size: 0.62em; font-weight: 700; color: var(--dim); letter-spacing: 0.06em; }
+.inputs .rpm.shift { color: var(--rpm-shift); text-shadow: 0 0 0.5em var(--rpm-shift); }
+.inputs .steer-angle { font-size: 0.8em; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* Battle box */
 .panel.battle { padding: 0.35em; gap: 0.35em; }

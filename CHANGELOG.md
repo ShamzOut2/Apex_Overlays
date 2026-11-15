@@ -7,7 +7,8 @@ Each version groups its changes under `### New features`, `### Improvements` and
 ## Unreleased
 
 ### Improvements
-- Driver inputs: engine RPM can be shown under the speed (Elements → RPM, off by default). It turns the shift lights’ “shift now” colour at the car’s shift point
+- Driver inputs: engine RPM can be shown in large bold figures under the shift lights (Elements → RPM, off by default). It turns the shift lights’ “shift now” colour and glows at the car’s shift point
+- Driver inputs: the steering angle can be shown above the steering wheel, in degrees with L or R (Elements → Steering angle, off by default)
 
 ## 0.9.7
 
