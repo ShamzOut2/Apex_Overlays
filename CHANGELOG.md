@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 0.9.7
 
 ### Fixes
 - Pit lane overlay: being put on the grid for the race start no longer flashes “TURN OFF PIT LIMITER”. Moving from the pit box to the grid is not driving out of the pit lane; only crossing the exit line under your own power counts
