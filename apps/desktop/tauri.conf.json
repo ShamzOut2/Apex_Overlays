@@ -21,6 +21,7 @@
     ],
     "publisher": "Apex Labs",
     "copyright": "© 2026 Apex Labs",
+    "licenseFile": "../../LICENSE",
     "shortDescription": "Lightweight, fully customisable iRacing overlays",
     "icon": [
       "icons/32x32.png",

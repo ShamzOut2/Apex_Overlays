@@ -7,7 +7,8 @@ default-members = ["crates/irsdk", "crates/core", "crates/xr-shared", "apps/serv
 [workspace.package]
 version = "0.9.7"
 edition = "2021"
-license = "MIT"
+license = "LicenseRef-Proprietary"
+publish = false
 
 [workspace.dependencies]
 apex-irsdk = { path = "crates/irsdk" }

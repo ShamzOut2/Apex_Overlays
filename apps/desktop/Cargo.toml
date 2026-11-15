@@ -4,6 +4,7 @@ description = "Apex Overlays desktop app: transparent, click-through overlay win
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+publish.workspace = true
 
 [[bin]]
 name = "apex-overlays"

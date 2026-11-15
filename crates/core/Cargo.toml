@@ -4,6 +4,7 @@ description = "Telemetry engine, calculators and overlay server for Apex Overlay
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+publish.workspace = true
 
 [dependencies]
 apex-irsdk.workspace = true

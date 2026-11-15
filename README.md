@@ -171,3 +171,13 @@ docs             architecture, how to add an overlay, roadmap
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/ADDING_AN_OVERLAY.md](docs/ADDING_AN_OVERLAY.md) and
 [docs/ROADMAP.md](docs/ROADMAP.md) (VR support, stream chat overlay and more).
+
+## Licence
+
+Copyright © 2026 Apex Labs. All rights reserved.
+
+Apex Overlays is proprietary software. The source code is visible here, but it is **not** open source: you may
+download, install and use the official releases for free, but you may not copy, modify, redistribute or sell the
+code or the app, in whole or in part, without written permission from Apex Labs. See [LICENSE](LICENSE) for the full
+terms. Third-party fonts, artwork, libraries and data keep their own licences, listed in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

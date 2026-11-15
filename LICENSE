@@ -1,0 +1,71 @@
+Apex Overlays — Proprietary Software Licence
+
+Copyright © 2026 Apex Labs. All rights reserved.
+
+Apex Overlays, including its source code, compiled programs, user interface, designs,
+graphics, documentation and other files in this repository (together, the "Software"),
+is owned by Apex Labs and is protected by copyright and other intellectual property laws.
+The Software is licensed, not sold. Making the source code visible to the public does
+not make it open source and does not give you any rights to it beyond those set out below.
+
+1. WHAT YOU MAY DO
+
+   You may download the official releases of Apex Overlays published by Apex Labs, and
+   install and use them on your own computers, free of charge, including while racing,
+   streaming or recording videos. You may view the source code in this repository for
+   your information.
+
+2. WHAT YOU MAY NOT DO
+
+   Unless Apex Labs has given you written permission, you may not, in whole or in part:
+
+   a. copy the source code or the Software, other than what is needed to install and
+      use an official release as allowed in section 1;
+   b. modify, adapt, translate or create derivative works based on the Software;
+   c. distribute, publish, share, sublicense, rent, lease or lend the Software or any
+      copy or modified version of it, or make it available to others in any other way,
+      except by pointing them to the official releases;
+   d. sell the Software, or use it, or any part of it, in a product or service that is
+      sold or otherwise offered to others;
+   e. decompile, disassemble or reverse engineer the compiled programs, except where
+      the law expressly allows this despite this restriction;
+   f. remove or change any copyright, trademark or other notices in the Software.
+
+   Forking this repository through GitHub's own features is allowed only as far as
+   GitHub's Terms of Service require; it gives you no right to use, modify or
+   distribute the code outside those terms.
+
+3. THIRD-PARTY COMPONENTS
+
+   Some files included with the Software (fonts, flag artwork, libraries and data)
+   belong to others and are provided under their own licences, which are listed in
+   THIRD_PARTY_NOTICES.md. Those licences apply to those components, and nothing in
+   this licence limits the rights they give you.
+
+4. TRADEMARKS
+
+   "Apex Overlays", "Apex Labs" and their logos are trademarks of Apex Labs. This
+   licence gives you no right to use them. iRacing is a trademark of iRacing.com
+   Motorsport Simulations, LLC; Apex Overlays is not affiliated with or endorsed by
+   iRacing.com Motorsport Simulations. Car manufacturer names and logos belong to their
+   respective owners.
+
+5. ENDING THIS LICENCE
+
+   This licence ends automatically if you break any of its terms. When it ends you must
+   stop using the Software and delete every copy you have.
+
+6. NO WARRANTY
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+   PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+
+7. LIMITATION OF LIABILITY
+
+   TO THE FULLEST EXTENT ALLOWED BY LAW, IN NO EVENT SHALL APEX LABS OR ITS CONTRIBUTORS
+   BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+   OF OR OTHER DEALINGS IN THE SOFTWARE.
+
+For permission to do anything this licence does not allow, contact Apex Labs.

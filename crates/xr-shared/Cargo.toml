@@ -4,5 +4,6 @@ description = "What the Apex Overlays app and its OpenXR layer share: the panel 
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+publish.workspace = true
 
 [dependencies]
