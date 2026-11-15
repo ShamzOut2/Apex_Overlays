@@ -115,8 +115,19 @@ export const forecast: OverlayDef = {
       ],
       group: 'Forecast',
     },
-    { key: 'slots', label: 'Times ahead', type: 'number', default: 4, min: 1, max: 8, group: 'Forecast', help: 'How many steps ahead to show (they stop at the end of the session)' },
-    { key: 'showNow', label: 'Weather now first', type: 'bool', default: true, group: 'Forecast' },
+    {
+      key: 'tiles',
+      label: 'Tiles',
+      type: 'select',
+      default: '5',
+      options: [
+        ['4', '4 tiles'],
+        ['5', '5 tiles'],
+      ],
+      group: 'Forecast',
+      help: 'The weather now is the first tile, then one per step: 4 tiles every 15 minutes covers the next 45 minutes',
+    },
+    { key: 'showNow', label: 'Weather now as the first tile', type: 'bool', default: true, group: 'Forecast', help: 'Off: every tile is a time ahead' },
     { key: 'showHeader', label: 'Title and time left', type: 'bool', default: true, group: 'Forecast' },
     { key: 'showTemp', label: 'Temperature', type: 'bool', default: true, group: 'What to show' },
     { key: 'showTrackTemp', when: (v) => v.showNow !== false, label: 'Track temperature (weather now)', type: 'bool', default: true, group: 'What to show' },
@@ -186,7 +197,8 @@ export const forecast: OverlayDef = {
       toggle(root, 'auto-hidden', !fc);
       if (!fc) return;
       const step = Number(s.interval) || 30;
-      const slots = Math.max(1, Math.min(8, s.slots as number));
+      const tiles = Number(s.tiles) === 4 ? 4 : 5;
+      const slots = s.showNow !== false ? tiles - 1 : tiles;
       const k = JSON.stringify([fc, step, slots, ctx.units]);
       if (k === key) return;
       key = k;
@@ -200,12 +212,18 @@ export const forecast: OverlayDef = {
         cards.push(card('NOW', fc.now.sky, isNight(fc.timeOfDay, 0), fc.now.air, rainNow, track));
         cards[now].classList.add('now');
       }
+      // Always the same number of tiles. Past the end of the session the forecast runs on as
+      // the session's last (the game says nothing beyond): those tiles are dimmed.
       for (let n = 1; n <= slots && fc.points.length; n++) {
         const m = n * step;
-        if (fc.minutesLeft != null && m > fc.minutesLeft + step / 2) break;
         const p = forecastAt(fc.points, m);
         if (!p) break;
-        cards.push(card(label(m), p.sky, isNight(fc.timeOfDay, m), p.temp, p.rain));
+        const c = card(label(m), p.sky, isNight(fc.timeOfDay, m), p.temp, p.rain);
+        if (fc.minutesLeft != null && m > fc.minutesLeft) {
+          c.classList.add('after');
+          c.title = 'After the end of this session: the session’s last forecast';
+        }
+        cards.push(c);
       }
       row.replaceChildren(...cards);
       text(sub, fc.minutesLeft != null ? `${Math.round(fc.minutesLeft)} min left` : '');
