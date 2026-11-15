@@ -4,7 +4,6 @@ description = "Apex Overlays OpenXR API layer: draws the overlays inside OpenXR 
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-publish.workspace = true
 
 [lib]
 name = "apex_xr_layer"

@@ -4,7 +4,6 @@ description = "Apex Overlays headless server: use the overlays as OBS browser so
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-publish.workspace = true
 
 [[bin]]
 name = "apex-overlays-server"
