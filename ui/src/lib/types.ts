@@ -319,6 +319,8 @@ export interface TrackMap {
   pit?: [[number, number], [number, number]][];
   source: string | null;
   recording: boolean;
+  /** Being built from the cars on track (Le Mans Ultimate) rather than recorded from your lap. */
+  building?: boolean;
   progress: number;
   sectors: number[];
   corners: Corner[];
@@ -403,6 +405,7 @@ export interface DeltaRefs {
 
 export interface Status {
   connected: boolean;
+  /** The game being read: 'iracing', 'lmu', 'mock', or '' while looking for one. */
   source: string;
   editMode: boolean;
   visible: boolean;
@@ -526,6 +529,9 @@ export interface Config {
   /** Saved arrangements of overlays, and the one in use. */
   layouts: SavedLayout[];
   activeLayout: string;
+  /** The game the overlays and layouts above belong to; the other games' are in gameSets. */
+  layoutGame?: string;
+  gameSets?: Record<string, { overlays: OverlayInstance[]; layouts: SavedLayout[]; activeLayout: string }>;
   fuel: { avgLaps: number; marginLaps: number; includeCautionLaps: boolean; includePitLaps: boolean };
   tyres: { wetThreshold: number; dryThreshold: number; useField: boolean; useCrossover: boolean; crossoverMargin: number };
   battle: { maxGap: number };
@@ -557,6 +563,8 @@ export interface Config {
   trackOutline: 'iracing' | 'recorded';
   /** 'balanced': timing tables a few times a second; 'full': everything 60 times a second. */
   updateRate: 'fast' | 'balanced' | 'full';
+  /** Which game to read: whichever is running, or one chosen by hand. */
+  game?: 'auto' | 'iracing' | 'lmu';
   /** Closing the settings window: ask, close everything, or keep the overlays running. */
   closeAction: 'ask' | 'quit' | 'keep';
 }
@@ -720,7 +728,33 @@ export interface VrState {
   overlays: number;
 }
 
+/** Sky words shared by both games. */
+export type Sky = 'clear' | 'light' | 'partly' | 'mostly' | 'overcast' | 'drizzle' | 'lightRain' | 'rain' | 'heavyRain' | 'storm';
+
+export interface ForecastPoint {
+  /** Minutes from now (negative: already begun). */
+  minutes: number;
+  sky: Sky;
+  /** Air temperature, °C. */
+  temp: number;
+  /** Chance of rain, 0-1. */
+  rain: number;
+}
+
+export interface Forecast {
+  game: string;
+  /** Minutes left in the session; null when it runs on laps. */
+  minutesLeft: number | null;
+  /** Seconds since midnight at the track. */
+  timeOfDay: number;
+  now: { sky: Sky; air: number; track: number; rain: number; wetness: number };
+  points: ForecastPoint[];
+  /** Why there is no forecast ('' when there is one). */
+  note: string;
+}
+
 export interface TopicMap {
+  forecast: Forecast;
   session: Session;
   player: Player;
   cars: Cars;

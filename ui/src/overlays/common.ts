@@ -176,7 +176,8 @@ export function driverCols<R extends Driver & Partial<Extras>>(s: Values): Col<R
       label: 'Lic',
       width: '3.4em',
       align: 'center',
-      render: (c, r) => chip(c, r.license.split(' ')[0] + ' ' + (r.license.split(' ')[1] ?? '').slice(0, 3), r.licenseColor),
+      // No licence (games other than iRacing): an empty cell rather than a blank chip.
+      render: (c, r) => (r.license ? chip(c, r.license.split(' ')[0] + ' ' + (r.license.split(' ')[1] ?? '').slice(0, 3), r.licenseColor) : c.firstChild && c.replaceChildren()),
     },
     { id: 'irating', label: 'iR', width: s.irGain !== false ? '5em' : '3.2em', align: 'center', render: (c, r) => iratingCell(c, r.irating, s.irGain !== false ? r.irDelta : null, licTint ? r.licenseColor : null) },
     { id: 'car', label: 'Car', width: 'minmax(3em, 0.7fr)', render: (c, r) => text(c, r.car) },

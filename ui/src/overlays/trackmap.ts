@@ -440,7 +440,14 @@ export const trackmap: OverlayDef = {
           base = null;
           const recording = (s.style as string) === 'full' && !map.points?.length;
           show(note, recording);
-          text(note, map.recording ? `Recording track outline… ${Math.round(map.progress * 100)}%` : 'Drive a clean lap to record the track outline');
+          text(
+            note,
+            map.building
+              ? `Mapping the track from the cars on it… ${Math.round(map.progress * 100)}%`
+              : map.recording
+                ? `Recording track outline… ${Math.round(map.progress * 100)}%`
+                : 'Drive a clean lap to record the track outline',
+          );
         } else if (topic === 'cars') {
           const prev = lanes().join();
           cars = data as Cars;

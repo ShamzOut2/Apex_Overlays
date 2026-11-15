@@ -9,7 +9,8 @@
 
 *A tool by Apex Labs.*
 
-A lightweight, fully customisable overlay suite for **iRacing**. It reads telemetry at the sim's native **60 Hz**,
+A lightweight, fully customisable overlay suite for **iRacing** and **Le Mans Ultimate** (switching automatically to
+whichever game you start, or the one you pick under *Settings → General → Game*). It reads telemetry at the sim's native **60 Hz**,
 does all the race maths once in a small native core (Rust), and draws each overlay as a minimal web page
 in a transparent, click-through window. The same pages work as **OBS browser sources** for streaming.
 

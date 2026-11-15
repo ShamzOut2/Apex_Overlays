@@ -764,7 +764,7 @@ pub fn build(
 const INDEX_URL: &str = "https://raw.githubusercontent.com/ShamzOut2/Apex_Overlays/main/data/iracing-track-maps.json";
 
 /// The shared library of recorded track outlines (see data/trackmaps in the repository).
-const LIBRARY_URL: &str = "https://raw.githubusercontent.com/ShamzOut2/Apex_Overlays/main/data/trackmaps";
+pub(crate) const LIBRARY_URL: &str = "https://raw.githubusercontent.com/ShamzOut2/Apex_Overlays/main/data/trackmaps";
 
 /// The public catalogue of iRacing's track maps kept by the racing-track-maps-vector project
 /// (every track and layout, read from iRacing's site, with a copy of each SVG layer): where

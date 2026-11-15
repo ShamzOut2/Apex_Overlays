@@ -4,6 +4,15 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 0.9.9
+
+### New features
+- Weather forecast overlay, for iRacing and Le Mans Ultimate: 4 or 5 tiles (you choose), the weather now and then every 15 or 30 minutes or every hour ahead (you choose), as modern cards with a sky icon (sun or moon by the time of day at the track), temperature and chance of rain, glowing blue when rain is likely. Le Mans Ultimate publishes a forecast for each session, read from the game; iRacing does not share its forecast with apps, so there the overlay shows the conditions now and says so. Turn it on under Overlays (it is added switched off)
+- Le Mans Ultimate support. Every overlay works in LMU: relative, standings, track map, inputs, fuel, delta bar, start lights (rolling starts), pit lane, spotter, weather and the rest. Apex Overlays reads LMU’s built-in shared memory (turn on “Enable Plugins” in the game’s settings; nothing to install). LMU has no iRating, licences or incident points, so those stay empty
+- Le Mans Ultimate track maps are drawn from where the cars actually are: LMU publishes every car’s position, so the map is built from all the cars on track at once (usually within a minute of a busy session, even while you sit in the garage or spectate), exact rather than reckoned from one lap of yours, with the pit lane drawn from cars driving through it, and sector lines from where cars change sector (also used for sector times). It is kept, so the next visit shows it straight away. LMU tracks also come from the shared map library (so a track mapped once is there for everyone: Settings → General → Game → Export my LMU track maps), and get corner names, pit entry and exit from Lovely Sim Racing’s LMU track data, as iRacing tracks do. iRacing’s track maps are unchanged
+- Game switch (Settings → General → Game): Automatic switches to whichever game you start, iRacing or Le Mans Ultimate; or pick one to stay with it. The status at the bottom of the settings window names the game being read
+- Each game has its own overlays and layouts: positions, sizes, settings and saved layouts made for iRacing stay with iRacing, and Le Mans Ultimate keeps its own. The first time a game is used it starts from a copy of your current setup; the Overlays page says which game’s overlays you are editing, and can copy the other game’s over
+
 ## 0.9.8
 
 ### Performance

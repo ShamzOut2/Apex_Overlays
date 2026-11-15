@@ -28,7 +28,19 @@
 
 ### `crates/core`
 - `model`: normalised `Telemetry` and `SessionInfo`. Sources fill these, and nothing downstream knows SDK variable names.
-- `source::iracing`: the live source. Variable handles are resolved once per connection.
+- `source::iracing`: the iRacing source. Variable handles are resolved once per connection.
+- `source::lmu`: the Le Mans Ultimate source, reading the game's built-in shared memory (`LMU_Data`; `lmu::data` mirrors
+  its layout, pinned by tests). It turns scoring and telemetry into the same telemetry rows and writes iRacing-style
+  session info (drivers, classes, the session), so the engine and every overlay read both games the same way. LMU tracks
+  get ids from 1,000,000,000 up, so nothing looks them up in iRacing's track lists. `lmu::map` builds their outline from
+  every car's world position and lap distance (averaged per stretch of lap, pit lane from cars in the pits), hands it to
+  the engine once complete (saved like a recorded outline), and the engine's heading-based recorder is not used for LMU.
+  Sector boundaries are learned from cars changing sector and written into the session info.
+  `lmu::extras` runs in the background while LMU is read: the weather forecast from the game's local REST API
+  (`localhost:6397/rest/sessions/weather`, five points per session; the `forecast` topic places them on the session
+  clock), Lovely's LMU track data (corners, pit entry/exit) and the shared map library under the LMU track ids.
+- `source::games`: picks the game: the one chosen under General → Game, or (automatic) whichever is running. When the
+  game changes the engine starts afresh and the status names the new game.
 - `source::mock`: a deterministic three-class race on a synthetic circuit. It emits YAML that goes through the real parser.
 - `engine`: derived state recomputed every tick:
   - running order and positions per class (live progress in races, best lap otherwise)

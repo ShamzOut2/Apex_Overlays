@@ -664,7 +664,7 @@ const overlaysPage: Page = {
     main.append(sel ? overlayEditor(sel, rerender) : h('p', 'dim', 'No overlays yet — press “Add overlay”.'));
     const wrap = h('div', 'ov-layout');
     wrap.append(list, main);
-    el.replaceChildren(bar, wrap);
+    el.replaceChildren(bar, ...gameStrip(rerender), wrap);
   },
 };
 
@@ -1258,6 +1258,103 @@ listen((t) => {
   if (t === 'monitor' && monitorView.tiles.size && document.contains([...monitorView.tiles.values()][0])) drawMonitor();
 });
 
+/** Overlays page: whose overlays these are, and copying the other game's. */
+function gameStrip(rerender: () => void): HTMLElement[] {
+  const cfg = state.config!;
+  const game = cfg.layoutGame ?? '';
+  if (!game) return [];
+  const others = Object.entries(cfg.gameSets ?? {}).filter(([g, set]) => g !== game && set.overlays.length);
+  const strip = h('div', 'notice game-strip');
+  strip.append(
+    h('span', '', `Overlays for ${gameName(game)}. Each game keeps its own overlays and layouts: pick the other game under General → Game to set it up.`),
+  );
+  for (const [g, set] of others) {
+    strip.append(
+      button(`Copy ${gameName(g)}’s overlays here`, () => {
+        if (!confirm(`Replace ${gameName(game)}’s overlays and layouts with a copy of ${gameName(g)}’s?`)) return;
+        cfg.overlays = structuredClone(set.overlays);
+        cfg.layouts = structuredClone(set.layouts);
+        cfg.activeLayout = set.activeLayout;
+        save(true);
+        rerender();
+      }),
+    );
+  }
+  return [strip];
+}
+
+/** A game's name for people ('iracing' → iRacing). */
+export function gameName(id: string): string {
+  return id === 'mock' ? 'Mock sim' : id === 'lmu' ? 'Le Mans Ultimate' : 'iRacing';
+}
+
+/** Which game to read: automatic, or one chosen by hand. */
+function gameCard(): HTMLElement {
+  const cfg = state.config!;
+  const c = card('Game');
+  c.append(
+    h('p', 'dim', 'Apex Overlays reads iRacing and Le Mans Ultimate. Automatic switches to whichever game you start; pick one to stay with it.'),
+    form(
+      [
+        {
+          key: 'game',
+          label: 'Game',
+          type: 'select',
+          default: 'auto',
+          options: [
+            ['auto', 'Automatic'],
+            ['iracing', 'iRacing'],
+            ['lmu', 'Le Mans Ultimate'],
+          ],
+          help: 'Automatic: whichever game is running',
+        },
+      ],
+      { game: cfg.game ?? 'auto' },
+      (_k, v) => {
+        cfg.game = v as 'auto' | 'iracing' | 'lmu';
+        save();
+      },
+    ),
+  );
+  const s = state.status;
+  const auto = (cfg.game ?? 'auto') === 'auto';
+  const line = !s
+    ? 'Not connected to the app.'
+    : s.connected
+      ? `Reading ${gameName(s.source)}${auto ? ' (found automatically)' : ''}.`
+      : s.source
+        ? `Waiting for ${gameName(s.source)} — start a session in the game.`
+        : 'Looking for iRacing or Le Mans Ultimate — start a session in either game.';
+  c.append(h('div', `notice${s?.connected ? ' good' : ''}`, line));
+  c.append(
+    h(
+      'p',
+      'dim small',
+      'Le Mans Ultimate: its built-in shared memory must be on. Turn on “Enable Plugins” in the game’s settings, then restart the game. No plugin needs installing.',
+    ),
+    h(
+      'p',
+      'dim small',
+      'In Le Mans Ultimate there are no iRating, licences or incident points, so those columns stay empty. Track maps are drawn from where the cars on track are, usually within a minute, and kept; tracks in the shared map library appear straight away.',
+    ),
+    button('Export my LMU track maps', async () => {
+      // For the shared map library, so other drivers get these tracks without mapping them.
+      try {
+        const r = await fetch('/api/lmu-track-maps');
+        const d = (await r.json()) as { maps: unknown[] };
+        if (!d.maps?.length) {
+          alert('No Le Mans Ultimate track maps yet: they are made as you go on track in LMU.');
+          return;
+        }
+        download('apex-lmu-track-maps.json', d);
+      } catch {
+        alert('Could not read the track maps.');
+      }
+    }),
+  );
+  return c;
+}
+
 /** VR (SteamVR overlays or the OpenXR layer, desktop app on Windows). */
 function vrCard(): HTMLElement {
   const cfg = state.config!;
@@ -1428,7 +1525,7 @@ const generalPage: Page = {
         'General',
         form(
           [
-            { key: 'units', label: 'Units', type: 'select', default: 'auto', options: [['auto', 'Same as iRacing'], ['metric', 'Metric'], ['imperial', 'Imperial']], group: 'Display' },
+            { key: 'units', label: 'Units', type: 'select', default: 'auto', options: [['auto', 'Same as the game'], ['metric', 'Metric'], ['imperial', 'Imperial']], group: 'Display' },
             {
               key: 'ratingsOfficialOnly',
               label: 'Only estimate iRating / SR in official races',
@@ -1486,6 +1583,7 @@ const generalPage: Page = {
           },
         ),
       ),
+      gameCard(),
       hotkeysCard(),
       vrCard(),
       monitoringCard(),

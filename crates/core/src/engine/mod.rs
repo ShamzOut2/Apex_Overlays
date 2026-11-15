@@ -182,6 +182,8 @@ pub struct Engine {
     /// Corners of the current track (custom > downloaded > source-provided).
     pub corners: Vec<Corner>,
     pub corners_source: &'static str,
+    /// Le Mans Ultimate's weather forecast, while LMU is read.
+    pub lmu_forecast: Option<crate::source::lmu::extras::Forecast>,
     remote_track: Option<(i64, crate::corners::TrackData, &'static str)>,
     /// Lovely Car Data per `CarPath` (lower case) and Lovely Car Classes shorthands.
     pub car_data: std::collections::HashMap<String, crate::cardata::CarData>,
@@ -233,6 +235,7 @@ impl Engine {
             sectors: Default::default(),
             corners: vec![],
             corners_source: "none",
+            lmu_forecast: None,
             remote_track: None,
             remote_countries: Default::default(),
             car_data: Default::default(),
@@ -749,7 +752,11 @@ impl Engine {
             }
         }
         self.weather.update(&self.tel);
-        self.map.update(&self.tel, &self.info);
+        // Le Mans Ultimate publishes where the cars are: its source builds the outline from that
+        // (see source::lmu::map) instead of reckoning it from the player's heading.
+        if self.source != "lmu" {
+            self.map.update(&self.tel, &self.info);
+        }
         let me = usize::try_from(self.tel.player_idx).ok().and_then(|i| self.static_of(i)).map(|s| s.name.clone()).unwrap_or_default();
         self.laps.update(&self.tel, &self.info, &me);
         self.sectors.update(&self.tel, &self.info.sectors);

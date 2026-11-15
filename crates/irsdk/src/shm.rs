@@ -122,3 +122,66 @@ impl Drop for SharedMemory {
         }
     }
 }
+
+/// A read-only view of another program's named memory-mapped file (e.g. Le Mans Ultimate's
+/// "LMU_Data"). The mapping is closed when this is dropped.
+pub struct NamedMapping {
+    mapping: HANDLE,
+    view: MEMORY_MAPPED_VIEW_ADDRESS,
+    len: usize,
+}
+
+// The handles are process-wide kernel objects; moving them across threads is fine.
+unsafe impl Send for NamedMapping {}
+
+impl NamedMapping {
+    /// Opens the mapping if it exists (the program publishing it is running). `None` otherwise.
+    pub fn open(name: &str) -> Option<Self> {
+        unsafe {
+            let mapping = OpenFileMappingW(FILE_MAP_READ, 0, wide(name).as_ptr());
+            if mapping.is_null() {
+                return None;
+            }
+            let view = MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0);
+            if view.Value.is_null() {
+                CloseHandle(mapping);
+                return None;
+            }
+            let mut info: MEMORY_BASIC_INFORMATION = std::mem::zeroed();
+            VirtualQuery(view.Value, &mut info, std::mem::size_of::<MEMORY_BASIC_INFORMATION>());
+            Some(Self { mapping, view, len: info.RegionSize })
+        }
+    }
+
+    /// Size of the mapped view in bytes (at least the mapping's size, rounded up to a page).
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
+    /// Copies a `T` from `offset`, if it lies inside the view. The other program writes
+    /// concurrently, so callers check what they read for consistency.
+    ///
+    /// # Safety
+    /// `T` must be plain old data (any bit pattern valid), such as `#[repr(C)]` structs of
+    /// numbers and byte arrays.
+    pub unsafe fn read<T: Copy>(&self, offset: usize) -> Option<T> {
+        let end = offset.checked_add(std::mem::size_of::<T>())?;
+        if end > self.len {
+            return None;
+        }
+        Some(ptr::read_unaligned((self.view.Value as *const u8).add(offset) as *const T))
+    }
+}
+
+impl Drop for NamedMapping {
+    fn drop(&mut self) {
+        unsafe {
+            UnmapViewOfFile(self.view);
+            CloseHandle(self.mapping);
+        }
+    }
+}

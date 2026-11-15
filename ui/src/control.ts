@@ -5,7 +5,7 @@ import { leaguesPage } from './control/leagues';
 import { raceControlPage } from './control/racecontrol';
 import { renderUpdatePrompt } from './control/updatePrompt';
 import { renderClosePrompt } from './control/closePrompt';
-import { PAGES, type Page } from './control/pages';
+import { gameName, PAGES, type Page } from './control/pages';
 import { listen, pageTopics, state } from './control/state';
 import { applyUiTheme } from './lib/theme';
 import { labsLogo } from './control/brand';
@@ -75,17 +75,23 @@ function renderStatus() {
   const s = state.status;
   const sess = state.session;
   conn.className = `conn ${s?.connected ? 'up' : 'down'}`;
-  text(conn, s ? (s.connected ? `${s.source === 'mock' ? 'Mock sim' : 'iRacing'} connected${sess?.trackName ? ` · ${sess.trackName}` : ''}` : `Waiting for iRacing…`) + ` · v${s.version}` : 'Not connected to server');
+  const game = gameName(s?.source ?? '');
+  text(conn, s ? (s.connected ? `${game} connected${sess?.trackName ? ` · ${sess.trackName}` : ''}` : `Waiting for ${s.source ? game : 'iRacing or Le Mans Ultimate'}…`) + ` · v${s.version}` : 'Not connected to server');
 }
 
 let lastLive = 0;
 window.addEventListener('hashchange', render);
 let leagueKey = '';
 let wasInVr = false;
+let lastGame = '';
 listen((t) => {
   if (t === 'config') render();
   if (t === 'status') {
     renderStatus();
+    // The Game card on General says which game is being read.
+    const game = `${state.status?.source}|${state.status?.connected}`;
+    if (game !== lastGame && current().id === 'general' && !(document.activeElement instanceof HTMLInputElement)) render();
+    lastGame = game;
     // Edit-mode / visibility buttons live on the overlays page.
     if (current().id === 'overlays') render();
   }

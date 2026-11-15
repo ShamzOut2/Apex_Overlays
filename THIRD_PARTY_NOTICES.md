@@ -46,3 +46,9 @@ overlays in VR. It is distributed under the BSD 3-Clause licence in
 
 The OpenXR layer (`apps/xr-layer`) uses the `openxr-sys` crate (https://github.com/Ralith/openxrs),
 MIT or Apache-2.0, generated from the Khronos OpenXR registry (Apache-2.0).
+
+## Le Mans Ultimate shared memory layout
+The layout of Le Mans Ultimate's built-in shared memory (`crates/core/src/source/lmu/data.rs`) follows the mapping in
+[pyLMUSharedMemory](https://github.com/TinyPedal/pyLMUSharedMemory) (MIT licence), itself based on the
+SharedMemoryInterface header Studio 397 ships with the game. No code from it is included; the Rust structures were
+written for this app and checked against the documented sizes and offsets.

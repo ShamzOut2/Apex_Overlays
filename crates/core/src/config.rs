@@ -27,6 +27,10 @@ pub struct Config {
     /// Saved layouts, and the one in use ("" = none).
     pub layouts: Vec<Layout>,
     pub active_layout: String,
+    /// The game the overlays and layouts above belong to ("" until a game has been read).
+    /// Each game keeps its own: the other games' are kept in `game_sets` (see `switch_game`).
+    pub layout_game: String,
+    pub game_sets: std::collections::BTreeMap<String, GameSet>,
     pub hotkeys: Hotkeys,
     pub vr: VrConfig,
     pub fuel: FuelConfig,
@@ -59,6 +63,8 @@ pub struct Config {
     /// "balanced" (timing tables a few times a second, driving aids every tick) or "full"
     /// (everything every tick, as before 0.5.6).
     pub update_rate: String,
+    /// Which game to read: "auto" (whichever is running), "iracing" or "lmu" (Le Mans Ultimate).
+    pub game: String,
     /// Closing the settings window: "ask", "quit" (overlays close too) or "keep" (overlays
     /// keep running, the app stays in the tray).
     pub close_action: String,
@@ -129,6 +135,7 @@ impl Default for Config {
                 o("tyres", "tyres", 1540, 680, 300, 150),
                 o("flags", "flags", 860, 70, 220, 110),
                 o("startLights", "startLights", 760, 190, 400, 110),
+                OverlayInstance { enabled: false, ..o("forecast", "forecast", 1240, 520, 460, 150) },
                 o("spotter", "spotter", 850, 520, 220, 200),
                 o("pit", "pit", 845, 300, 230, 200),
                 o("safety", "safety", 760, 160, 400, 230),
@@ -139,6 +146,8 @@ impl Default for Config {
             ],
             layouts: vec![],
             active_layout: String::new(),
+            layout_game: String::new(),
+            game_sets: Default::default(),
             hotkeys: Hotkeys::default(),
             vr: VrConfig::default(),
             fuel: FuelConfig::default(),
@@ -159,6 +168,7 @@ impl Default for Config {
             update_postpone: None,
             track_outline: "iracing".into(),
             update_rate: "balanced".into(),
+            game: "auto".into(),
             close_action: "ask".into(),
         }
     }
@@ -560,7 +570,38 @@ pub struct ConfigStore {
     tx: Arc<watch::Sender<u64>>,
 }
 
+/// One game's overlays with their saved layouts and the layout in use.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct GameSet {
+    pub overlays: Vec<OverlayInstance>,
+    pub layouts: Vec<Layout>,
+    pub active_layout: String,
+}
+
 impl Config {
+    /// Bring in `game`'s overlays and layouts, keeping the current ones for the game they
+    /// belong to. A game used for the first time starts from a copy of the current set.
+    /// Returns whether anything changed.
+    pub fn switch_game(&mut self, game: &str) -> bool {
+        if game.is_empty() || game == "mock" || game == self.layout_game {
+            return false;
+        }
+        if !self.layout_game.is_empty() {
+            let current = GameSet { overlays: self.overlays.clone(), layouts: self.layouts.clone(), active_layout: self.active_layout.clone() };
+            self.game_sets.insert(self.layout_game.clone(), current);
+        }
+        if let Some(set) = self.game_sets.remove(game) {
+            self.overlays = set.overlays;
+            self.layouts = set.layouts;
+            self.active_layout = set.active_layout;
+            // Overlays added in versions since this set was last used.
+            self.add_new_kinds();
+        }
+        self.layout_game = game.to_string();
+        true
+    }
+
     /// Switch to a saved layout. The arrangement in use is first kept in the layout it came
     /// from, so moving or changing overlays is never lost by switching.
     pub fn apply_layout(&mut self, id: &str) -> bool {
@@ -601,7 +642,7 @@ impl Config {
     /// they appear in the overlay list and the hotkeys straight away.
     pub fn add_new_kinds(&mut self) {
         let defaults = Config::default().overlays;
-        for kind in ["safety", "delta", "inputGraph", "startLights"] {
+        for kind in ["safety", "delta", "inputGraph", "startLights", "forecast"] {
             if self.overlays.iter().any(|o| o.kind == kind) {
                 continue;
             }
@@ -732,6 +773,35 @@ mod tests {
     use super::*;
 
     #[test]
+    fn each_game_keeps_its_own_overlays_and_layouts() {
+        let mut c = Config::default();
+        let n = c.overlays.len();
+        // First game read: the current set becomes iRacing's.
+        assert!(c.switch_game("iracing"));
+        assert!(!c.switch_game("iracing"), "already iRacing's");
+        assert!(!c.switch_game("") && !c.switch_game("mock"), "no game / the mock change nothing");
+        c.overlays[0].x = 111;
+        c.layouts.push(Layout { id: "ir".into(), name: "iRacing race".into(), ..Default::default() });
+        // LMU for the first time: a copy of the current set to start from.
+        assert!(c.switch_game("lmu"));
+        assert_eq!((c.overlays.len(), c.overlays[0].x, c.layouts.len()), (n, 111, 1));
+        // Changes in LMU stay in LMU.
+        c.overlays[0].x = 222;
+        c.overlays.truncate(3);
+        c.layouts.clear();
+        assert!(c.switch_game("iracing"));
+        assert_eq!((c.overlays.len(), c.overlays[0].x, c.layouts.len()), (n, 111, 1), "iRacing's set is back as it was");
+        assert!(c.switch_game("lmu"));
+        assert_eq!((c.overlays[0].x, c.layouts.len()), (222, 0), "and LMU's");
+        // Overlays added in a newer version join a set brought back in (switched off).
+        assert!(c.overlays.len() >= 3 && c.overlays.iter().any(|o| o.kind == "startLights" && !o.enabled));
+        // Saved and loaded with the config.
+        let back: Config = serde_json::from_str(&serde_json::to_string(&c).unwrap()).unwrap();
+        assert_eq!(back.layout_game, "lmu");
+        assert_eq!(back.game_sets["iracing"].overlays[0].x, 111);
+    }
+
+    #[test]
     fn vr_position_is_separate_from_the_screen_one() {
         let mut o = OverlayInstance { x: 10, y: 20, width: 300, height: 100, ..Default::default() };
         // Not moved in VR yet: VR uses the screen position.
@@ -796,9 +866,15 @@ mod tests {
         let added: Vec<_> = c.overlays.iter().skip(1).map(|o| (o.id.as_str(), o.kind.as_str(), o.enabled)).collect();
         assert_eq!(
             added,
-            vec![("safety-2", "safety", false), ("delta", "delta", false), ("inputGraph", "inputGraph", false), ("startLights", "startLights", false)]
+            vec![
+                ("safety-2", "safety", false),
+                ("delta", "delta", false),
+                ("inputGraph", "inputGraph", false),
+                ("startLights", "startLights", false),
+                ("forecast", "forecast", false)
+            ]
         );
         c.add_new_kinds();
-        assert_eq!(c.overlays.len(), 5);
+        assert_eq!(c.overlays.len(), 6);
     }
 }
