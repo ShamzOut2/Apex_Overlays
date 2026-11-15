@@ -315,6 +315,8 @@ pub struct PlayerOut {
     pub race_start_in: Option<f32>,
     /// A race session is forming up / on its parade laps (the start comes next).
     pub gridding: bool,
+    /// Rolling start: "pacing", "oneToGreen", "green" or "" (see `model::rolling_start`).
+    pub rolling: &'static str,
 }
 
 pub fn player(e: &Engine) -> PlayerOut {
@@ -351,6 +353,8 @@ pub fn player(e: &Engine) -> PlayerOut {
         race_start_in: (e.is_race() && matches!(t.session_state, 1 | 2) && t.session_time_remain > 0.0 && t.session_time_remain < 3600.0)
             .then(|| round(t.session_time_remain as f32, 1)),
         gridding: e.is_race() && t.session_state == 3,
+        // Standing starts have formation laps too: only a rolling start's pace laps count.
+        rolling: if e.is_race() && e.info.standing_start == Some(false) { model::rolling_start(t.session_state, t.session_flags) } else { "" },
     }
 }
 

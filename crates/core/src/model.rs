@@ -76,6 +76,22 @@ pub mod flags {
     }
 }
 
+/// A race's rolling start, from the session state (3 = parade / pace laps, 4 = racing) and
+/// flags: "pacing" on the pace laps, "oneToGreen" on the last one, "green" once the green flag
+/// is out, "" otherwise. Only when iRacing shows no start lights (a standing start has them).
+pub fn rolling_start(session_state: i32, session_flags: u32) -> &'static str {
+    let lights = session_flags & (flags::START_READY | flags::START_SET | flags::START_GO) != 0 && session_flags & flags::START_HIDDEN == 0;
+    if lights {
+        return "";
+    }
+    match session_state {
+        3 if session_flags & flags::ONE_LAP_TO_GREEN != 0 => "oneToGreen",
+        3 => "pacing",
+        4 if session_flags & flags::GREEN != 0 => "green",
+        _ => "",
+    }
+}
+
 /// The start lights from the session flags: "ready" (red lights on), "set", "go" (green), or
 /// "" when they are not showing (none, or hidden as in rolling starts).
 pub fn start_lights(session_flags: u32) -> &'static str {
@@ -392,6 +408,8 @@ pub struct SessionInfo {
     /// IncidentWarningInitialLimit / IncidentWarningSubsequentLimit); None when unlimited.
     pub incident_warning: Option<i32>,
     pub incident_warning_every: Option<i32>,
+    /// The race starts standing (WeekendOptions.StandingStart: 1) or rolling (0); unknown if missing.
+    pub standing_start: Option<bool>,
     /// Pit lane speed limit (km/h, 0 = unknown).
     pub pit_speed_limit_kph: f32,
     pub sessions: Vec<SessionDef>,
@@ -513,6 +531,7 @@ impl SessionInfo {
             incident_limit: wi.path("WeekendOptions.IncidentLimit").i64().map(|v| v as i32),
             incident_warning: wi.path("WeekendOptions.IncidentWarningInitialLimit").i64().map(|v| v as i32).filter(|v| *v > 0),
             incident_warning_every: wi.path("WeekendOptions.IncidentWarningSubsequentLimit").i64().map(|v| v as i32).filter(|v| *v > 0),
+            standing_start: wi.path("WeekendOptions.StandingStart").i64().map(|v| v != 0),
             pit_speed_limit_kph: {
                 let s = wi.get("TrackPitSpeedLimit").string();
                 let v = wi.get("TrackPitSpeedLimit").f32_or(0.0);
@@ -679,6 +698,16 @@ mod tests {
     }
 
     #[test]
+    fn rolling_start_from_state_and_flags() {
+        assert_eq!(rolling_start(3, flags::START_HIDDEN), "pacing");
+        assert_eq!(rolling_start(3, flags::START_HIDDEN | flags::ONE_LAP_TO_GREEN), "oneToGreen");
+        assert_eq!(rolling_start(4, flags::START_HIDDEN | flags::GREEN), "green");
+        assert_eq!(rolling_start(4, 0), "", "racing, no green flag out");
+        assert_eq!(rolling_start(3, flags::START_READY), "", "a standing start has lights");
+        assert_eq!(rolling_start(2, 0), "");
+    }
+
+    #[test]
     fn start_lights_from_flags() {
         assert_eq!(start_lights(0), "");
         assert_eq!(start_lights(flags::START_READY), "ready");
@@ -690,7 +719,7 @@ mod tests {
     #[test]
     fn carry_over_and_incident_limits() {
         let s = SessionInfo::parse(
-            "WeekendInfo:\n WeekendOptions:\n  IncidentLimit: 25\n  IncidentWarningInitialLimit: 10\n  IncidentWarningSubsequentLimit: 5\nSessionInfo:\n Sessions:\n - SessionNum: 0\n   SessionType: Practice\n   SessionTrackRubberState: low usage\n - SessionNum: 1\n   SessionType: Qualify\n   SessionTrackRubberState: carry over\n - SessionNum: 2\n   SessionType: Race\n   SessionTrackRubberState: carry over\n",
+            "WeekendInfo:\n WeekendOptions:\n  IncidentLimit: 25\n  IncidentWarningInitialLimit: 10\n  IncidentWarningSubsequentLimit: 5\n  StandingStart: 0\nSessionInfo:\n Sessions:\n - SessionNum: 0\n   SessionType: Practice\n   SessionTrackRubberState: low usage\n - SessionNum: 1\n   SessionType: Qualify\n   SessionTrackRubberState: carry over\n - SessionNum: 2\n   SessionType: Race\n   SessionTrackRubberState: carry over\n",
         );
         // Carry over: what the last session that says left.
         assert_eq!(s.rubber_state(2), "low usage");
@@ -703,6 +732,8 @@ mod tests {
         assert_eq!(no_dq.incident_limits(), vec![10, 20, 30, 40, 50, 60]);
         let fresh = SessionInfo::parse("SessionInfo:\n Sessions:\n - SessionNum: 0\n   SessionTrackRubberState: carry over\n");
         assert_eq!(fresh.rubber_state(0), "", "nothing earlier to carry over from");
+        assert_eq!(s.standing_start, Some(false), "a rolling start");
+        assert_eq!(fresh.standing_start, None);
     }
 
     #[test]

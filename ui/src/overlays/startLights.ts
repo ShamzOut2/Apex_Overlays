@@ -1,12 +1,14 @@
 // Start lights: a row of light pods that only appears for the start. Optionally a countdown
 // to the start first, as a warning; then red lights come on (ready), all red (set), green
-// (or lights out) for the go, and it hides again.
+// (or lights out) for the go, and it hides again. Rolling starts (no lights in iRacing): amber
+// on the pace laps, pulsing on the last one, green when the green flag drops.
 
 import { h, show, style, text, toggle } from '../lib/dom';
 import type { OverlayDef } from '../lib/overlay';
 import type { Player, Status } from '../lib/types';
 
 type Phase = '' | 'ready' | 'set' | 'go';
+type Rolling = '' | 'pacing' | 'oneToGreen' | 'green';
 
 /** How long "GET READY" waits for the lights after the countdown (rolling starts have none). */
 const GET_READY_MAX = 20_000;
@@ -15,7 +17,7 @@ export const startLights: OverlayDef = {
   kind: 'startLights',
   name: 'Start lights',
   description:
-    'Race start lights that appear only for the start: a countdown first as a warning (optional), then red lights, all red when set, green (or lights out) for the go, then it disappears. Hidden for rolling starts, where iRacing shows no lights.',
+    'Race start lights that appear only for the start: a countdown first as a warning (optional), then red lights, all red when set, green (or lights out) for the go, then it disappears. For rolling starts: amber on the pace laps, pulsing on the last one, green when the green flag drops.',
   topics: ['player', 'status'],
   size: [400, 110],
   // Nothing behind the lights: the window is see-through.
@@ -37,8 +39,10 @@ export const startLights: OverlayDef = {
     },
     { key: 'goSeconds', label: 'Keep showing after the go', type: 'number', default: 2, min: 0, max: 10, step: 0.5, unit: 's', group: 'Lights' },
     { key: 'showLabel', label: 'COUNTDOWN / READY / SET / GO wording', type: 'bool', default: true, group: 'Lights' },
+    { key: 'rolling', label: 'Show rolling starts', type: 'bool', default: true, group: 'Rolling starts', help: 'Amber on the pace laps, pulsing on the last one ("1 lap to green"), green when the green flag drops' },
     { key: 'redColor', label: 'Red', type: 'color', default: '#ff2a3d', group: 'Colours' },
     { key: 'greenColor', label: 'Green', type: 'color', default: '#22e07a', group: 'Colours' },
+    { key: 'paceColor', when: (v) => v.rolling !== false, label: 'Pace laps', type: 'color', default: '#ffb020', group: 'Colours' },
     { key: 'countColor', when: (v) => v.countdown !== false, label: 'Countdown', type: 'color', default: '#ffffff', group: 'Colours' },
   ],
   create(root, ctx) {
@@ -48,6 +52,7 @@ export const startLights: OverlayDef = {
     style(root, '--sl-red', s.redColor as string);
     style(root, '--sl-green', s.greenColor as string);
     style(root, '--sl-count', s.countColor as string);
+    style(root, '--sl-amber', s.paceColor as string);
     const n = Math.max(3, Math.min(5, Math.round(s.lights as number)));
     const gantry = h('div', 'sl-gantry');
     const pods = Array.from({ length: n }, () => {
@@ -66,6 +71,9 @@ export const startLights: OverlayDef = {
     let goAt = 0;
     let startIn: number | null = null;
     let gridding = false;
+    let rolling: Rolling = '';
+    // The green flag just dropped after the pace laps (not just "green" mid-race).
+    let rollingGo = false;
     // When the countdown ran out (the grid forms next), for "GET READY".
     let countdownEnded = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -77,9 +85,12 @@ export const startLights: OverlayDef = {
       const now = performance.now();
       const goLeft = (s.goSeconds as number) * 1000 - (now - goAt);
       const counting = !!s.countdown && !lights && startIn != null && startIn <= (s.countdownFrom as number);
-      const getReady = !!s.countdown && !lights && !counting && countdownEnded > 0 && gridding && now - countdownEnded < GET_READY_MAX;
+      // Rolling start: amber while pacing (pulsing on the last lap), green for the go.
+      const pace = !!s.rolling && !lights && (rolling === 'pacing' || rolling === 'oneToGreen') ? rolling : '';
+      const rollGo = !!s.rolling && !lights && rollingGo && goLeft > 0;
+      const getReady = !!s.countdown && !lights && !counting && !pace && !rollGo && countdownEnded > 0 && gridding && now - countdownEnded < GET_READY_MAX;
       const lit = lights === 'ready' || lights === 'set' || (lights === 'go' && goLeft > 0);
-      toggle(root, 'auto-hidden', !(lit || counting || getReady));
+      toggle(root, 'auto-hidden', !(lit || counting || getReady || pace || rollGo));
       // The countdown takes the place of the lights; "GET READY" shows them, still dark.
       show(count, counting);
       show(gantry, !counting);
@@ -87,16 +98,20 @@ export const startLights: OverlayDef = {
       if (counting) text(count, String(Math.max(1, Math.ceil(startIn as number))));
       // Ready: the first lights red (three of five); set: all red; go: green, or all out.
       const red = lights === 'ready' ? Math.ceil(n * 0.6) : lights === 'set' ? n : 0;
-      const green = lights === 'go' && s.goStyle !== 'out';
+      const green = (lights === 'go' && s.goStyle !== 'out') || rollGo;
       pods.forEach((p, i) => {
         toggle(p, 'red', i < red);
         toggle(p, 'green', green);
+        toggle(p, 'amber', !!pace);
       });
-      toggle(root, 'go', lights === 'go');
-      text(label, counting ? 'RACE STARTS IN' : getReady ? 'GET READY' : lights === 'go' ? 'GO' : lights === 'set' ? 'SET' : lights === 'ready' ? 'READY' : '');
+      toggle(root, 'go', lights === 'go' || rollGo);
+      toggle(root, 'pacing', !!pace);
+      toggle(root, 'pulse', pace === 'oneToGreen');
+      const words = counting ? 'RACE STARTS IN' : pace === 'oneToGreen' ? '1 LAP TO GREEN' : pace ? 'ROLLING START' : rollGo ? 'GO' : getReady ? 'GET READY' : lights === 'go' ? 'GO' : lights === 'set' ? 'SET' : lights === 'ready' ? 'READY' : '';
+      text(label, words);
       if (timer) clearTimeout(timer);
       timer = null;
-      if (lights === 'go' && goLeft > 0) timer = setTimeout(draw, goLeft + 20);
+      if ((lights === 'go' || rollGo) && goLeft > 0) timer = setTimeout(draw, goLeft + 20);
       else if (getReady) timer = setTimeout(draw, GET_READY_MAX - (now - countdownEnded) + 20);
     };
     draw();
@@ -116,8 +131,15 @@ export const startLights: OverlayDef = {
         if (left == null && startIn != null) countdownEnded = performance.now();
         if (next) countdownEnded = 0;
         const shownBefore = startIn == null ? null : Math.ceil(startIn);
-        const changed = next !== phase || (left == null) !== (startIn == null) || (left != null && Math.ceil(left) !== shownBefore) || !!p.gridding !== gridding;
+        const roll = (p.rolling ?? '') as Rolling;
+        const changed = next !== phase || (left == null) !== (startIn == null) || (left != null && Math.ceil(left) !== shownBefore) || !!p.gridding !== gridding || roll !== rolling;
         if (next === 'go' && phase !== 'go') goAt = performance.now();
+        // Green straight after the pace laps is the start; green at any other time is not.
+        if (roll === 'green' && (rolling === 'pacing' || rolling === 'oneToGreen')) {
+          rollingGo = true;
+          goAt = performance.now();
+        } else if (roll !== 'green') rollingGo = false;
+        rolling = roll;
         phase = next;
         startIn = left;
         gridding = !!p.gridding;

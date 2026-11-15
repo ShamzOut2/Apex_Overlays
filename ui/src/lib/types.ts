@@ -92,6 +92,8 @@ export interface Player {
   raceStartIn?: number | null;
   /** A race is forming up / on its parade laps. */
   gridding?: boolean;
+  /** Rolling start: the pace laps, the last one ("one lap to green"), the green flag; '' otherwise. */
+  rolling?: '' | 'pacing' | 'oneToGreen' | 'green';
 }
 
 export interface CarDot {
