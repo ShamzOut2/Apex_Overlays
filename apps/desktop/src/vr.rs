@@ -640,7 +640,10 @@ mod imp {
         let publish = |app: &AppHandle, status: &mut String, s: &str, msg: &str, n: usize| {
             let v = serde_json::json!({ "status": s, "message": msg, "overlays": n }).to_string();
             if *status != v {
-                app.state::<Core>().hub.publish("vr", &v);
+                let hub = &app.state::<Core>().hub;
+                hub.publish("vr", &v);
+                // "on": the overlays are in the headset, so the windows take their VR positions.
+                hub.host(apex_core::hub::HostEvent::VrActive { value: s == "on" });
                 *status = v;
             }
         };
@@ -772,7 +775,9 @@ mod imp {
                 for (o, hwnd) in &wanted {
                     let (aw, ah) = sizes.get(&crate::label_for(&o.id)).copied().unwrap_or_default();
                     let size = |auto: f64, set: u32| if auto > 0.0 { auto } else { set as f64 };
-                    let p = placement(o, &cfg.vr, screen, (o.x as f64, o.y as f64, size(aw, o.width), size(ah, o.height)));
+                    // The VR position when the overlay has one of its own, else the screen one.
+                    let rect = o.geometry(true);
+                    let p = placement(o, &cfg.vr, screen, (rect.x as f64, rect.y as f64, size(aw, rect.width), size(ah, rect.height)));
                     if !x.captures.contains_key(&o.id) && x.failed.get(&o.id).is_none_or(|t| t.elapsed() > Duration::from_secs(5)) {
                         match Capture::new(g, *hwnd, true) {
                             Ok(c) => {
@@ -894,7 +899,9 @@ mod imp {
             for (o, hwnd) in &wanted {
                 let (aw, ah) = sizes.get(&crate::label_for(&o.id)).copied().unwrap_or_default();
                 let size = |auto: f64, set: u32| if auto > 0.0 { auto } else { set as f64 };
-                let p = placement(o, &cfg.vr, screen, (o.x as f64, o.y as f64, size(aw, o.width), size(ah, o.height)));
+                // The VR position when the overlay has one of its own, else the screen one.
+                let rect = o.geometry(true);
+                let p = placement(o, &cfg.vr, screen, (rect.x as f64, rect.y as f64, size(aw, rect.width), size(ah, rect.height)));
                 let l = match live.get_mut(&o.id) {
                     Some(l) => l,
                     None => {

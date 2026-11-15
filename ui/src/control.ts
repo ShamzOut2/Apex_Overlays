@@ -81,6 +81,7 @@ function renderStatus() {
 let lastLive = 0;
 window.addEventListener('hashchange', render);
 let leagueKey = '';
+let wasInVr = false;
 listen((t) => {
   if (t === 'config') render();
   if (t === 'status') {
@@ -99,6 +100,12 @@ listen((t) => {
     }
   }
   if ((t === 'trackmap' || t === 'vr') && current().id === 'general') render();
+  // Entering or leaving VR: the overlay editor's position boxes switch between the screen and VR positions.
+  if (t === 'vr') {
+    const inVr = state.vr?.status === 'on';
+    if (inVr !== wasInVr && current().id === 'overlays' && !(document.activeElement instanceof HTMLInputElement)) render();
+    wasInVr = inVr;
+  }
   if (t === 'update' && (promptKind === 'update' || (!promptMode && current().id === 'general'))) render();
   // Race control lists live flags: refresh every couple of seconds unless the user is typing.
   if (t === 'standings' && current().id === 'racecontrol' && Date.now() - lastLive > 2000 && !(document.activeElement instanceof HTMLInputElement)) {

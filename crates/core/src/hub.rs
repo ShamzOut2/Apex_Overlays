@@ -45,6 +45,11 @@ pub enum HostEvent {
         id: String,
         value: bool,
     },
+    /// The overlays started (true) or stopped (false) showing in the headset: the windows move
+    /// to their VR positions, or back to their screen positions.
+    VrActive {
+        value: bool,
+    },
 }
 
 /// Commands for the telemetry thread.

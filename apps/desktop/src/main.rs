@@ -10,7 +10,7 @@ mod vr;
 use apex_core::config::{Config, ConfigStore};
 use apex_core::hub::{HostEvent, Hub};
 use std::collections::{HashMap, HashSet};
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
@@ -31,8 +31,12 @@ struct Core {
     config: ConfigStore,
     url: String,
     port: u16,
-    /// Window geometry changes waiting to be written to the config (debounced).
-    pending: Mutex<HashMap<String, Geometry>>,
+    /// Window geometry changes waiting to be written to the config (debounced), per overlay
+    /// and whether they were made while in VR (they then change only the VR position).
+    pending: Mutex<HashMap<(String, bool), Geometry>>,
+    /// The overlays are showing in the headset: windows sit at their VR positions, and moving
+    /// or resizing one changes only its VR position, so the screen layout stays as it was.
+    vr_active: AtomicBool,
     /// Overlays that size their window to their content (label -> (width, height), 0 = user-set).
     auto_size: Mutex<HashMap<String, (f64, f64)>>,
     /// Overlays that take mouse clicks right now (e.g. the incident list's replay buttons).
@@ -137,17 +141,20 @@ fn reconcile(app: &AppHandle) {
     let cfg = core.config.get();
     let edit = core.hub.edit_mode.load(Ordering::Relaxed);
     let visible = core.hub.visible.load(Ordering::Relaxed);
+    let in_vr = core.vr_active.load(Ordering::Relaxed);
     let mut wanted = Vec::new();
     let mut hwnds = HashMap::new();
     for o in cfg.overlays.iter().filter(|o| o.enabled && !apex_core::config::HIDDEN_KINDS.contains(&o.kind.as_str())) {
         let label = label_for(&o.id);
         wanted.push(label.clone());
+        // In VR the windows sit at their VR positions (the screen ones when not set).
+        let g = o.geometry(in_vr);
         let win = match app.get_webview_window(&label) {
             Some(w) => {
                 // A position typed in settings ends a "move all together" drag of this overlay.
                 let mut group = core.group_drag.lock().unwrap();
                 if group.as_ref().is_some_and(|g| g.leader == label)
-                    && logical_pos(&w).is_some_and(|(x, y)| (x - o.x as f64).abs() > 1.0 || (y - o.y as f64).abs() > 1.0)
+                    && logical_pos(&w).is_some_and(|(x, y)| (x - g.x as f64).abs() > 1.0 || (y - g.y as f64).abs() > 1.0)
                 {
                     *group = None;
                 }
@@ -155,7 +162,7 @@ fn reconcile(app: &AppHandle) {
                 // Auto-sized overlays keep the size their content asked for.
                 let (aw, ah) = core.auto_size.lock().unwrap().get(&label).copied().unwrap_or_default();
                 let pick = |auto: f64, set: u32| if auto > 0.0 { auto.round() as u32 } else { set };
-                sync_geometry(&w, o.x, o.y, pick(aw, o.width), pick(ah, o.height));
+                sync_geometry(&w, g.x, g.y, pick(aw, g.width), pick(ah, g.height));
                 w
             }
             None => {
@@ -170,8 +177,8 @@ fn reconcile(app: &AppHandle) {
                     .resizable(true)
                     .focused(false)
                     .visible(visible || edit)
-                    .position(o.x as f64, o.y as f64)
-                    .inner_size(o.width.max(40) as f64, o.height.max(20) as f64)
+                    .position(g.x as f64, g.y as f64)
+                    .inner_size(g.width.max(40) as f64, g.height.max(20) as f64)
                     .build()
                 {
                     Ok(w) => w,
@@ -250,6 +257,15 @@ fn handle_host_event(app: &AppHandle, ev: HostEvent) {
                     _ => D::SouthEast,
                 };
                 let _ = w.as_ref().window().start_resize_dragging(d);
+            }
+        }
+        HostEvent::VrActive { value } => {
+            let core = app.state::<Core>();
+            // Moves made before the switch are saved where they belong first.
+            flush_geometry(app);
+            *core.group_drag.lock().unwrap() = None;
+            if core.vr_active.swap(value, Ordering::Relaxed) != value {
+                reconcile(app);
             }
         }
         HostEvent::EditMode { .. } | HostEvent::Visible { .. } => {
@@ -392,8 +408,9 @@ async fn install_update(app: AppHandle) {
 fn record_geometry(app: &AppHandle, label: &str, pos: Option<(i32, i32)>, size: Option<(u32, u32)>) {
     let core = app.state::<Core>();
     let Some(id) = core.config.read(|c| id_for(c, label)) else { return };
+    let in_vr = core.vr_active.load(Ordering::Relaxed);
     let mut pending = core.pending.lock().unwrap();
-    let e = pending.entry(id).or_default();
+    let e = pending.entry((id, in_vr)).or_default();
     if pos.is_some() {
         e.0 = pos;
     }
@@ -409,15 +426,26 @@ fn flush_geometry(app: &AppHandle) {
         return;
     }
     core.config.update(|c| {
-        for (id, (pos, size)) in pending {
+        for ((id, in_vr), (pos, size)) in pending {
             if let Some(o) = c.overlays.iter_mut().find(|o| o.id == id) {
+                // Changed in VR: the VR position (starting from the screen one), else the screen one.
+                let mut g = o.geometry(in_vr);
                 if let Some((x, y)) = pos {
-                    o.x = x;
-                    o.y = y;
+                    g.x = x;
+                    g.y = y;
                 }
                 if let Some((w, h)) = size {
-                    o.width = w;
-                    o.height = h;
+                    g.width = w;
+                    g.height = h;
+                }
+                if in_vr {
+                    // Windows put in place on entering VR report their (unchanged) screen
+                    // position: that is no VR position of its own yet.
+                    if o.vr_rect.is_some() || g != o.geometry(false) {
+                        o.vr_rect = Some(g);
+                    }
+                } else {
+                    (o.x, o.y, o.width, o.height) = (g.x, g.y, g.width, g.height);
                 }
             }
         }
@@ -531,6 +559,7 @@ fn main() {
             url: core.url(),
             port: core.addr.port(),
             pending: Mutex::new(HashMap::new()),
+            vr_active: AtomicBool::new(false),
             auto_size: Mutex::new(HashMap::new()),
             interactive: Mutex::new(HashSet::new()),
             group_drag: Mutex::new(None),
@@ -627,10 +656,13 @@ fn main() {
                     let l: LogicalSize<f64> = sz.to_logical(s);
                     // Auto-sized overlays only remember the dimensions the user sets.
                     let (aw, ah) = app.state::<Core>().auto_size.lock().unwrap().get(&label).copied().unwrap_or_default();
+                    let in_vr = app.state::<Core>().vr_active.load(Ordering::Relaxed);
                     let set = app
                         .state::<Core>()
                         .config
-                        .read(|c| id_for(c, &label).and_then(|id| c.overlays.iter().find(|o| o.id == id).map(|o| (o.width, o.height))))
+                        .read(|c| {
+                            id_for(c, &label).and_then(|id| c.overlays.iter().find(|o| o.id == id).map(|o| o.geometry(in_vr)).map(|g| (g.width, g.height)))
+                        })
                         .unwrap_or((0, 0));
                     let w = if aw > 0.0 { set.0 } else { l.width.round() as u32 };
                     let h = if ah > 0.0 { set.1 } else { l.height.round() as u32 };
