@@ -236,6 +236,8 @@ h3 { margin: 16px 0 8px; font-size: 12px; font-weight: 650; color: var(--dim); t
 .points-table label { display: flex; flex-direction: column; align-items: center; font-size: 11px; color: var(--dim); }
 .points-table input { width: 54px; text-align: center; }
 .notice { padding: 11px 14px; border-radius: var(--r-sm); background: linear-gradient(90deg, var(--soft), var(--panel-2) 60%); border: 1px solid var(--line); border-left: 3px solid var(--accent); margin: 8px 0; }
+.notice.game-strip { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
+.notice.game-strip > span { flex: 1; min-width: 240px; }
 .corners input[type='number'] { width: 80px; }
 .corners input.cname { width: 180px; }
 .pen-chip { display: inline-block; padding: 1px 6px; border-radius: 3px; background: #000; color: #fff; border: 1px solid #fff; font-size: 11px; font-weight: 800; }

@@ -664,7 +664,7 @@ const overlaysPage: Page = {
     main.append(sel ? overlayEditor(sel, rerender) : h('p', 'dim', 'No overlays yet — press “Add overlay”.'));
     const wrap = h('div', 'ov-layout');
     wrap.append(list, main);
-    el.replaceChildren(bar, wrap);
+    el.replaceChildren(bar, ...gameStrip(rerender), wrap);
   },
 };
 
@@ -1257,6 +1257,31 @@ function drawMonitor() {
 listen((t) => {
   if (t === 'monitor' && monitorView.tiles.size && document.contains([...monitorView.tiles.values()][0])) drawMonitor();
 });
+
+/** Overlays page: whose overlays these are, and copying the other game's. */
+function gameStrip(rerender: () => void): HTMLElement[] {
+  const cfg = state.config!;
+  const game = cfg.layoutGame ?? '';
+  if (!game) return [];
+  const others = Object.entries(cfg.gameSets ?? {}).filter(([g, set]) => g !== game && set.overlays.length);
+  const strip = h('div', 'notice game-strip');
+  strip.append(
+    h('span', '', `Overlays for ${gameName(game)}. Each game keeps its own overlays and layouts: pick the other game under General → Game to set it up.`),
+  );
+  for (const [g, set] of others) {
+    strip.append(
+      button(`Copy ${gameName(g)}’s overlays here`, () => {
+        if (!confirm(`Replace ${gameName(game)}’s overlays and layouts with a copy of ${gameName(g)}’s?`)) return;
+        cfg.overlays = structuredClone(set.overlays);
+        cfg.layouts = structuredClone(set.layouts);
+        cfg.activeLayout = set.activeLayout;
+        save(true);
+        rerender();
+      }),
+    );
+  }
+  return [strip];
+}
 
 /** A game's name for people ('iracing' → iRacing). */
 export function gameName(id: string): string {

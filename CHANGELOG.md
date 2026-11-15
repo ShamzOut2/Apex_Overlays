@@ -9,6 +9,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 ### New features
 - Le Mans Ultimate support. Every overlay works in LMU: relative, standings, track map, inputs, fuel, delta bar, start lights (rolling starts), pit lane, spotter, weather and the rest. Apex Overlays reads LMU’s built-in shared memory (turn on “Enable Plugins” in the game’s settings; nothing to install). LMU has no iRating, licences or incident points, so those stay empty, and track maps are recorded from your driving
 - Game switch (Settings → General → Game): Automatic switches to whichever game you start, iRacing or Le Mans Ultimate; or pick one to stay with it. The status at the bottom of the settings window names the game being read
+- Each game has its own overlays and layouts: positions, sizes, settings and saved layouts made for iRacing stay with iRacing, and Le Mans Ultimate keeps its own. The first time a game is used it starts from a copy of your current setup; the Overlays page says which game’s overlays you are editing, and can copy the other game’s over
 
 ## 0.9.8
 

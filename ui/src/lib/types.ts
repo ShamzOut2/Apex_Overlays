@@ -527,6 +527,9 @@ export interface Config {
   /** Saved arrangements of overlays, and the one in use. */
   layouts: SavedLayout[];
   activeLayout: string;
+  /** The game the overlays and layouts above belong to; the other games' are in gameSets. */
+  layoutGame?: string;
+  gameSets?: Record<string, { overlays: OverlayInstance[]; layouts: SavedLayout[]; activeLayout: string }>;
   fuel: { avgLaps: number; marginLaps: number; includeCautionLaps: boolean; includePitLaps: boolean };
   tyres: { wetThreshold: number; dryThreshold: number; useField: boolean; useCrossover: boolean; crossoverMargin: number };
   battle: { maxGap: number };

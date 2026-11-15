@@ -183,6 +183,12 @@ fn run(
             e.source = game;
             *hub.source.lock().unwrap() = game;
             hub.publish_status();
+            // Each game has its own overlays and layouts.
+            if config.read(|c| !game.is_empty() && game != "mock" && c.layout_game != game) {
+                config.update(|c| {
+                    c.switch_game(game);
+                });
+            }
         }
         match polled {
             Poll::Idle => continue,
