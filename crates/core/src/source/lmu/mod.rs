@@ -10,6 +10,7 @@
 //! no plugin needs installing.
 
 pub mod data;
+pub mod map;
 
 use self::data::{text, ScoringInfo, VehicleScoring, VehicleTelemetry};
 use crate::model::{flags, surface, CarTel, Telemetry, MAX_CARS};
@@ -54,6 +55,53 @@ pub struct State {
     /// When the green flag fell after the start countdown, for the "go" of the start lights.
     green_at: Option<f64>,
     tick: i32,
+    sectors: Sectors,
+}
+
+/// Where sectors 2 and 3 start (lap fractions), learned from cars changing sector: LMU does
+/// not publish the boundaries. Settled once each has been seen a few times.
+#[derive(Default)]
+struct Sectors {
+    last: HashMap<i32, i8>,
+    s2: Vec<f32>,
+    s3: Vec<f32>,
+    last_et: f64,
+    settled: Option<[f32; 2]>,
+}
+
+impl Sectors {
+    const SEEN: usize = 5;
+
+    fn feed(&mut self, snap: &Snapshot) {
+        let len = snap.info.mLapDist;
+        if self.settled.is_some() || len < 100.0 || snap.info.mCurrentET == self.last_et {
+            return;
+        }
+        self.last_et = snap.info.mCurrentET;
+        for v in &snap.vehicles {
+            let before = self.last.insert(v.mID, v.mSector);
+            if v.mInPits != 0 || v.mInGarageStall != 0 {
+                continue;
+            }
+            let pct = (v.mLapDist / len) as f32;
+            // LMU numbers sectors 1, 2, then 0 for the third.
+            match (before, v.mSector) {
+                (Some(1), 2) => self.s2.push(pct),
+                (Some(2), 0) => self.s3.push(pct),
+                _ => {}
+            }
+        }
+        if self.s2.len() >= Self::SEEN && self.s3.len() >= Self::SEEN {
+            let median = |v: &mut Vec<f32>| {
+                v.sort_by(f32::total_cmp);
+                v[v.len() / 2]
+            };
+            let (a, b) = (median(&mut self.s2), median(&mut self.s3));
+            if 0.0 < a && a < b && b < 1.0 {
+                self.settled = Some([a, b]);
+            }
+        }
+    }
 }
 
 /// Session type for iRacing-style session info: (SessionType, SessionName, EventType).
@@ -199,6 +247,7 @@ pub fn apply(st: &mut State, snap: &Snapshot, tel: &mut Telemetry) -> Option<Str
         class_pos.insert(v.mID, *n);
     }
 
+    st.sectors.feed(snap);
     let phase = if info.mGamePhase == 9 { st.last_phase } else { info.mGamePhase };
     if phase == 5 && matches!(st.last_phase, 3 | 4) {
         st.green_at = Some(info.mCurrentET);
@@ -519,6 +568,13 @@ fn session_yaml(
             is_pace_car(v) as i32,
         );
     }
+    // After the drivers (a top-level block). Sector boundaries, once learned (sector lines on the track map, sector times).
+    if let Some([s2, s3]) = st.sectors.settled {
+        let _ = write!(
+            y,
+            "SplitTimeInfo:\n Sectors:\n - SectorNum: 0\n   SectorStartPct: 0.000000\n - SectorNum: 1\n   SectorStartPct: {s2:.6}\n - SectorNum: 2\n   SectorStartPct: {s3:.6}\n"
+        );
+    }
     y
 }
 
@@ -543,6 +599,8 @@ pub struct Lmu {
     next_frame: std::time::Instant,
     #[cfg_attr(not(windows), allow(dead_code))]
     state: State,
+    /// The track outline, built from the cars' positions.
+    outline: map::MapBuilder,
 }
 
 impl Default for Lmu {
@@ -565,6 +623,7 @@ impl Lmu {
             #[cfg(windows)]
             next_frame: std::time::Instant::now(),
             state: State::default(),
+            outline: map::MapBuilder::default(),
         }
     }
 
@@ -620,6 +679,18 @@ impl super::Source for Lmu {
         "lmu"
     }
 
+    fn take_track_map(&mut self) -> Option<crate::engine::trackmap::TrackMap> {
+        self.outline.take()
+    }
+
+    fn track_map_progress(&self) -> Option<f32> {
+        Some(self.outline.progress())
+    }
+
+    fn reset_track_map(&mut self) {
+        self.outline.reset();
+    }
+
     #[cfg(not(windows))]
     fn poll(&mut self, _tel: &mut Telemetry) -> super::Poll {
         std::thread::sleep(std::time::Duration::from_millis(500));
@@ -672,6 +743,8 @@ impl super::Source for Lmu {
             return super::Poll::Idle;
         }
         let session_yaml = apply(&mut self.state, &snap, tel);
+        let track = text(&snap.info.mTrackName);
+        self.outline.feed(&snap, track_id(&track), &track);
         super::Poll::Data { session_yaml }
     }
 }
@@ -844,6 +917,38 @@ pub mod tests {
         assert!(!rel.rows.is_empty(), "the relative has cars");
         let st = crate::topics::standings(&e);
         assert_eq!(st.classes.len(), 3, "Hyper, LMP2 and GT3");
+    }
+
+    #[test]
+    fn learns_where_the_sectors_start() {
+        let mut st = State::default();
+        let mut tel = Telemetry::default();
+        let mut snap = snapshot();
+        let mut last = None;
+        // Cars crossing into sector 2 at 4,000 m and sector 3 at 9,000 m of the 13,626 m lap.
+        for k in 0..12 {
+            snap.info.mCurrentET += 0.2;
+            for v in snap.vehicles.iter_mut() {
+                let (d, sector) = if k % 2 == 0 { (3990.0, 1) } else { (4005.0, 2) };
+                v.mLapDist = d;
+                v.mSector = sector;
+            }
+            if let Some(y) = apply(&mut st, &snap, &mut tel) {
+                last = Some(y);
+            }
+            for v in snap.vehicles.iter_mut() {
+                v.mSector = if k % 2 == 0 { 2 } else { 0 };
+                v.mLapDist = if k % 2 == 0 { 4005.0 } else { 9001.0 };
+            }
+            snap.info.mCurrentET += 0.2;
+            if let Some(y) = apply(&mut st, &snap, &mut tel) {
+                last = Some(y);
+            }
+        }
+        let info = SessionInfo::parse(&last.unwrap());
+        assert_eq!(info.sectors.len(), 3, "{:?}", info.sectors);
+        assert!((info.sectors[1] - 4005.0 / 13626.0).abs() < 0.002, "{:?}", info.sectors);
+        assert!((info.sectors[2] - 9001.0 / 13626.0).abs() < 0.002, "{:?}", info.sectors);
     }
 
     #[test]

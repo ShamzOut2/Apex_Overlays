@@ -26,6 +26,17 @@ pub trait Source: Send {
     }
     /// Which game to read: "auto", "iracing" or "lmu" (sources reading one game ignore it).
     fn set_game(&mut self, _game: &str) {}
+    /// A track outline the source built from the game's car positions, once complete
+    /// (Le Mans Ultimate). Handed over once.
+    fn take_track_map(&mut self) -> Option<crate::engine::trackmap::TrackMap> {
+        None
+    }
+    /// How far that outline is (0..1), while it is being built.
+    fn track_map_progress(&self) -> Option<f32> {
+        None
+    }
+    /// Start the outline again (the player reset the track map).
+    fn reset_track_map(&mut self) {}
     /// Wait for and read the next telemetry row (blocks at most ~1 frame).
     fn poll(&mut self, tel: &mut Telemetry) -> Poll;
     /// A known track outline, for sources that have one (the mock does).

@@ -749,7 +749,11 @@ impl Engine {
             }
         }
         self.weather.update(&self.tel);
-        self.map.update(&self.tel, &self.info);
+        // Le Mans Ultimate publishes where the cars are: its source builds the outline from that
+        // (see source::lmu::map) instead of reckoning it from the player's heading.
+        if self.source != "lmu" {
+            self.map.update(&self.tel, &self.info);
+        }
         let me = usize::try_from(self.tel.player_idx).ok().and_then(|i| self.static_of(i)).map(|s| s.name.clone()).unwrap_or_default();
         self.laps.update(&self.tel, &self.info, &me);
         self.sectors.update(&self.tel, &self.info.sectors);

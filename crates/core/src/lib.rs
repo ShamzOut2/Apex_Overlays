@@ -163,6 +163,7 @@ fn run(
                 }
                 Command::ResetTrackMap => {
                     e.map.clear();
+                    source.reset_track_map();
                     if let Some(m) = source.track_map(e.info.track_id) {
                         e.map.set(m);
                     }
@@ -274,6 +275,14 @@ fn run(
                         });
                     }
                     last_session_layout = session_key;
+                }
+                // Le Mans Ultimate builds its outline from the cars' positions (iRacing's is recorded
+                // by the engine from the player's driving).
+                if e.source == "lmu" {
+                    if let Some(m) = source.take_track_map().filter(|m| m.track_id == e.info.track_id && e.map.map.is_none()) {
+                        e.map.install(m);
+                    }
+                    e.map.building = if e.map.map.is_none() { source.track_map_progress() } else { None };
                 }
                 let t0 = std::time::Instant::now();
                 e.tick();

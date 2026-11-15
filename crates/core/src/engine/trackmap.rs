@@ -61,6 +61,9 @@ pub struct Recorder {
     last_pct: f32,
     /// Incremented whenever `map` changes so the topic can be re-sent.
     pub revision: u64,
+    /// How far a game that publishes car positions (Le Mans Ultimate) is with building the
+    /// outline itself (0..1); `None` for iRacing, whose outline is recorded here.
+    pub building: Option<f32>,
 }
 
 impl Recorder {
@@ -77,6 +80,7 @@ impl Recorder {
             last_dist: 0.0,
             last_pct: 0.0,
             revision: 0,
+            building: None,
         }
     }
 
@@ -137,6 +141,19 @@ impl Recorder {
         }
     }
 
+    /// Install an outline the game source built (Le Mans Ultimate) and keep it for next time,
+    /// as a recorded one is.
+    pub fn install(&mut self, map: TrackMap) {
+        if let Some(p) = self.path(map.track_id) {
+            if let Some(dir) = p.parent() {
+                let _ = std::fs::create_dir_all(dir);
+            }
+            let _ = std::fs::write(p, serde_json::to_string(&map).unwrap_or_default());
+        }
+        self.building = None;
+        self.set(map);
+    }
+
     /// Install a map generated elsewhere (e.g. the mock simulator or an import).
     pub fn set(&mut self, map: TrackMap) {
         self.map = Some(map);
@@ -156,6 +173,8 @@ impl Recorder {
     pub fn progress(&self) -> f32 {
         if self.map.is_some() {
             1.0
+        } else if let Some(p) = self.building {
+            p
         } else if self.active {
             self.bins.iter().filter(|b| b.is_some()).count() as f32 / BINS as f32
         } else {
@@ -164,7 +183,7 @@ impl Recorder {
     }
 
     pub fn recording(&self) -> bool {
-        self.map.is_none() && self.active
+        self.map.is_none() && (self.active || self.building.is_some())
     }
 
     pub fn update(&mut self, t: &Telemetry, info: &SessionInfo) {
@@ -238,7 +257,7 @@ impl Recorder {
     /// Heading (radians, same convention as YawNorth) of the track at a lap fraction,
     /// from the recorded outline. Lets the compass follow any car, not only the player's.
     pub fn heading_at(&self, pct: f32) -> Option<f32> {
-        let map = self.map.as_ref().filter(|m| m.source == "recorded" || m.source == "mock")?;
+        let map = self.map.as_ref().filter(|m| matches!(m.source.as_str(), "recorded" | "mock" | "lmu"))?;
         let pts = &map.points;
         let n = pts.len();
         if n < 8 || !(0.0..=1.0).contains(&pct) {
@@ -256,7 +275,7 @@ impl Recorder {
     }
 }
 
-fn fill_gaps(bins: &[Option<[f64; 2]>]) -> Vec<[f64; 2]> {
+pub(crate) fn fill_gaps(bins: &[Option<[f64; 2]>]) -> Vec<[f64; 2]> {
     let n = bins.len();
     let known: Vec<usize> = (0..n).filter(|&i| bins[i].is_some()).collect();
     if known.is_empty() {

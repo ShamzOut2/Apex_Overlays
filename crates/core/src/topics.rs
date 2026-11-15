@@ -1053,6 +1053,9 @@ pub struct TrackMapOut<'a> {
     pub pit: &'a [[[f32; 2]; 2]],
     pub source: Option<&'a str>,
     pub recording: bool,
+    /// The outline is being built from the cars on track (Le Mans Ultimate), not recorded
+    /// from the player's lap.
+    pub building: bool,
     pub progress: f32,
     pub sectors: &'a [f32],
     pub corners: &'a [crate::config::Corner],
@@ -1071,6 +1074,7 @@ pub fn trackmap(e: &Engine) -> TrackMapOut<'_> {
         pit: e.map.shown(e.cfg.track_outline != "recorded").map(|m| m.pit.as_slice()).unwrap_or(&[]),
         source: e.map.shown(e.cfg.track_outline != "recorded").map(|m| m.source.as_str()),
         recording: e.map.recording(),
+        building: e.map.building.is_some() && e.map.map.is_none(),
         progress: round(e.map.progress(), 2),
         sectors: &e.info.sectors,
         corners: &e.corners,

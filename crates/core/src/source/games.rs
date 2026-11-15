@@ -104,6 +104,28 @@ impl Source for Games {
         }
     }
 
+    fn take_track_map(&mut self) -> Option<crate::engine::trackmap::TrackMap> {
+        if self.active == Some(Game::Lmu) {
+            self.lmu.take_track_map()
+        } else {
+            None
+        }
+    }
+
+    fn track_map_progress(&self) -> Option<f32> {
+        if self.active == Some(Game::Lmu) {
+            self.lmu.track_map_progress()
+        } else {
+            None
+        }
+    }
+
+    fn reset_track_map(&mut self) {
+        if self.active == Some(Game::Lmu) {
+            self.lmu.reset_track_map();
+        }
+    }
+
     fn replay(&mut self, session_num: i32, session_time: f64, car_number_raw: Option<i32>, camera: (i32, i32)) {
         // Replays can only be driven in iRacing.
         if self.active == Some(Game::IRacing) {

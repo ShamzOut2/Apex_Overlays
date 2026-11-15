@@ -319,6 +319,8 @@ export interface TrackMap {
   pit?: [[number, number], [number, number]][];
   source: string | null;
   recording: boolean;
+  /** Being built from the cars on track (Le Mans Ultimate) rather than recorded from your lap. */
+  building?: boolean;
   progress: number;
   sectors: number[];
   corners: Corner[];
