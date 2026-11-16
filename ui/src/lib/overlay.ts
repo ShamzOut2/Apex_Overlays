@@ -14,6 +14,8 @@ export interface Ctx {
   units: Units;
   latest: Partial<TopicMap>;
   send(msg: object): void;
+  /** Change how often a topic is delivered (times a second; 0 = as it comes), e.g. less often while idle. */
+  limit(topic: TopicName, hz: number): void;
 }
 
 export interface View {
@@ -32,6 +34,8 @@ export interface OverlayDef {
   settings: SettingDef[];
   /** Overrides for the defaults of the common options (scale, autoHeight, ...). */
   commonDefaults?: Values;
+  /** Topics this overlay needs less often than they are sent: at most this many times a second. */
+  rates?: Partial<Record<TopicName, number>>;
   /** Has table columns, so "fit the window width to the columns" applies. */
   fitsWidth?: boolean;
   create(root: HTMLElement, ctx: Ctx): View;

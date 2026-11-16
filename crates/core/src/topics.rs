@@ -78,8 +78,9 @@ impl Topic {
     /// it is sent.
     pub fn every(self) -> u64 {
         match self {
-            Topic::Player | Topic::Cars | Topic::Spotter => 1,
-            Topic::Pit => 2,
+            Topic::Player | Topic::Spotter => 1,
+            // The track map's dots: 30 a second is smooth (a car moves well under a pixel).
+            Topic::Cars | Topic::Pit => 2,
             Topic::Relative | Topic::Safety => 3,
             Topic::Standings | Topic::Battle => 6,
             Topic::Session | Topic::Fuel | Topic::Tyres | Topic::Incidents => 15,
@@ -90,12 +91,15 @@ impl Topic {
         }
     }
 
-    /// The "fast" update rate, for the least CPU: nothing above 30/s, timing tables as in
-    /// balanced. Telemetry is still read at 60/s, so nothing is missed, only shown less often.
+    /// The "fast" update rate, the lightest on CPU and frame rate: inputs, spotter and pit
+    /// 30/s, track map 20/s, relative and safety alert 10/s, standings and battle 5/s.
+    /// Telemetry is still read at 60/s, so nothing is missed, only shown less often.
     pub fn every_fast(self) -> u64 {
         match self {
-            Topic::Player | Topic::Cars | Topic::Spotter | Topic::Pit => 2,
-            Topic::Relative | Topic::Safety => 3,
+            Topic::Player | Topic::Spotter | Topic::Pit => 2,
+            Topic::Cars => 3,
+            Topic::Relative | Topic::Safety => 6,
+            Topic::Standings | Topic::Battle => 12,
             t => t.every(),
         }
     }

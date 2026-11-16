@@ -1553,11 +1553,11 @@ const generalPage: Page = {
               type: 'select',
               default: 'balanced',
               options: [
-                ['fast', 'Fast (lightest on CPU, 20–30/s)'],
+                ['fast', 'Light (least CPU and FPS impact)'],
                 ['balanced', 'Balanced (recommended)'],
                 ['full', 'Every tick (60/s, most CPU)'],
               ],
-              help: 'Fast: inputs, track map, spotter and pit 30/s; relative and safety alert 20/s; standings and battle 10/s. Balanced: as Fast but inputs, track map and spotter 60/s. Telemetry is always read 60 times a second, so nothing is missed.',
+              help: 'Light: inputs, spotter and pit 30/s; track map 20/s; relative and safety alert 10/s; standings and battle 5/s. Balanced: inputs and spotter 60/s; track map and pit 30/s; relative and safety alert 20/s; standings and battle 10/s. Telemetry is always read 60 times a second, so nothing is missed: only shown less often.',
               group: 'Performance',
             },
             {

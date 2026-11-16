@@ -104,8 +104,9 @@ export const delta: OverlayDef = {
       const w = live == null ? 0 : (Math.min(range, Math.abs(live)) / range) * 50;
       // Faster grows to one side (right by default), slower to the other.
       const toLeft = live != null && (live < 0) !== (s.fasterSide === 'right');
-      style(fill, 'width', `${w}%`);
-      style(fill, 'left', toLeft ? `${50 - w}%` : '50%');
+      // The fill is the right half of the bar, scaled from the middle (mirrored for the left):
+      // a transform, which the compositor animates without laying the page out again.
+      style(fill, 'transform', `scaleX(${toLeft ? '-' : ''}${(w / 50).toFixed(4)})`);
       text(pred, live != null && p.ref ? f.lapTime(p.ref.lapTime + live) : '');
       // Trend: how the delta moved over the last second or so.
       const now = performance.now() / 1000;

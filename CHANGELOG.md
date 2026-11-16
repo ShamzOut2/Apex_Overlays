@@ -4,6 +4,19 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### Performance
+- Driver inputs and Input graph: the scrolling trace draws only its newest sliver each tick and slides the rest along, instead of redrawing every line in full 60 times a second. It looks the same, for about a third of the drawing work (the Input graph overlay uses around 55% less CPU)
+- The iRating pills on the relative and standings no longer blur what is behind them: the blur had to be redrawn by the graphics card for every pill on every update, taking GPU time from the game
+- The delta bar, the Garage 61 delta bar and the spotter’s car markers move without re-laying out the overlay on every tick
+- Track map: the car dots are updated 30 times a second in Balanced (20 in Light) instead of 60: still smooth, as a car moves well under a pixel between updates, for about a third less work
+- Overlays only take the live car data as often as they show it: the start lights look a few times a second until a start, grid or countdown comes up (then every tick, for exact timing), the weather compass 15 times a second, Garage 61 and the data box 20, and overlays set to hide when you are not driving or in the pits check that 10 times a second
+- The Light update rate (previously “Fast”) is lighter: relative and safety alert 10 updates a second, standings and battle 5, track map 20, inputs, spotter and pit 30
+- The drivers’ names, teams, cars and classes are no longer sent out to the overlays again each time iRacing updates the session info (every few seconds in a race, with each new result), only when one of them changes
+- Le Mans Ultimate: the session details are built when the game’s scoring updates (5 times a second) instead of with every telemetry update (60 times a second)
+- Monitoring: the readings look for the app’s own processes every 30 seconds (or when an overlay opens) instead of every 5, as listing every process on the PC was itself a small spike every few seconds while the Monitoring numbers were shown
+
 ## 1.0.1
 
 ### New features

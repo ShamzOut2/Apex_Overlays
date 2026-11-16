@@ -81,8 +81,95 @@ export function inputTrace(canvas: HTMLCanvasElement, s: Values, clutch: () => b
     }
   };
 
+  const traces = () => {
+    const list: [Float32Array, string, boolean, Uint8Array?][] = [];
+    if (s.traceSteering) list.push([ste, s.steeringColor as string, false]);
+    if (clutch()) list.push([clt, s.clutchColor as string, false]);
+    list.push([thr, s.throttleColor as string, s.traceFill as boolean]);
+    list.push([brk, s.brakeColor as string, s.traceFill as boolean, abs]);
+    return list;
+  };
+
+  /** Where the newest point was drawn (canvas pixels), for drawing on from it. */
+  let lastX = -1;
+  /** Where the shading under the lines has been drawn to: whole pixels, so the slivers meet
+   * exactly (soft edges side by side would show as stripes). */
+  let fillX = -1;
+  let filled = 0;
+
+  /** Everything, from the stored history (first time, and when the canvas is resized). */
+  const redraw = () => {
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    for (const [arr, color, fill, absArr] of traces()) series(arr, color, fill, absArr);
+    lastX = canvas.width;
+    fillX = canvas.width;
+  };
+
+  /**
+   * Only the newest stretch: the picture so far moves left by whole pixels (copied, no
+   * redrawing) and the new bit of each line is drawn at the right. Points land exactly where a
+   * full redraw would put them; drawing a few pixels instead of every line's whole length
+   * each tick is several times lighter.
+   */
+  const step = () => {
+    const w = canvas.width;
+    const hh = canvas.height;
+    const dpr = window.devicePixelRatio || 1;
+    const pad = 2 * dpr;
+    const dx = w / (n - 1);
+    const y = (v: number) => hh - pad - v * (hh - pad * 2);
+    let from = lastX;
+    let to = lastX + dx;
+    const shift = Math.ceil(to - w);
+    if (shift > 0) {
+      g.globalCompositeOperation = 'copy';
+      g.drawImage(canvas, -shift, 0);
+      g.globalCompositeOperation = 'source-over';
+      g.clearRect(w - shift, 0, shift, hh);
+      from -= shift;
+      to -= shift;
+      fillX -= shift;
+    }
+    lastX = to;
+    // The shading goes on in whole pixel columns, from where it stopped.
+    const fx0 = fillX;
+    const fx1 = Math.min(w, Math.round(to));
+    if (fx1 > fx0) fillX = fx1;
+    const at = (x: number, y0: number, y1: number) => (to > from ? y0 + ((y1 - y0) * Math.min(1, Math.max(0, (x - from) / (to - from)))) : y1);
+    const cur = (head + n - 1) % n;
+    const prev = (head + n - 2) % n;
+    const width = (s.traceWidth as number) * dpr;
+    g.lineCap = 'round';
+    for (const [arr, color, fill, absArr] of traces()) {
+      const y0 = y(arr[prev]);
+      const y1 = y(arr[cur]);
+      const hot = !!absArr && !!s.absHighlight && absArr[cur] === 1;
+      // As a full redraw: the line's own shading, then the ABS colour over it.
+      for (const [on, alpha, c] of [[fill, 0.15, color], [hot, 0.4, s.absColor as string]] as [boolean, number, string][]) {
+        if (!on || fx1 <= fx0) continue;
+        g.beginPath();
+        g.moveTo(fx0, at(fx0, y0, y1));
+        g.lineTo(fx1, at(fx1, y0, y1));
+        g.lineTo(fx1, hh);
+        g.lineTo(fx0, hh);
+        g.closePath();
+        g.globalAlpha = alpha;
+        g.fillStyle = c;
+        g.fill();
+        g.globalAlpha = 1;
+      }
+      g.beginPath();
+      g.moveTo(from, y0);
+      g.lineTo(to, y1);
+      g.strokeStyle = hot ? (s.absColor as string) : color;
+      g.lineWidth = hot ? width * 1.7 : width;
+      g.stroke();
+    }
+    g.lineCap = 'butt';
+  };
+
   return {
-    /** Record one telemetry tick and redraw. */
+    /** Record one telemetry tick and draw it. */
     push(p: Player) {
       thr[head] = p.throttle;
       brk[head] = p.brake;
@@ -90,12 +177,11 @@ export function inputTrace(canvas: HTMLCanvasElement, s: Values, clutch: () => b
       ste[head] = p.steeringMax ? 0.5 - p.steering / p.steeringMax / 2 : 0.5;
       abs[head] = p.abs ? 1 : 0;
       head = (head + 1) % n;
-      fitCanvas(canvas);
-      g.clearRect(0, 0, canvas.width, canvas.height);
-      if (s.traceSteering) series(ste, s.steeringColor as string, false);
-      if (clutch()) series(clt, s.clutchColor as string, false);
-      series(thr, s.throttleColor as string, s.traceFill as boolean);
-      series(brk, s.brakeColor as string, s.traceFill as boolean, abs);
+      filled = Math.min(n, filled + 1);
+      if (fitCanvas(canvas) || lastX < 0 || filled < 2) redraw();
+      else step();
     },
+    /** Draws the whole trace again from its history. */
+    redraw,
   };
 }

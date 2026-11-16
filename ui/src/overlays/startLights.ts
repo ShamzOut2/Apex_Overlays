@@ -77,6 +77,8 @@ export const startLights: OverlayDef = {
     // When the countdown ran out (the grid forms next), for "GET READY".
     let countdownEnded = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    /** No start under way: the player topic is only looked at a few times a second. */
+    let idle = false;
 
     const draw = () => {
       // In edit mode (and the settings preview) a sample shows, so it can be placed.
@@ -144,6 +146,13 @@ export const startLights: OverlayDef = {
         startIn = left;
         gridding = !!p.gridding;
         if (changed) draw();
+        // Mid-race nothing is coming: a few looks a second until a start, grid or countdown
+        // shows up (always seconds before the lights), then every tick for exact timing.
+        const quiet = !next && left == null && !gridding && (!roll || roll === 'green') && !rollingGo;
+        if (quiet !== idle) {
+          idle = quiet;
+          ctx.limit('player', quiet ? 5 : 0);
+        }
       },
     };
   },

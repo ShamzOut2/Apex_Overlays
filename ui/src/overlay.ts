@@ -108,15 +108,18 @@ function rebuild() {
     },
     latest: client.latest,
     send: (m) => client.send(m),
+    limit: (t, hz) => client.limit(t, hz),
   };
   view = def.create(panel, ctx);
   stale.clear();
-  // The 60 Hz player topic only when the overlay shows it or hides itself by it.
+  // The 60 Hz player topic only when the overlay shows it or hides itself by it: just to
+  // know when to hide, a few times a second is plenty.
   if (settings.hideWhenNotDriving || settings.hideInPits || def.topics.includes('player')) client.subscribe('player');
   else {
     client.unsubscribe('player');
     player = null;
   }
+  for (const t of ['player', ...def.topics] as TopicName[]) client.limit(t, def.rates?.[t] ?? (t === 'player' && !def.topics.includes('player') ? 10 : 0));
   client.subscribe(...def.topics);
   for (const t of def.topics) {
     const d = client.latest[t];
