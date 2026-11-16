@@ -668,18 +668,27 @@ const overlaysPage: Page = {
   },
 };
 
-function swatch(name: string, theme: Record<string, unknown>, onApply: () => void, onDelete?: () => void) {
+function swatch(name: string, theme: Record<string, unknown>, onApply: () => void, onDelete?: () => void, logo?: string) {
   const t = merge(THEME, theme);
-  const el = h('button', 'swatch');
+  const el = h('button', `swatch${logo ? ' has-logo' : ''}`);
   el.style.background = t.background as string;
   el.style.color = t.textColor as string;
-  const bars = h('div', 'swatch-bars');
-  for (const k of ['accent', 'playerColor', 'goodColor', 'badColor', 'lapBehindColor']) {
-    const b = h('span');
-    b.style.background = t[k] as string;
-    bars.append(b);
+  el.title = name;
+  if (logo) {
+    // A sponsored team's card: its logo in place of the name and colour bars.
+    const img = h('img', 'swatch-logo') as HTMLImageElement;
+    img.src = logo;
+    img.alt = name;
+    el.append(img);
+  } else {
+    const bars = h('div', 'swatch-bars');
+    for (const k of ['accent', 'playerColor', 'goodColor', 'badColor', 'lapBehindColor']) {
+      const b = h('span');
+      b.style.background = t[k] as string;
+      bars.append(b);
+    }
+    el.append(h('span', 'swatch-name', name), bars);
   }
-  el.append(h('span', 'swatch-name', name), bars);
   el.onclick = (e) => {
     e.preventDefault();
     onApply();
@@ -715,7 +724,8 @@ const themePage: Page = {
       rerender();
     };
     const presets = h('div', 'swatches');
-    for (const p of PRESETS) presets.append(swatch(p.name, p.values, () => apply(p.values, true)));
+    const sponsored = h('div', 'swatches');
+    for (const p of PRESETS) (p.sponsored ? sponsored : presets).append(swatch(p.name, p.values, () => apply(p.values, true), undefined, p.logo));
     const saved = h('div', 'swatches');
     cfg.savedThemes.forEach((t, i) =>
       saved.append(
@@ -763,6 +773,9 @@ const themePage: Page = {
         h('p', 'dim', 'A theme colours every overlay and this settings window. Pick a preset, tweak it below, then save it as your own.'),
         h('h3', '', 'Presets'),
         presets,
+        h('h3', '', 'Sponsored by Us'),
+        h('p', 'dim small', 'The colours of the teams Apex Overlays sponsors.'),
+        sponsored,
         h('h3', '', 'My themes'),
         saved,
         saveRow,

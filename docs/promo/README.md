@@ -16,7 +16,7 @@ Ultimate are named as the games the app works with; no game artwork or footage i
 
 ## Nimbus Motorsport
 
-Images of the Nimbus Motorsport theme (Settings → Theme → Nimbus Motorsport: #000000, #85FF00,
+Images of the Nimbus Motorsport theme, with the team's logo (Settings → Theme → Sponsored by Us → Nimbus Motorsport: #000000, #85FF00,
 #A5A5A5), made the same way, with the team's cars (#114, #118 and #21 in the mock race) in the
 team colour on the timing overlays (League builder → Team builder, Number colour → Team).
 
