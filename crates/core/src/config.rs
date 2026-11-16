@@ -398,6 +398,25 @@ pub struct League {
     /// Leave out the class tags some leagues put in names ("(P) Max Power" shows as
     /// "Max Power").
     pub strip_name_class: bool,
+    /// Teams (Team builder): a driver is in the team named on their roster row (or the
+    /// team iRacing gives them), matched by name.
+    pub teams: Vec<LeagueTeam>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct LeagueTeam {
+    pub name: String,
+    /// Used where space is tight.
+    pub short: String,
+    /// CSS hex colour, "" for none (the class colour is used instead).
+    pub color: String,
+    /// Logo files in the data folder's team-logos (see `server.rs`): the full logo and a small
+    /// one (a badge that reads well tiny); "" for none.
+    pub logo: String,
+    pub logo_small: String,
+    /// Other leagues (ids) this team is kept in step with.
+    pub shared: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -480,6 +499,15 @@ pub struct LeagueClass {
     /// CSS hex colour, e.g. "#ff4d4d".
     pub color: String,
     pub rules: ClassRules,
+    /// "secondary": a class running across the main ones (a Rookie Cup, a Pro-Am trophy),
+    /// picked per driver on the roster and never by rules. Anything else: a main class.
+    pub role: String,
+}
+
+impl LeagueClass {
+    pub fn is_secondary(&self) -> bool {
+        self.role == "secondary"
+    }
 }
 
 /// A car joins the class if ANY populated rule matches. Text rules are
@@ -506,6 +534,8 @@ pub struct DriverOverride {
     pub car_number: String,
     /// League class this driver races in (a `LeagueClass::id`); takes priority over class rules.
     pub class_id: String,
+    /// Their secondary class (a `LeagueClass::id` of a secondary class), if any.
+    pub class2_id: String,
     pub display_name: String,
     pub team_name: String,
     /// ISO country code shown as the driver's flag, overriding their iRacing flair.
@@ -747,8 +777,13 @@ impl ConfigStore {
             let _ = std::fs::create_dir_all(dir);
         }
         let tmp = path.with_extension("json.tmp");
-        if std::fs::write(&tmp, json).is_ok() {
-            let _ = std::fs::rename(&tmp, path.as_ref());
+        match std::fs::write(&tmp, json) {
+            Ok(()) => {
+                if let Err(e) = std::fs::rename(&tmp, path.as_ref()) {
+                    log::error!("could not save the settings to {}: {e}", path.display());
+                }
+            }
+            Err(e) => log::error!("could not save the settings to {}: {e}", tmp.display()),
         }
     }
 }

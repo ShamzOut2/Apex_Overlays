@@ -1,7 +1,7 @@
 //! League builder: user-defined classes that override iRacing's car classes,
 //! plus per-driver display overrides.
 
-use crate::config::{League, LeagueClass};
+use crate::config::{League, LeagueClass, LeagueTeam};
 use crate::model::Driver;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -46,13 +46,14 @@ impl Resolver {
             order: i as f32,
         };
         // A class picked for the driver on the league roster wins over the rules.
+        // Secondary classes are never anyone's main class.
         if let Some(o) = league.driver_overrides.iter().find(|o| o.customer_id == d.user_id && !o.class_id.is_empty()) {
-            if let Some((i, c)) = league.classes.iter().enumerate().find(|(_, c)| c.id == o.class_id) {
+            if let Some((i, c)) = league.classes.iter().enumerate().find(|(_, c)| c.id == o.class_id && !c.is_secondary()) {
                 return key(i, c);
             }
         }
         for (i, c) in league.classes.iter().enumerate() {
-            if matches(c, d) {
+            if !c.is_secondary() && matches(c, d) {
                 return key(i, c);
             }
         }
@@ -63,6 +64,14 @@ impl Resolver {
         }
     }
 
+    /// The driver's secondary class (picked for them on the roster), if they have one.
+    pub fn secondary_of(&self, d: &Driver) -> Option<ClassKey> {
+        let league = self.league.as_ref()?;
+        let o = league.driver_overrides.iter().find(|o| o.customer_id == d.user_id && !o.class2_id.is_empty())?;
+        let (i, c) = league.classes.iter().enumerate().find(|(_, c)| c.id == o.class2_id && c.is_secondary())?;
+        Some(ClassKey { id: format!("lg{}", c.id), name: c.name.clone(), color: parse_color(&c.color).unwrap_or(0xffffff), order: i as f32 })
+    }
+
     /// League car number for a driver, if the roster sets one.
     pub fn car_number(&self, d: &Driver) -> String {
         self.league
@@ -70,6 +79,16 @@ impl Resolver {
             .and_then(|l| l.driver_overrides.iter().find(|o| o.customer_id == d.user_id && !o.car_number.trim().is_empty()))
             .map(|o| o.car_number.trim().to_string())
             .unwrap_or_else(|| d.car_number.clone())
+    }
+
+    /// The league team a driver races for: by the team name shown for them (their roster
+    /// row's, else iRacing's), ignoring case and spaces at the ends.
+    pub fn team_of(&self, team_name: &str) -> Option<&LeagueTeam> {
+        let name = team_name.trim();
+        if name.is_empty() {
+            return None;
+        }
+        self.league.as_ref()?.teams.iter().find(|t| t.name.trim().eq_ignore_ascii_case(name))
     }
 
     /// (display name, team name, hidden)
@@ -188,6 +207,41 @@ mod tests {
     }
 
     #[test]
+    fn secondary_classes_run_alongside_the_main_ones() {
+        let rookie = LeagueClass {
+            id: "rookie".into(),
+            name: "Rookie Cup".into(),
+            color: "#00ff00".into(),
+            role: "secondary".into(),
+            rules: ClassRules { car_numbers: vec!["1".into()], ..Default::default() },
+        };
+        let pro = LeagueClass {
+            id: "pro".into(),
+            name: "Pro".into(),
+            color: "#ff0000".into(),
+            rules: ClassRules { car_numbers: vec!["1".into()], ..Default::default() },
+            ..Default::default()
+        };
+        let league = League {
+            classes: vec![rookie, pro],
+            driver_overrides: vec![
+                DriverOverride { customer_id: 7, class2_id: "rookie".into(), ..Default::default() },
+                // A secondary class picked as the main one by mistake: not used as such.
+                DriverOverride { customer_id: 8, class_id: "rookie".into(), class2_id: "pro".into(), ..Default::default() },
+            ],
+            ..Default::default()
+        };
+        let r = Resolver::new(Some(league));
+        let d = |id: i64| Driver { user_id: id, car_number: "1".into(), class_id: 3, ..Default::default() };
+        // The rules of a secondary class pick nobody: the main class is Pro.
+        assert_eq!(r.class_of(&d(7)).name, "Pro");
+        assert_eq!(r.secondary_of(&d(7)).map(|c| (c.name, c.color)), Some(("Rookie Cup".into(), 0x00ff00)));
+        assert_eq!(r.class_of(&d(8)).name, "Pro");
+        assert!(r.secondary_of(&d(8)).is_none(), "a main class is not a secondary one");
+        assert!(r.secondary_of(&d(9)).is_none());
+    }
+
+    #[test]
     fn league_classes_override_iracing() {
         let league = League {
             id: "l".into(),
@@ -198,12 +252,14 @@ mod tests {
                     name: "Pro".into(),
                     color: "#f00".into(),
                     rules: ClassRules { car_numbers: vec!["1".into()], ..Default::default() },
+                    ..Default::default()
                 },
                 LeagueClass {
                     id: "am".into(),
                     name: "Am".into(),
                     color: "#00ff00".into(),
                     rules: ClassRules { team_names: vec!["*amateur*".into()], ..Default::default() },
+                    ..Default::default()
                 },
             ],
             driver_overrides: vec![DriverOverride { customer_id: 42, display_name: "Ace".into(), ..Default::default() }],

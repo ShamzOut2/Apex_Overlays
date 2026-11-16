@@ -6,7 +6,7 @@ import { columns, enabledColumns, NAME_STYLES } from '../lib/settings';
 import { type Col, columnFitter, Table } from '../lib/table';
 import type { Session, StandClass, StandRow, Standings } from '../lib/types';
 import { classBadge } from '../lib/classBadges';
-import { classLogo, COLUMN_STYLE_SETTINGS, driverCols, extraCols, tireCell } from './common';
+import { classLogo, COLUMN_STYLE_SETTINGS, driverCols, extraCols, STRIPE_COLOR_SETTING, stripeColor, tireCell } from './common';
 
 const COLS = [
   { id: 'pos', label: 'Class position — POS' },
@@ -15,6 +15,8 @@ const COLS = [
   { id: 'flag', label: 'Country flag — NAT' },
   { id: 'name', label: 'Driver' },
   { id: 'team', label: 'Team' },
+  { id: 'teamLogo', label: 'Team logo (Team builder)' },
+  { id: 'class2', label: 'Secondary class (League builder) — 2ND' },
   { id: 'make', label: 'Manufacturer — MAKE' },
   { id: 'class', label: 'Class' },
   { id: 'car', label: 'Car' },
@@ -82,6 +84,7 @@ export const standings: OverlayDef = {
     },
     { key: 'showColumnTitles', label: 'Show column titles', type: 'bool', default: true, group: 'Header' },
     { key: 'columnTitlesEveryClass', when: (v) => v.showColumnTitles !== false && (v.mode ?? 'multiclass') === 'multiclass', label: 'Repeat column titles for every class', type: 'bool', default: false, group: 'Header' },
+    STRIPE_COLOR_SETTING,
     { key: 'dimPitCars', label: 'Dim cars in the pits', type: 'bool', default: true, group: 'Colours' },
     { key: 'dimDisconnected', label: 'Dim disconnected cars', type: 'bool', default: true, group: 'Colours' },
   ],
@@ -203,7 +206,7 @@ export const standings: OverlayDef = {
               pit: (s.dimPitCars as boolean) && r.onPitRoad,
               out: (s.dimDisconnected as boolean) && !r.inWorld,
             }),
-            (row, r) => row.style.setProperty('--class', r.classColor),
+            (row, r) => row.style.setProperty('--class', stripeColor(r, s)),
           );
         });
         if (s.autoWidth) fit(sections.map((x) => x.table));

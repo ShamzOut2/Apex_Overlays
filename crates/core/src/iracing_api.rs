@@ -136,6 +136,7 @@ pub fn build_league(league: &Value, season: Option<&Value>, sessions: &[Value], 
                     name: if name.is_empty() { car_name.clone() } else { name },
                     color: PALETTE[n % PALETTE.len()].into(),
                     rules: ClassRules { iracing_class_ids: if class_id > 0 { vec![class_id] } else { vec![] }, ..Default::default() },
+                    role: String::new(),
                 });
                 classes.last_mut().unwrap()
             }
@@ -205,6 +206,7 @@ pub fn build_league(league: &Value, season: Option<&Value>, sessions: &[Value], 
         season_points,
         imported_at: String::new(),
         strip_name_class: false,
+        teams: vec![],
     }
 }
 

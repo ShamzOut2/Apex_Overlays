@@ -4,6 +4,21 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 1.1.0
+
+### New features
+- Secondary classes (League builder), as in the Apex Commentator app: a class running across the main ones, e.g. a Rookie Cup or a Pro-Am trophy. Each class is a main or a secondary one (Kind, or Add secondary class); secondary classes are never picked by rules, but for each driver in the roster’s new 2nd class column, and the driver keeps their main class everywhere. Switching a class’s kind moves its drivers to the other column. Re-importing a league from iRacing keeps them
+- Car numbers by secondary class: Number colour → Secondary class in the relative, standings, battle box and safety alert (drivers without one show just the number). The little colour bar by each driver in the relative and standings (Colours → Colour bar by each driver) can show the main class (as before), the secondary class (no bar for drivers without one), the team’s colour (the class colour for a team with no colour) or follow the car number. And a 2nd class column shows each driver’s secondary class
+- Sign-up sheets can bring in secondary classes (“The sheet’s classes are: Secondary classes”), and league files from the Apex Commentator app keep their classes’ kind and drivers’ secondary classes
+- Team builder (League builder → Team builder), with the features of the Apex Commentator app’s: each team of a league gets a name, a short name (for tight spaces), a colour (optional) and a full and a small logo; drivers are added to and taken out of teams from the team’s card, with a list of who is not in a team. Renaming a team moves its drivers with it. The roster’s Team column suggests the league’s teams
+- Teams in more than one league: tick another league under “Also in” to put the team, and its drivers who race there too, in that league as well; changes to the team (name, short name, colour, logos, new drivers) reach it from then on. ✕ takes the team out of that league
+- Export and import teams (with their logos and who drives for each), as files either app can read; importing a league file from the Apex Commentator app now brings its teams and logos too
+- Import a sign-up sheet (CSV) into a league: iRacing IDs, names, car numbers, teams, team colours, classes and nicknames, with the columns worked out from the headings (and checked before importing). Drivers already on the roster are updated, the rest added; new teams and classes are made
+- Car numbers in team colours: Number colour → Team in the relative, standings, battle box and safety alert. Drivers in a team with no colour, or in no team, keep their class colour
+- Team logo column in the relative and standings (the full or the small logo), and the Team column can show teams’ short names
+- In the Team builder and on the roster, the arrow keys move between the boxes, as in a spreadsheet
+- Log file for bug reports: Apex Overlays now writes what it does and every error it meets to apex.log, in the logs folder of its data folder. That covers the game connecting and each session, overlays that fail to open, downloads (Garage 61, track and car data, the LMU forecast), settings that cannot be saved, updates, VR, crashes (with where they happened) and script errors inside the overlays and the settings window. The previous run’s log is kept as apex.previous.log, so the log of a crash survives the restart. Settings → General → Logs opens the folder or copies the log, ready to paste into a report. The same error repeating is written once with a count, so the file stays small
+
 ## 1.0.2
 
 ### Performance

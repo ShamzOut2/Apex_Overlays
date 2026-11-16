@@ -625,6 +625,10 @@ pub struct DriverInfo<'a> {
     pub class_id: &'a str,
     pub class_name: &'a str,
     pub class_color: String,
+    /// Secondary class (League builder): "" when the driver has none.
+    pub class2_id: &'a str,
+    pub class2_name: &'a str,
+    pub class2_color: String,
     pub user_id: i64,
     pub car_id: i64,
     pub irating: i32,
@@ -636,6 +640,11 @@ pub struct DriverInfo<'a> {
     /// ISO country code for the flag ("" if unknown).
     pub country: &'a str,
     pub make: &'a str,
+    /// League team (Team builder): colour ("" for none), short name, logo URLs ("" for none).
+    pub team_color: String,
+    pub team_short: &'a str,
+    pub team_logo: String,
+    pub team_logo_small: String,
 }
 
 #[derive(Serialize)]
@@ -658,6 +667,9 @@ pub fn driver_info(s: &Static) -> DriverInfo<'_> {
         class_id: &s.class.id,
         class_name: &s.class.name,
         class_color: hex(s.class.color),
+        class2_id: s.class2.as_ref().map_or("", |c| c.id.as_str()),
+        class2_name: s.class2.as_ref().map_or("", |c| c.name.as_str()),
+        class2_color: s.class2.as_ref().map(|c| hex(c.color)).unwrap_or_default(),
         user_id: s.user_id,
         car_id: s.car_id,
         irating: s.irating,
@@ -667,6 +679,19 @@ pub fn driver_info(s: &Static) -> DriverInfo<'_> {
         flair: &s.flair,
         country: &s.country,
         make: &s.make,
+        team_color: s.team_color.map(hex).unwrap_or_default(),
+        team_short: &s.team_short,
+        team_logo: team_logo_url(&s.team_logo),
+        team_logo_small: team_logo_url(&s.team_logo_small),
+    }
+}
+
+/// Where the overlays load a team logo from ("" for none).
+fn team_logo_url(file: &str) -> String {
+    if file.is_empty() {
+        String::new()
+    } else {
+        format!("/team-logos/{file}")
     }
 }
 

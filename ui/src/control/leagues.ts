@@ -9,8 +9,15 @@ import { showFlagCodes } from './flagCodes';
 import { fromCommentator, isCommentatorLeague } from './leagueImport';
 import type { Page } from './pages';
 import { download, save, state, uid, upload } from './state';
+import { arrowNav, teamsFromFile, teamsOf } from './teams';
 
 let selected = '';
+
+/** The league being edited (shared with the Team builder). */
+export const selectedLeague = () => selected;
+export function selectLeague(id: string) {
+  selected = id;
+}
 
 const RULES: [keyof ClassRules, string, 'num' | 'text', string][] = [
   ['carNumbers', 'Car numbers', 'text', '1, 7, 42'],
@@ -58,6 +65,7 @@ const newLeague = (name: string): League => ({
   seasonPoints: [],
   importedAt: '',
   stripNameClass: false,
+  teams: [],
 });
 
 function btn(label: string, fn: () => void, cls = '') {
@@ -120,9 +128,38 @@ function classEditor(l: League, c: LeagueClass, i: number, rerender: () => void)
   const down = btn('▼', move(1), 'mini');
   up.disabled = i === 0;
   down.disabled = i === l.classes.length - 1;
+  // Main or secondary: switching moves the drivers picked for it to the other roster column.
+  const kind = h('select') as HTMLSelectElement;
+  kind.title = 'Main: what the overlays show, found by the rules below or picked on the roster. Secondary: a class running across the main ones (a Rookie Cup, a Pro-Am trophy), picked in the roster’s 2nd class column';
+  for (const [v, t] of [
+    ['main', 'Main class'],
+    ['secondary', 'Secondary class'],
+  ]) {
+    const o = h('option', '', t);
+    o.value = v;
+    kind.append(o);
+  }
+  const secondary = c.role === 'secondary';
+  kind.value = secondary ? 'secondary' : 'main';
+  kind.onchange = () => {
+    const sec = kind.value === 'secondary';
+    c.role = sec ? 'secondary' : 'main';
+    for (const o of l.driverOverrides) {
+      if (sec && o.classId === c.id) {
+        o.classId = '';
+        o.class2Id = c.id;
+      } else if (!sec && o.class2Id === c.id) {
+        o.class2Id = '';
+        if (!o.classId) o.classId = c.id;
+      }
+    }
+    save();
+    rerender();
+  };
   head.append(
     color,
     name,
+    kind,
     up,
     down,
     btn(
@@ -147,7 +184,7 @@ function classEditor(l: League, c: LeagueClass, i: number, rerender: () => void)
       ),
     );
   }
-  el.append(head, rules);
+  el.append(head, secondary ? h('p', 'dim small', 'Picked for each driver in the roster’s 2nd class column. The driver keeps their main class; the overlays can colour car numbers or the class stripe by this class instead (Number colour / Stripe colour → Secondary class) and show it in a 2nd class column.') : rules);
   return el;
 }
 
@@ -245,9 +282,10 @@ function pointsCard(l: League, rerender: () => void) {
     c.append(h('h3', '', `Championship standings ${l.seasonName ? `(${l.seasonName})` : ''}`));
     // Scored per class: a table per class (by each driver's class in the roster).
     const classOf = new Map(l.driverOverrides.map((d) => [d.customerId, d.classId]));
-    const groups = p.basis === 'class' && l.classes.length ? [...l.classes.map((k) => ({ name: k.name, id: k.id })), { name: 'Other', id: '' }] : [{ name: '', id: null }];
+    const mains = l.classes.filter((k) => k.role !== 'secondary');
+    const groups = p.basis === 'class' && mains.length ? [...mains.map((k) => ({ name: k.name, id: k.id })), { name: 'Other', id: '' }] : [{ name: '', id: null }];
     for (const g of groups) {
-      const rows = l.seasonPoints.filter((e) => g.id === null || (classOf.get(e.customerId) ?? '') === g.id || (g.id === '' && !l.classes.some((k) => k.id === classOf.get(e.customerId))));
+      const rows = l.seasonPoints.filter((e) => g.id === null || (classOf.get(e.customerId) ?? '') === g.id || (g.id === '' && !mains.some((k) => k.id === classOf.get(e.customerId))));
       if (!rows.length) continue;
       const top = rows.sort((a, b) => b.points - a.points).slice(0, 10);
       const t = h('table', 'drivers');
@@ -374,7 +412,9 @@ function rosterCard(l: League, rerender: () => void) {
   }
   const table = h('table', 'drivers roster');
   const head = h('tr');
-  for (const t of ['Car #', 'Flag', 'iRacing name', 'Customer ID', 'Class', 'Display name', 'Team', 'Hide', '']) head.append(h('th', '', t));
+  const mains = l.classes.filter((k) => k.role !== 'secondary');
+  const seconds = l.classes.filter((k) => k.role === 'secondary');
+  for (const t of ['Car #', 'Flag', 'iRacing name', 'Customer ID', 'Class', ...(seconds.length ? ['2nd class'] : []), 'Display name', 'Team', 'Hide', '']) head.append(h('th', '', t));
   table.append(head);
   const live = new Map(sessionRows().map((r) => [r.userId, r]));
   l.driverOverrides.forEach((o, i) => {
@@ -408,19 +448,38 @@ function rosterCard(l: League, rerender: () => void) {
     const none = h('option', '', 'By class rules');
     none.value = '';
     cls.append(none);
-    for (const k of l.classes) {
+    for (const k of mains) {
       const opt = h('option', '', k.name || '(unnamed)');
       opt.value = k.id;
       cls.append(opt);
     }
-    cls.value = o.classId;
+    cls.value = mains.some((k) => k.id === o.classId) ? o.classId : '';
     cls.onchange = () => {
       o.classId = cls.value;
       save();
     };
     cell(cls);
+    if (seconds.length) {
+      const cls2 = h('select') as HTMLSelectElement;
+      const none2 = h('option', '', '—');
+      none2.value = '';
+      cls2.append(none2);
+      for (const k of seconds) {
+        const opt = h('option', '', k.name || '(unnamed)');
+        opt.value = k.id;
+        cls2.append(opt);
+      }
+      cls2.value = seconds.some((k) => k.id === o.class2Id) ? o.class2Id! : '';
+      cls2.onchange = () => {
+        o.class2Id = cls2.value;
+        save();
+      };
+      cell(cls2);
+    }
     cell(input(o.displayName, (v) => (o.displayName = v), 'Nickname'));
-    cell(input(o.teamName, (v) => (o.teamName = v), 'Team'));
+    const team = input(o.teamName, (v) => (o.teamName = v), 'Team');
+    team.setAttribute('list', 'league-teams');
+    cell(team);
     const hide = h('input');
     hide.type = 'checkbox';
     hide.checked = o.hidden;
@@ -442,7 +501,12 @@ function rosterCard(l: League, rerender: () => void) {
     );
     table.append(tr);
   });
-  c.append(bar, l.driverOverrides.length ? table : h('p', 'dim', 'No drivers on the roster yet.'));
+  // The Team column suggests the league's teams (Team builder); a new name makes a new team.
+  const teams = h('datalist');
+  teams.id = 'league-teams';
+  for (const t of teamsOf(l)) teams.append(h('option', '', t.name));
+  arrowNav(table);
+  c.append(bar, l.driverOverrides.length ? table : h('p', 'dim', 'No drivers on the roster yet.'), teams);
   return c;
 }
 
@@ -550,14 +614,17 @@ export const leaguesPage: Page = {
           // From the commentator app: update the league with the same iRacing league ID, or add it.
           const leagueId = Number(file.league.league_id) || 0;
           const same = leagueId > 0 ? cfg.leagues.find((x) => x.iracingLeagueId === leagueId) : undefined;
+          // Teams with their logos (stored like uploaded ones).
+          const teams = await teamsFromFile({ teams: (file.league as { teams?: [] }).teams, images: (file as { images?: Record<string, string> }).images }).catch(() => []);
           if (same && confirm(`Update “${same.name || 'unnamed league'}” (iRacing league ${leagueId}) with this file?\n\nOK: update it. Cancel: add it as a new league.`)) {
             Object.assign(same, fromCommentator(file, same));
+            same.teams = teams.map((t) => ({ ...t, shared: same.teams?.find((x) => x.name.toLowerCase() === t.name.toLowerCase())?.shared ?? [] }));
             selected = same.id;
             save();
             rerender();
             return;
           }
-          return add(fromCommentator(file, newLeague(file.league.name || 'Imported league')));
+          return add({ ...fromCommentator(file, newLeague(file.league.name || 'Imported league')), teams });
         }
         const l = file as League;
         if (!l || !Array.isArray(l.classes)) return alert('That file is not a league export (from Apex Overlays or the commentator app).');
@@ -614,6 +681,15 @@ export const leaguesPage: Page = {
         save();
         rerender();
       }, 'primary'),
+      Object.assign(
+        btn('Add secondary class', () => {
+          l.classes.push({ id: uid('c'), name: `Cup ${l.classes.filter((k) => k.role === 'secondary').length + 1}`, color: PALETTE[(l.classes.length + 3) % PALETTE.length], rules: emptyRules(), role: 'secondary' });
+          save();
+          rerender();
+        }),
+        { title: 'A class running across the main ones, e.g. a Rookie Cup or a Pro-Am trophy: picked for each driver in the roster’s 2nd class column' },
+      ),
+      Object.assign(btn('Team builder →', () => (location.hash = '#teams')), { title: 'Teams of this league: names, short names, colours, logos and who drives for each' }),
       btn('Export league', () => download(`${l.name || 'league'}.json`, l)),
       btn('Delete league', () => {
         if (!confirm(`Delete ${l.name}?`)) return;
@@ -655,7 +731,7 @@ export const leaguesPage: Page = {
       h(
         'p',
         'dim small',
-        'A driver’s class comes from the roster below when picked there; otherwise the first class (top to bottom) whose rules match. Text rules are case-insensitive; use * as a wildcard. Separate values with commas.',
+        'A driver’s (main) class comes from the roster below when picked there; otherwise the first main class (top to bottom) whose rules match. Text rules are case-insensitive; use * as a wildcard. Separate values with commas. Secondary classes (a Rookie Cup, a Pro-Am trophy) run across the main ones: each driver keeps their main class and can also have one secondary class, picked in the roster’s 2nd class column.',
       ),
     );
     l.classes.forEach((c, i) => ed.append(classEditor(l, c, i, rerender)));

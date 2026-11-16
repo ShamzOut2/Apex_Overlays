@@ -682,6 +682,7 @@ mod imp {
         let publish = |app: &AppHandle, status: &mut String, s: &str, msg: &str, n: usize| {
             let v = serde_json::json!({ "status": s, "message": msg, "overlays": n }).to_string();
             if *status != v {
+                log::info!("VR: {s}{}{msg}", if msg.is_empty() { "" } else { ": " });
                 let hub = &app.state::<Core>().hub;
                 hub.publish("vr", &v);
                 // "on": the overlays are in the headset, so the windows take their VR positions.

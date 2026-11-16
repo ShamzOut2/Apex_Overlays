@@ -9,6 +9,7 @@ interface CClass {
   id: string;
   name?: string;
   color?: string;
+  role?: string;
 }
 interface CDriver {
   cust_id?: number | string;
@@ -17,6 +18,7 @@ interface CDriver {
   nickname?: string;
   team?: string;
   class_id?: string;
+  class2_id?: string;
 }
 interface CResult {
   driver?: string;
@@ -160,7 +162,9 @@ export function fromCommentator(file: CommentatorLeague, base: League): League {
       name: c.name || 'Class',
       color: /^#[0-9a-f]{6}$/i.test(c.color ?? '') ? c.color! : '#888888',
       rules: { carIds: [], carNames: [], carNumbers: [], customerIds: [], teamNames: [], driverNames: [], iracingClassIds: [] },
+      role: c.role === 'secondary' ? ('secondary' as const) : ('main' as const),
     }));
+  const secondary = new Set(classes.filter((c) => c.role === 'secondary').map((c) => c.id));
   const known = new Set(classes.map((c) => c.id));
   const roster = new Map<number, CDriver>();
   const driverOverrides: DriverOverride[] = [];
@@ -172,7 +176,8 @@ export function fromCommentator(file: CommentatorLeague, base: League): League {
       customerId: id,
       name: d.name ?? '',
       carNumber: d.car_number ?? '',
-      classId: known.has(d.class_id ?? '') ? d.class_id! : '',
+      classId: known.has(d.class_id ?? '') && !secondary.has(d.class_id!) ? d.class_id! : '',
+      class2Id: secondary.has(d.class2_id ?? '') ? d.class2_id! : '',
       displayName: d.nickname ?? '',
       teamName: d.team ?? '',
       country: '',

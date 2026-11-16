@@ -3,6 +3,7 @@
 
 import { Client } from './lib/client';
 import { h, show, text } from './lib/dom';
+import { reportErrors } from './lib/errors';
 import type { Units } from './lib/format';
 import { type Ctx, type OverlayDef, schemaOf, type View } from './lib/overlay';
 import { merge, type Values } from './lib/settings';
@@ -43,6 +44,7 @@ const client = new Client(onData, (up) => {
   if (up) resendAutoSize();
 });
 client.subscribe('config', 'status', 'session');
+reportErrors(client, () => `overlay ${inst?.kind ?? '?'} (${id || 'no id'})`);
 
 edit.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;

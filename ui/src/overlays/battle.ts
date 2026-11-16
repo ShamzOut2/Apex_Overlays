@@ -4,6 +4,7 @@ import type { OverlayDef } from '../lib/overlay';
 import { NAME_STYLES } from '../lib/settings';
 import { chip } from '../lib/table';
 import type { Battle, BattleCar } from '../lib/types';
+import { NUMBER_COLOR_SETTING, numberChip } from './common';
 
 export const battle: OverlayDef = {
   kind: 'battle',
@@ -25,6 +26,7 @@ export const battle: OverlayDef = {
       group: 'Cars',
     },
     { key: 'showClass', label: 'Show the other car’s class', type: 'bool', default: true, group: 'Elements' },
+    { ...NUMBER_COLOR_SETTING, group: 'Format' },
     { key: 'showAhead', label: 'Car ahead', type: 'bool', default: true, group: 'Elements' },
     { key: 'showBehind', label: 'Car behind', type: 'bool', default: true, group: 'Elements' },
     { key: 'showTrend', label: 'Gap trend per lap', type: 'bool', default: true, group: 'Elements' },
@@ -84,7 +86,7 @@ export const battle: OverlayDef = {
         c.fill.style.transform = 'scaleX(0)';
         return;
       }
-      chip(c.num, b.number, b.classColor);
+      numberChip(c.num, b.number, b, s);
       if (s.showClass) chip(c.cls, b.className, b.classColor);
       text(c.name, f.name(b.name, s.nameStyle as string));
       text(c.ir, b.irating ? f.iRating(b.irating) : '');

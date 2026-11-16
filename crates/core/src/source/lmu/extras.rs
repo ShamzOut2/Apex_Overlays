@@ -114,6 +114,8 @@ pub fn spawn(hub: Arc<Hub>, data_dir: PathBuf, track: Arc<Mutex<(i64, String)>>)
         let mut forecast_at: Option<Instant> = None;
         let mut forecast_id: i64 = 0;
         let mut last: Option<Forecast> = None;
+        // A failing forecast is logged once per track, not every 30 s.
+        let mut forecast_failed = 0i64;
         loop {
             std::thread::sleep(Duration::from_secs(1));
             let (id, name) = track.lock().unwrap().clone();
@@ -128,7 +130,21 @@ pub fn spawn(hub: Arc<Hub>, data_dir: PathBuf, track: Arc<Mutex<(i64, String)>>)
             if forecast_id != id || forecast_at.is_none_or(|t| t.elapsed() > Duration::from_secs(30)) {
                 forecast_id = id;
                 forecast_at = Some(Instant::now());
-                let f = local.get(&format!("{REST}/rest/sessions/weather")).call().ok().and_then(|r| r.into_json::<Value>().ok()).map(|v| parse_forecast(&v));
+                let f = match local
+                    .get(&format!("{REST}/rest/sessions/weather"))
+                    .call()
+                    .map_err(|e| e.to_string())
+                    .and_then(|r| r.into_json::<Value>().map_err(|e| e.to_string()))
+                {
+                    Ok(v) => Some(parse_forecast(&v)),
+                    Err(e) => {
+                        if forecast_failed != id {
+                            forecast_failed = id;
+                            log::warn!("LMU forecast for {name}: {e}");
+                        }
+                        None
+                    }
+                };
                 if let Some(f) = f.filter(|f| !(f.practice.is_empty() && f.qualify.is_empty() && f.race.is_empty())) {
                     // Sent every time, so the engine has it again soon after it starts afresh.
                     last = Some(f.clone());

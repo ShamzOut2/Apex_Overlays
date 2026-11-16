@@ -167,10 +167,12 @@ export function driverCols<R extends Driver & Partial<Extras>>(s: Values): Col<R
   // No licence column: the iRating pill shows the licence by its colour instead.
   const licTint = s.irLicenseColor !== false && !columnOn(s, 'license');
   return [
-    { id: 'number', label: '#', width: '2.9em', align: 'center', render: (c, r) => chip(c, r.number, r.classColor) },
+    { id: 'number', label: '#', width: '2.9em', align: 'center', render: (c, r) => numberChip(c, r.number, r, s) },
     { id: 'flag', label: 'Nat', width: '2em', align: 'center', render: (c, r) => text(c, s.flagStyle === 'code' && r.country !== 'GLOBE' ? r.country.replace(/^GB-/, '') : flagEmoji(r.country)) },
     { id: 'name', label: 'Driver', width: 'minmax(4em, 1fr)', render: (c, r) => nameCell(c, f.name(r.name, nameStyle), r as NameRow, s) },
-    { id: 'team', label: 'Team', width: 'minmax(3em, 0.8fr)', render: (c, r) => text(c, r.team === r.name ? '' : r.team) },
+    { id: 'team', label: 'Team', width: 'minmax(3em, 0.8fr)', render: (c, r) => text(c, r.team === r.name ? '' : s.teamStyle === 'short' && r.teamShort ? r.teamShort : r.team) },
+    { id: 'class2', label: '2nd', width: 'minmax(3em, auto)', align: 'center', render: (c, r) => (r.class2Name ? chip(c, r.class2Name, r.class2Color) : c.firstChild && c.replaceChildren()) },
+    { id: 'teamLogo', label: '', width: '2.6em', align: 'center', render: (c, r) => teamLogoCell(c, r, s.teamLogoKind === 'small') },
     { id: 'make', label: 'Make', width: s.makeStyle === 'full' ? '5.5em' : '3em', align: 'center', render: (c, r) => makeCell(c, r.make, s.makeStyle as string, s.makePlate === true) },
     {
       id: 'license',
@@ -245,6 +247,63 @@ function signedCell(c: HTMLElement, v: number | null, digits: number) {
 }
 
 /** Columns from the per-car extras (stint, ratings, points, ...). */
+/** Where the car number's background colour comes from (Number colour setting). */
+export const NUMBER_COLOR_SETTING = {
+  key: 'numberColor',
+  label: 'Number colour',
+  type: 'select' as const,
+  default: 'class',
+  options: [
+    ['class', 'Main class colour'],
+    ['secondary', 'Secondary class colour (League builder)'],
+    ['team', 'Team colour (League builder → Team builder)'],
+  ] as [string, string][],
+  help: 'Secondary class: drivers without one show just the number, with no background. Team colour: drivers in a team with no colour (or in no team) keep their class colour',
+};
+
+type Colored = { classColor: string; class2Color?: string; teamColor?: string };
+
+/** A colour from the main class, the secondary class or the team ('' when the driver has no secondary class). */
+export function colorFrom(r: Colored, from: unknown): string {
+  if (from === 'secondary') return r.class2Color ?? '';
+  if (from === 'team' && r.teamColor) return r.teamColor;
+  return r.classColor;
+}
+
+/** The car number's background (Number colour setting). */
+export const numberBg = (r: Colored, s: Values) => colorFrom(r, s.numberColor);
+
+/** A car number chip in its colour; just the number when there is none. */
+export function numberChip(c: HTMLElement, label: string, r: Colored, s: Values) {
+  const bg = numberBg(r, s);
+  if (bg) chip(c, label, bg);
+  else chip(c, label, 'transparent', 'inherit');
+}
+
+/** The colour stripe by each row (Stripe colour setting): the number's colour, a class's or the team's. */
+export const stripeColor = (r: Colored, s: Values) => colorFrom(r, s.stripeColor === 'number' ? s.numberColor : s.stripeColor) || 'transparent';
+
+/** Team logo cell: the full or small logo (whichever the team has when only one). */
+function teamLogoCell(c: HTMLElement, r: Driver, small: boolean) {
+  const url = small ? r.teamLogoSmall || r.teamLogo : r.teamLogo || r.teamLogoSmall;
+  let img = c.firstElementChild as HTMLImageElement | null;
+  if (!url) {
+    if (img) img.hidden = true;
+    return;
+  }
+  if (!img) {
+    img = h('img', 'team-logo') as HTMLImageElement;
+    img.alt = '';
+    c.append(img);
+  }
+  img.hidden = false;
+  // The same address is not set again (it would reload the image).
+  if (img.dataset.src !== url) {
+    img.dataset.src = url;
+    img.src = url;
+  }
+}
+
 /** Fuel put in at stops: litres (or gallons) for the player in iRacing, % of a tank in LMU. */
 function fuelText(v: number, unit: string, u: Units): string {
   if (unit === '%') return `${Math.round(v)}%`;
@@ -316,8 +375,27 @@ export function extraCols<R extends Driver & Extras>(s: Values, units: () => Uni
   ];
 }
 
+/** The colour of the bar by each driver (relative and standings). */
+export const STRIPE_COLOR_SETTING = {
+  key: 'stripeColor',
+  label: 'Colour bar by each driver',
+  type: 'select' as const,
+  default: 'class',
+  options: [
+    ['class', 'Main class colour'],
+    ['secondary', 'Secondary class colour (League builder)'],
+    ['team', 'Team colour (League builder → Team builder)'],
+    ['number', 'As the car number'],
+  ] as [string, string][],
+  help: 'Secondary class: no bar for drivers without one. Team colour: the class colour for drivers in a team with no colour, or in no team',
+  group: 'Colours',
+};
+
 /** Settings shared by every column-based overlay. */
 export const COLUMN_STYLE_SETTINGS = [
+  { ...NUMBER_COLOR_SETTING, when: (v: Values) => columnOn(v, 'number'), group: 'Column style' },
+  { key: 'teamStyle', when: (v: Values) => columnOn(v, 'team'), label: 'Team name', type: 'select' as const, default: 'full', options: [['full', 'Full name'], ['short', 'Short name (Team builder), when set']] as [string, string][], group: 'Column style' },
+  { key: 'teamLogoKind', when: (v: Values) => columnOn(v, 'teamLogo'), label: 'Team logo', type: 'select' as const, default: 'full', options: [['full', 'Full logo'], ['small', 'Small logo']] as [string, string][], help: 'From the Team builder. A team with only one of the two shows that one', group: 'Column style' },
   { key: 'flagStyle', when: (v: Values) => columnOn(v, 'flag'), label: 'Flag style', type: 'select' as const, default: 'emoji', options: [['emoji', 'Flag'], ['code', 'Country code']] as [string, string][], group: 'Column style' },
   {
     key: 'makeStyle', when: (v: Values) => columnOn(v, 'make'),

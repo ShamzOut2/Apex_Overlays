@@ -25,6 +25,10 @@ pub enum HostEvent {
         value: bool,
     },
     OpenSettings,
+    /// Show a folder in the file manager (the log files).
+    OpenFolder {
+        path: std::path::PathBuf,
+    },
     /// Fit an overlay window to its content (CSS pixels; 0 = not automatic).
     AutoSize {
         id: String,

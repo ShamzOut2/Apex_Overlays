@@ -140,6 +140,10 @@ export interface Driver {
   classId: string;
   className: string;
   classColor: string;
+  /** Secondary class (League builder): '' when the driver has none. */
+  class2Id: string;
+  class2Name: string;
+  class2Color: string;
   userId: number;
   carId: number;
   irating: number;
@@ -151,6 +155,11 @@ export interface Driver {
   /** ISO country code ('' if unknown); may be 'GB-SCT' style for UK nations. */
   country: string;
   make: string;
+  /** League team (Team builder): colour ('' for none), short name, logo URLs ('' for none). */
+  teamColor: string;
+  teamShort: string;
+  teamLogo: string;
+  teamLogoSmall: string;
   isPlayer: boolean;
   isFocus: boolean;
 }
@@ -444,6 +453,9 @@ export interface LeagueClass {
   name: string;
   color: string;
   rules: ClassRules;
+  /** 'secondary': runs across the main classes (a Rookie Cup, a Pro-Am trophy), picked per
+   *  driver on the roster's 2nd class column, never by rules. Otherwise a main class. */
+  role?: 'main' | 'secondary' | '';
 }
 
 export interface DriverOverride {
@@ -454,6 +466,8 @@ export interface DriverOverride {
   carNumber: string;
   /** League class id this driver races in (overrides class rules). */
   classId: string;
+  /** Their secondary class (a class with role "secondary"), '' for none. */
+  class2Id?: string;
   displayName: string;
   teamName: string;
   country: string;
@@ -494,6 +508,21 @@ export interface League {
   importedAt: string;
   /** Leave out class tags in names: "(P) Max Power" shows as "Max Power". */
   stripNameClass: boolean;
+  /** Team builder: a driver is in the team named on their roster row (or iRacing's team name). */
+  teams: LeagueTeam[];
+}
+
+export interface LeagueTeam {
+  name: string;
+  /** Used where space is tight. */
+  short: string;
+  /** "#rrggbb", or "" for none (the class colour is used instead). */
+  color: string;
+  /** Logo files (served at /team-logos/<file>), "" for none: the full logo and a small badge. */
+  logo: string;
+  logoSmall: string;
+  /** Other leagues (ids) this team is kept in step with. */
+  shared: string[];
 }
 
 export interface LeagueImport {
