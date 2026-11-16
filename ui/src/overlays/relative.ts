@@ -27,6 +27,8 @@ const COLS = [
   { id: 'bestLap', label: 'Best lap — BEST' },
   { id: 'tire', label: 'Tyre (wet/dry) — TYRE' },
   { id: 'points', label: 'League points for position — PTS' },
+  { id: 'fuelAdded', label: 'Fuel added at the last stop (LMU: every car; iRacing: you) — FUEL+' },
+  { id: 'fuelTotal', label: 'Fuel added this session (LMU: every car; iRacing: you) — FUEL Σ' },
   { id: 'seasonPoints', label: 'Championship total (projected) — CHAMP' },
   { id: 'gap', label: 'Gap' },
 ];
@@ -73,7 +75,7 @@ export const relative: OverlayDef = {
       { id: 'pos', label: 'Pos', width: '2.4em', align: 'center', render: (c, r) => text(c, r.classPosition > 0 ? String(r.classPosition) : '') },
       { id: 'overall', label: 'Ovr', width: '2.4em', align: 'center', render: (c, r) => text(c, r.position > 0 ? String(r.position) : '') },
       ...driverCols<RelRow>(s),
-      ...extraCols<RelRow>(s),
+      ...extraCols<RelRow>(s, () => ctx.units),
       { id: 'tire', label: 'Tyre', width: '2.4em', align: 'center', render: (c, r) => tireCell(c, r.tireWet) },
       {
         id: 'gap',

@@ -264,6 +264,8 @@ pub fn apply(st: &mut State, snap: &Snapshot, tel: &mut Telemetry) -> Option<Str
         if let Some(t) = t {
             dist += speed_of(t) * ahead;
         }
+        // Carried over the line before the game counts the lap: the next lap already.
+        let crossed = track_m > 1.0 && v.mLapDist < track_m && dist >= track_m;
         let pct = if track_m > 1.0 { (dist / track_m).rem_euclid(1.0) as f32 } else { 0.0 };
         let off = v.mTrackEdge > 0.0 && v.mPathLateral.abs() > v.mTrackEdge.abs() + 2.0;
         let surf = if v.mInGarageStall != 0 {
@@ -285,10 +287,13 @@ pub fn apply(st: &mut State, snap: &Snapshot, tel: &mut Telemetry) -> Option<Str
             car_flags |= flags::BLACK;
         }
         tel.cars[i] = CarTel {
-            lap: v.mTotalLaps as i32 + 1,
+            lap: v.mTotalLaps as i32 + 1 + crossed as i32,
             lap_completed: v.mTotalLaps as i32,
             pct: if surf == surface::NOT_IN_WORLD { -1.0 } else { pct },
-            est_time: v.mEstimatedLapTime.max(0.0) as f32,
+            // iRacing's CarIdxEstTime is the time a reference lap takes to reach the car's spot;
+            // LMU has no such figure (mEstimatedLapTime is a whole lap), so gaps are reckoned
+            // from the distance into the lap instead.
+            est_time: 0.0,
             f2_time: v.mTimeBehindLeader as f32,
             position: v.mPlace as i32,
             class_position: class_pos.get(&v.mID).copied().unwrap_or(0),
@@ -300,6 +305,7 @@ pub fn apply(st: &mut State, snap: &Snapshot, tel: &mut Telemetry) -> Option<Str
             gear: t.map_or(0, |t| t.mGear),
             rpm: t.map_or(0.0, |t| t.mEngineRPM as f32),
             session_flags: car_flags,
+            fuel: Some(v.mFuelFraction as f32 / 255.0),
         };
     }
 
@@ -541,7 +547,7 @@ fn session_yaml(
         max_rpm * 0.96,
         max_rpm * 0.97,
         max_rpm * 0.985,
-        player.map_or(0.0, |p| p.mEstimatedLapTime),
+        player.map_or(0.0, |p| if p.mEstimatedLapTime > 0.0 { p.mEstimatedLapTime } else { class_est_lap(snap, &p.mVehicleClass) }),
     );
     let mut cars: Vec<&VehicleScoring> = snap.vehicles.iter().filter(|v| st.slots.contains_key(&v.mID)).collect();
     cars.sort_by_key(|v| st.slots[&v.mID]);
@@ -556,7 +562,7 @@ fn session_yaml(
         let pit_group = clean(&text(&v.mPitGroup));
         let team = if pit_group.is_empty() { team_name(&vehicle) } else { pit_group };
         let number = car_number(&vehicle).unwrap_or_default();
-        let class_est = snap.vehicles.iter().filter(|o| text(&o.mVehicleClass) == class).map(|o| o.mEstimatedLapTime).find(|e| *e > 0.0).unwrap_or(0.0);
+        let class_est = class_est_lap(snap, &v.mVehicleClass);
         let _ = write!(
             y,
             " - CarIdx: {i}\n   UserName: {driver}\n   AbbrevName: {}\n   Initials: \n   UserID: -1\n   TeamName: {team}\n   CarNumber: \"{number}\"\n   CarNumberRaw: {}\n   CarID: {}\n   CarPath: {}\n   CarScreenName: {model}\n   CarScreenNameShort: {model}\n   CarClassID: {}\n   CarClassShortName: {class}\n   CarClassColor: 0x{:06x}\n   CarClassEstLapTime: {class_est:.4}\n   IRating: 0\n   LicString: \n   LicColor: 0xffffff\n   CarIsAI: {}\n   IsSpectator: 0\n   CarIsPaceCar: {}\n",
@@ -751,6 +757,16 @@ impl super::Source for Lmu {
     }
 }
 
+/// A lap time for the class, to turn track distance into time: the game's estimate, or when it
+/// has none yet the class's best lap so far (0 when nobody has set one).
+fn class_est_lap(snap: &Snapshot, class: &[u8]) -> f64 {
+    let same = || snap.vehicles.iter().filter(|o| o.mVehicleClass[..] == class[..]);
+    same()
+        .map(|o| o.mEstimatedLapTime)
+        .find(|e| *e > 0.0)
+        .unwrap_or_else(|| same().map(|o| o.mBestLapTime).filter(|b| *b > 0.0).fold(0.0, |a: f64, b| if a == 0.0 { b } else { a.min(b) }))
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::data::*;
@@ -919,6 +935,109 @@ pub mod tests {
         assert!(!rel.rows.is_empty(), "the relative has cars");
         let st = crate::topics::standings(&e);
         assert_eq!(st.classes.len(), 3, "Hyper, LMP2 and GT3");
+    }
+
+    /// An engine fed from LMU scoring, `steps` updates at 5 Hz with `step` run between them.
+    fn run(e: &mut crate::engine::Engine, st: &mut State, snap: &mut Snapshot, steps: usize, mut step: impl FnMut(&mut Snapshot)) {
+        for _ in 0..steps {
+            snap.info.mCurrentET += 0.2;
+            for t in snap.telemetry.iter_mut() {
+                t.mElapsedTime = snap.info.mCurrentET;
+                t.mLocalVel.z = 0.0;
+            }
+            step(snap);
+            if let Some(y) = apply(st, snap, &mut e.tel) {
+                e.set_session(SessionInfo::parse(&y));
+            }
+            e.connected = true;
+            e.tick();
+        }
+    }
+
+    #[test]
+    fn gaps_come_from_where_the_cars_are() {
+        let mut e = crate::engine::Engine::new(crate::config::Config::default(), None);
+        e.source = "lmu";
+        let (mut st, mut snap) = (State::default(), snapshot());
+        // The Ferrari 70 m ahead of the player, the LMP2 3 km behind on the same lap.
+        snap.vehicles[0].mLapDist = 5070.0;
+        run(&mut e, &mut st, &mut snap, 3, |_| {});
+        let me = st.slots[&11];
+        let (ferrari, lmp2) = (st.slots[&4], st.slots[&20]);
+        // 210 s laps of 13,626 m: 70 m is about 1.1 s, 3 km about 46 s.
+        let g = e.relative_gap(me, ferrari);
+        assert!((g - 70.0 / 13626.0 * 210.0).abs() < 0.1, "Ferrari ahead by {g}");
+        let g = e.relative_gap(me, lmp2);
+        assert!((g + 3000.0 / 13626.0 * 210.0).abs() < 0.5, "LMP2 behind by {g}");
+        // Race order: the player 1.1 s behind the class leader.
+        let row = e.order.iter().find(|r| r.idx == me).unwrap();
+        assert_eq!(row.class_pos, 2);
+        let gap = row.gap.unwrap();
+        assert!((gap - 70.0 / 13626.0 * 210.0).abs() < 0.1, "gap to the leader {gap}");
+        let rel = crate::topics::relative(&e);
+        let f = rel.rows.iter().find(|r| r.d.idx == ferrari).unwrap();
+        assert!(f.gap > 1.0, "relative shows the gap: {}", f.gap);
+    }
+
+    #[test]
+    fn crossing_the_line_counts_the_lap_straight_away() {
+        let mut st = State::default();
+        let mut tel = Telemetry::default();
+        let mut snap = snapshot();
+        // 2 m before the line, carried 6 m on by speed before the game counts the lap.
+        snap.vehicles[1].mLapDist = 13_624.0;
+        apply(&mut st, &snap, &mut tel);
+        let me = &tel.cars[st.slots[&11]];
+        assert_eq!(me.lap, 5, "on the next lap");
+        assert!(me.pct < 0.01 && me.progress() > 5.0, "{}", me.progress());
+    }
+
+    #[test]
+    fn fuel_added_at_every_cars_stops() {
+        let mut e = crate::engine::Engine::new(crate::config::Config::default(), None);
+        e.source = "lmu";
+        let (mut st, mut snap) = (State::default(), snapshot());
+        for v in snap.vehicles.iter_mut() {
+            v.mFuelFraction = 51; // 20%
+        }
+        run(&mut e, &mut st, &mut snap, 2, |_| {});
+        let ferrari = st.slots[&4];
+        let me = st.slots[&11];
+        assert!(crate::topics::extras(&e, ferrari).fuel_added.is_none(), "no stop yet");
+        // The Ferrari pits and takes 60% of a tank, a little at a time.
+        run(&mut e, &mut st, &mut snap, 3, |s| {
+            s.vehicles[0].mInPits = 1;
+            s.vehicles[0].mPitState = 3;
+        });
+        let mut fill = 51u8;
+        run(&mut e, &mut st, &mut snap, 6, |s| {
+            fill = (fill + 26).min(204);
+            s.vehicles[0].mFuelFraction = fill;
+        });
+        let x = crate::topics::extras(&e, ferrari).fuel_added.unwrap();
+        assert!(x.filling && x.unit == "%" && x.last > 50.0, "filling shows as it goes: {}", x.last);
+        run(&mut e, &mut st, &mut snap, 3, |s| {
+            s.vehicles[0].mInPits = 0;
+            s.vehicles[0].mPitState = 0;
+        });
+        let x = crate::topics::extras(&e, ferrari).fuel_added.unwrap();
+        assert!(!x.filling && (x.last - 60.0).abs() < 0.5 && (x.total - 60.0).abs() < 0.5, "{} / {}", x.last, x.total);
+        // A second, shorter stop: last is that one, the total adds up.
+        run(&mut e, &mut st, &mut snap, 2, |s| {
+            s.vehicles[0].mInPits = 1;
+            s.vehicles[0].mFuelFraction = 102;
+        });
+        run(&mut e, &mut st, &mut snap, 2, |s| s.vehicles[0].mFuelFraction = 153);
+        run(&mut e, &mut st, &mut snap, 2, |s| s.vehicles[0].mInPits = 0);
+        let x = crate::topics::extras(&e, ferrari).fuel_added.unwrap();
+        assert!((x.last - 20.0).abs() < 0.5 && (x.total - 80.0).abs() < 0.5, "{} / {}", x.last, x.total);
+        // Driving through the pit lane without a stop adds nothing.
+        run(&mut e, &mut st, &mut snap, 2, |s| s.vehicles[1].mInPits = 1);
+        run(&mut e, &mut st, &mut snap, 2, |s| s.vehicles[1].mInPits = 0);
+        assert!(crate::topics::extras(&e, me).fuel_added.is_none());
+        // Shown on the relative and the standings.
+        let json = crate::topics::Topic::ALL.iter().find(|t| t.name() == "standings").unwrap().build(&e);
+        assert!(json.contains("\"fuelAdded\":{\"last\":20.0,\"total\":80.0,\"unit\":\"%\",\"filling\":false}"), "{json}");
     }
 
     #[test]

@@ -181,6 +181,9 @@ export interface Extras {
   seasonPoints: number | null;
   /** Serving a slow-down penalty: for how long, and the time given up so far (estimated). */
   slowdown: { seconds: number; lost: number } | null;
+  /** Fuel put in at stops (LMU: every car; iRacing: only the player): at the last stop (or so
+   *  far at this one) and over the session, in litres ("L") or % of a full tank ("%"). */
+  fuelAdded: { last: number; total: number; unit: 'L' | '%'; filling: boolean } | null;
 }
 
 export interface RelRow extends Driver, Extras {

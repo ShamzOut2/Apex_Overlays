@@ -126,6 +126,8 @@ pub struct CarTel {
     pub rpm: f32,
     /// Flags shown to this car (irsdk_Flags): black, meatball, blue, ...
     pub session_flags: u32,
+    /// Share of a full tank left (0..1), where the game tells it for this car (LMU: every car).
+    pub fuel: Option<f32>,
 }
 
 impl CarTel {

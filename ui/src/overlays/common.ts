@@ -6,6 +6,7 @@ import { columnOn, type Values } from '../lib/settings';
 import { BADGE_COLORS, classBadge } from '../lib/classBadges';
 import { chip, contrast, type Col } from '../lib/table';
 import type { Driver, Extras } from '../lib/types';
+import type { Units } from '../lib/format';
 
 /** ISO code → flag emoji (rendered by the bundled flag font). Handles GB-SCT style UK nations. */
 const flags = new Map<string, string>();
@@ -244,7 +245,14 @@ function signedCell(c: HTMLElement, v: number | null, digits: number) {
 }
 
 /** Columns from the per-car extras (stint, ratings, points, ...). */
-export function extraCols<R extends Driver & Extras>(s: Values): Col<R>[] {
+/** Fuel put in at stops: litres (or gallons) for the player in iRacing, % of a tank in LMU. */
+function fuelText(v: number, unit: string, u: Units): string {
+  if (unit === '%') return `${Math.round(v)}%`;
+  const n = f.fuel(v, u);
+  return `${n.toFixed(n < 10 ? 1 : 0)}${f.fuelUnit(u) === 'gal' ? 'g' : 'L'}`;
+}
+
+export function extraCols<R extends Driver & Extras>(s: Values, units: () => Units = () => 'metric'): Col<R>[] {
   return [
     { id: 'lap', label: 'Lap', width: '2.6em', align: 'center', render: (c, r) => text(c, r.lap ? String(r.lap) : '') },
     {
@@ -292,6 +300,18 @@ export function extraCols<R extends Driver & Extras>(s: Values): Col<R>[] {
         toggle(c, 'good', r.points != null && r.points > 0);
       },
     },
+    {
+      id: 'fuelAdded',
+      label: 'Fuel+',
+      width: '3.4em',
+      align: 'center',
+      render: (c, r) => {
+        const a = r.fuelAdded;
+        text(c, a ? `+${fuelText(a.last, a.unit, units())}` : '');
+        toggle(c, 'filling', !!a?.filling);
+      },
+    },
+    { id: 'fuelTotal', label: 'Fuel Σ', width: '3.4em', align: 'center', render: (c, r) => text(c, r.fuelAdded ? fuelText(r.fuelAdded.total, r.fuelAdded.unit, units()) : '') },
     { id: 'seasonPoints', label: 'Champ', width: '3.2em', align: 'center', render: (c, r) => text(c, r.seasonPoints == null ? '' : String(+r.seasonPoints.toFixed(1))) },
   ];
 }
