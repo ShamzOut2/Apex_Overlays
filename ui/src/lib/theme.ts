@@ -199,7 +199,7 @@ export const PRESETS: Preset[] = [
     name: 'VCR',
     sponsored: true,
     logo: '/assets/teams/vcr.png',
-    values: { background: '#000000', headerBackground: '#140000', textColor: '#ffffff', dimColor: '#a8a8a8', accent: '#e60000', playerColor: '#e60000', bestColor: '#c27bff', goodColor: '#3ddc84', badColor: '#ff5c5c', lapAheadColor: '#ffa04d', lapBehindColor: '#6cb4ff' },
+    values: { background: '#000000', headerBackground: '#14110a', textColor: '#ffffff', dimColor: '#a8a8a8', accent: '#e9b949', playerColor: '#e9b949', bestColor: '#c27bff', goodColor: '#3ddc84', badColor: '#ff5c5c', lapAheadColor: '#ff8a8a', lapBehindColor: '#6cb4ff' },
   },
   {
     name: 'JWB',
