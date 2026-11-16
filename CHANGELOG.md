@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.0.1
 
 ### New features
 - Fuel added column on the relative and standings: how much fuel each car put in at its last pit stop (FUEL+), and in total this session (FUEL Σ), lit up while the car is filling. In Le Mans Ultimate it shows for every car, as a share of a full tank (LMU tells every car’s fuel level, or virtual energy for the classes that run on it); in iRacing it shows for you, in litres or gallons, as iRacing does not tell other cars’ fuel. Turn the columns on under Columns
