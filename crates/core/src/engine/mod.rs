@@ -26,6 +26,8 @@ pub const STATE_CHECKERED: i32 = 5;
 pub struct Static {
     pub idx: usize,
     pub class: ClassKey,
+    /// Secondary class (League builder), if the driver has one.
+    pub class2: Option<ClassKey>,
     pub name: String,
     pub abbrev: String,
     pub team: String,
@@ -618,6 +620,7 @@ impl Engine {
             statics[d.car_idx] = Some(Static {
                 idx: d.car_idx,
                 class,
+                class2: self.resolver.secondary_of(d),
                 abbrev: if d.abbrev.is_empty() { name.clone() } else { d.abbrev.clone() },
                 name,
                 team,

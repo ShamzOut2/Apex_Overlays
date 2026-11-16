@@ -5,7 +5,7 @@ import type { OverlayDef } from '../lib/overlay';
 import { columns, enabledColumns, NAME_STYLES } from '../lib/settings';
 import { type Col, columnFitter, Table } from '../lib/table';
 import type { RelRow, Relative, Session } from '../lib/types';
-import { COLUMN_STYLE_SETTINGS, driverCols, extraCols, tireCell } from './common';
+import { COLUMN_STYLE_SETTINGS, driverCols, extraCols, stripeColor, tireCell } from './common';
 
 const COLS = [
   { id: 'pos', label: 'Class position — POS' },
@@ -15,6 +15,7 @@ const COLS = [
   { id: 'name', label: 'Driver' },
   { id: 'team', label: 'Team' },
   { id: 'teamLogo', label: 'Team logo (Team builder)' },
+  { id: 'class2', label: 'Secondary class (League builder) — 2ND' },
   { id: 'make', label: 'Manufacturer — MAKE' },
   { id: 'class', label: 'Class' },
   { id: 'car', label: 'Car' },
@@ -123,7 +124,7 @@ export const relative: OverlayDef = {
             pit: (s.dimPitCars as boolean) && r.onPitRoad,
             off: r.offTrack,
           }),
-          (row, r) => row.style.setProperty('--class', r.classColor),
+          (row, r) => row.style.setProperty('--class', stripeColor(r, s)),
         );
         if (s.autoWidth) fit([table]);
       },

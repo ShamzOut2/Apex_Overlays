@@ -140,6 +140,10 @@ export interface Driver {
   classId: string;
   className: string;
   classColor: string;
+  /** Secondary class (League builder): '' when the driver has none. */
+  class2Id: string;
+  class2Name: string;
+  class2Color: string;
   userId: number;
   carId: number;
   irating: number;
@@ -449,6 +453,9 @@ export interface LeagueClass {
   name: string;
   color: string;
   rules: ClassRules;
+  /** 'secondary': runs across the main classes (a Rookie Cup, a Pro-Am trophy), picked per
+   *  driver on the roster's 2nd class column, never by rules. Otherwise a main class. */
+  role?: 'main' | 'secondary' | '';
 }
 
 export interface DriverOverride {
@@ -459,6 +466,8 @@ export interface DriverOverride {
   carNumber: string;
   /** League class id this driver races in (overrides class rules). */
   classId: string;
+  /** Their secondary class (a class with role "secondary"), '' for none. */
+  class2Id?: string;
   displayName: string;
   teamName: string;
   country: string;

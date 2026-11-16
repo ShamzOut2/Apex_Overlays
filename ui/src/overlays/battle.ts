@@ -4,7 +4,7 @@ import type { OverlayDef } from '../lib/overlay';
 import { NAME_STYLES } from '../lib/settings';
 import { chip } from '../lib/table';
 import type { Battle, BattleCar } from '../lib/types';
-import { NUMBER_COLOR_SETTING, numberBg } from './common';
+import { NUMBER_COLOR_SETTING, numberChip } from './common';
 
 export const battle: OverlayDef = {
   kind: 'battle',
@@ -86,7 +86,7 @@ export const battle: OverlayDef = {
         c.fill.style.transform = 'scaleX(0)';
         return;
       }
-      chip(c.num, b.number, numberBg(b, s));
+      numberChip(c.num, b.number, b, s);
       if (s.showClass) chip(c.cls, b.className, b.classColor);
       text(c.name, f.name(b.name, s.nameStyle as string));
       text(c.ir, b.irating ? f.iRating(b.irating) : '');

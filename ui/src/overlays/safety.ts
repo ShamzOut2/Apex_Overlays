@@ -4,10 +4,10 @@ import type { OverlayDef } from '../lib/overlay';
 import { NAME_STYLES } from '../lib/settings';
 import { chip } from '../lib/table';
 import type { Approach, Driver, Extras, Hazard, Overtake, Safety, Status } from '../lib/types';
-import { flagEmoji, iratingCell, NUMBER_COLOR_SETTING, numberBg } from './common';
+import { flagEmoji, iratingCell, NUMBER_COLOR_SETTING, numberChip } from './common';
 
 const driverSample = (d: Partial<Driver & Extras>): Driver & Extras => ({
-  idx: 0, number: '', name: '', abbrev: '', team: '', car: '', classId: '', className: '', classColor: '#888888', userId: 0, carId: 0,
+  idx: 0, number: '', name: '', abbrev: '', team: '', car: '', classId: '', className: '', classColor: '#888888', class2Id: '', class2Name: '', class2Color: '', userId: 0, carId: 0,
   irating: 0, license: '', licenseColor: '#888888', club: '', flair: '', country: '', make: '', teamColor: '', teamShort: '', teamLogo: '', teamLogoSmall: '', isPlayer: false, isFocus: false,
   lap: 0, stintState: 'lap', stintLap: null, bestLap: null, lastLap: null, classBest: false, lastIsPb: false, finished: false, lapsLed: 0,
   flags: [], penalty: null, penaltyServed: false, incidents: null, irDelta: null, srDelta: null, points: null, seasonPoints: null, slowdown: null, fuelAdded: null, ...d,
@@ -157,7 +157,7 @@ export const safety: OverlayDef = {
 
     const fillDriver = (c: Card, d: Driver) => {
       show(c.num, !!s.showNumber && !!d.number);
-      if (s.showNumber) chip(c.num, `#${d.number}`, numberBg(d, s));
+      if (s.showNumber) numberChip(c.num, `#${d.number}`, d, s);
       const nat = s.showCountry ? flagEmoji(d.country) : '';
       text(c.nat, nat);
       show(c.nat, !!nat);

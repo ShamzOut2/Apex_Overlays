@@ -503,6 +503,8 @@ fn import_league(s: AppState, league_id: i64, season_id: Option<i64>) {
                                 class.name = old.name.clone();
                             }
                         }
+                        // Secondary classes are made here, not in iRacing: kept.
+                        league.classes.extend(existing.classes.iter().filter(|c| c.is_secondary()).cloned());
                         // Keep everything the user set on the roster; fill in names/numbers from iRacing.
                         let imported = std::mem::take(&mut league.driver_overrides);
                         league.driver_overrides = existing.driver_overrides.clone();

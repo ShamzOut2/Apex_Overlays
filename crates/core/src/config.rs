@@ -499,6 +499,15 @@ pub struct LeagueClass {
     /// CSS hex colour, e.g. "#ff4d4d".
     pub color: String,
     pub rules: ClassRules,
+    /// "secondary": a class running across the main ones (a Rookie Cup, a Pro-Am trophy),
+    /// picked per driver on the roster and never by rules. Anything else: a main class.
+    pub role: String,
+}
+
+impl LeagueClass {
+    pub fn is_secondary(&self) -> bool {
+        self.role == "secondary"
+    }
 }
 
 /// A car joins the class if ANY populated rule matches. Text rules are
@@ -525,6 +534,8 @@ pub struct DriverOverride {
     pub car_number: String,
     /// League class this driver races in (a `LeagueClass::id`); takes priority over class rules.
     pub class_id: String,
+    /// Their secondary class (a `LeagueClass::id` of a secondary class), if any.
+    pub class2_id: String,
     pub display_name: String,
     pub team_name: String,
     /// ISO country code shown as the driver's flag, overriding their iRacing flair.
