@@ -27,3 +27,10 @@ team colour on the timing overlays (League builder → Team builder, Number colo
 | `nimbus/nimbus-motorsport-track-map-1600x900.png` | 1600×900 |
 | `nimbus/nimbus-motorsport-theme-1600x900.png` | 1600×900 |
 | `nimbus/nimbus-motorsport-social-1080x1080.png` | 1080×1080 |
+
+## VCR and Gassed Up Motorsports
+
+The same five images for the VCR (Virtual Circuit Racing) and Gassed Up Motorsports themes
+(Settings → Theme → Sponsored by Us), with the team's logo, and three GT3 cars of the mock race
+(#114, #118, #111) in the team colour: `vcr/vcr-*.png` and `gassed-up/gassed-up-motorsports-*.png`
+(hero 1920×1080; timing, track map and theme 1600×900; social 1080×1080).

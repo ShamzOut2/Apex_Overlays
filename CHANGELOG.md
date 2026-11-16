@@ -8,7 +8,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 
 ### New features
 - Nimbus Motorsport theme: black, lime green and grey
-- Settings → Theme: the team themes (Gassed Up Motorsports, VCR, JWB and Nimbus Motorsport) have a section of their own, Sponsored by Us, and the teams’ cards show their logos
+- Settings → Theme: the team themes (Gassed Up Motorsports, VCR, JWB and Nimbus Motorsport) have a section of their own, Sponsored by Us, and the teams’ cards show their logos (VCR with its full Virtual Circuit Racing logo)
 
 ## 1.1.0
 
