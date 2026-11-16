@@ -12,6 +12,7 @@ pub mod garage61;
 pub mod hub;
 pub mod iracing_api;
 pub mod league;
+pub mod logging;
 pub mod lookup;
 pub mod model;
 pub mod monitor;
@@ -153,6 +154,7 @@ fn run(
     let mut cfg_rx = config.subscribe();
     let mut keys = Keys::default();
     let mut last_session_layout: (i64, i32, &'static str) = (0, -1, "");
+    let mut logged_session: (i64, String) = (0, String::new());
     loop {
         if cfg_rx.has_changed().unwrap_or(false) {
             cfg_rx.mark_unchanged();
@@ -212,6 +214,8 @@ fn run(
             Poll::Idle => continue,
             Poll::Disconnected => {
                 if e.connected {
+                    log::info!("{}: disconnected", e.source);
+                    logged_session = (0, String::new());
                     e.reset();
                     hub.connected.store(false, Ordering::Relaxed);
                     hub.publish_status();
@@ -221,12 +225,26 @@ fn run(
             }
             Poll::Data { session_yaml } => {
                 if !e.connected {
+                    log::info!("{}: connected", e.source);
                     e.connected = true;
                     hub.connected.store(true, Ordering::Relaxed);
                     hub.publish_status();
                 }
                 if let Some(y) = session_yaml {
                     e.set_session(SessionInfo::parse(&y));
+                    // What is being driven, once per session (for reading the log).
+                    let kind = e.session_def().map(|s| s.kind.clone()).unwrap_or_default();
+                    let key = (e.info.track_id, format!("{}|{kind}", e.tel.session_num));
+                    if key != logged_session {
+                        logged_session = key;
+                        let cars = e.info.drivers.iter().filter(|d| !d.is_pace_car && !d.is_spectator).count();
+                        log::info!(
+                            "{}: {} session at {} ({cars} cars)",
+                            e.source,
+                            if kind.is_empty() { "a" } else { kind.as_str() },
+                            e.info.track_display_name
+                        );
+                    }
                     *hub.session_yaml.lock().unwrap() = y;
                     if e.map.map.is_none() {
                         if let Some(m) = source.track_map(e.info.track_id) {

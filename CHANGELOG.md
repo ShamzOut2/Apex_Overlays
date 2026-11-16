@@ -4,6 +4,11 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### New features
+- Log file for bug reports: Apex Overlays now writes what it does and every error it meets to apex.log, in the logs folder of its data folder. That covers the game connecting and each session, overlays that fail to open, downloads (Garage 61, track and car data, the LMU forecast), settings that cannot be saved, updates, VR, crashes (with where they happened) and script errors inside the overlays and the settings window. The previous run’s log is kept as apex.previous.log, so the log of a crash survives the restart. Settings → General → Logs opens the folder or copies the log, ready to paste into a report. The same error repeating is written once with a count, so the file stays small
+
 ## 1.0.2
 
 ### Performance

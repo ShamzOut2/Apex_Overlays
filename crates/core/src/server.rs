@@ -57,8 +57,21 @@ pub fn router(state: AppState) -> Router {
         .route("/make-logo/{name}", get(make_logo))
         .route("/api/session-info", get(session_info))
         .route("/api/lmu-track-maps", get(lmu_track_maps))
+        .route("/api/log", get(log_file))
         .fallback(|s: State<AppState>, uri: Uri| async move { asset(&s, uri.path().trim_start_matches('/')) })
         .with_state(state)
+}
+
+/// The end of the log file (the last ~300 KB) and where it is, for Settings → General → Logs.
+async fn log_file(s: State<AppState>) -> Response {
+    let dir = crate::logging::dir(&s.data_dir);
+    let body = serde_json::json!({
+        "folder": dir.display().to_string(),
+        "file": crate::logging::FILE_NAME,
+        "previous": dir.join(crate::logging::PREVIOUS_NAME).exists(),
+        "text": crate::logging::tail(&s.data_dir, 300_000),
+    });
+    ([(header::CONTENT_TYPE, "application/json"), (header::CACHE_CONTROL, "no-store")], body.to_string()).into_response()
 }
 
 fn asset(s: &AppState, path: &str) -> Response {
@@ -201,6 +214,17 @@ enum ClientMsg {
     },
     ResetTrackMap,
     OpenSettings,
+    /// Show the folder with the log files (desktop app).
+    OpenLogs,
+    /// An error (or warning) in an overlay or settings page, for the log file.
+    Log {
+        #[serde(default)]
+        level: String,
+        #[serde(default)]
+        source: String,
+        #[serde(default)]
+        message: String,
+    },
     /// Plain-text secrets are masked immediately and never stored.
     SetIracingApi {
         client_id: String,
@@ -337,6 +361,17 @@ fn handle(s: &AppState, m: ClientMsg, subs: &mut HashSet<String>, send_now: &mut
         ClientMsg::Replay { session_num, session_time } => s.hub.command(Command::Replay { session_num, session_time }),
         ClientMsg::SetInteractive { id, value } => s.hub.host(HostEvent::Interactive { id, value }),
         ClientMsg::OpenSettings => s.hub.host(HostEvent::OpenSettings),
+        ClientMsg::OpenLogs => s.hub.host(HostEvent::OpenFolder { path: crate::logging::dir(&s.data_dir) }),
+        ClientMsg::Log { level, source, message } => {
+            // Pages send their own errors: kept short, one line per report.
+            let cut = |t: &str, n: usize| t.chars().take(n).collect::<String>();
+            let (source, message) = (cut(&source, 60), cut(&message, 4000));
+            if level == "warn" {
+                log::warn!(target: "ui", "{source}: {message}");
+            } else {
+                log::error!(target: "ui", "{source}: {message}");
+            }
+        }
         ClientMsg::SetIracingApi { client_id, client_secret, username, password } => s.config.update(|c| {
             let api = &mut c.iracing_api;
             let username = username.trim().to_string();

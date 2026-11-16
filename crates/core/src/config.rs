@@ -747,8 +747,13 @@ impl ConfigStore {
             let _ = std::fs::create_dir_all(dir);
         }
         let tmp = path.with_extension("json.tmp");
-        if std::fs::write(&tmp, json).is_ok() {
-            let _ = std::fs::rename(&tmp, path.as_ref());
+        match std::fs::write(&tmp, json) {
+            Ok(()) => {
+                if let Err(e) = std::fs::rename(&tmp, path.as_ref()) {
+                    log::error!("could not save the settings to {}: {e}", path.display());
+                }
+            }
+            Err(e) => log::error!("could not save the settings to {}: {e}", tmp.display()),
         }
     }
 }

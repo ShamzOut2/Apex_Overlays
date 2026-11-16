@@ -2,6 +2,7 @@
 // core (debounced) whenever the user edits something.
 
 import { Client } from '../lib/client';
+import { reportErrors } from '../lib/errors';
 import type { Config, Garage61, Monitor, Player, Session, Standings, Status, TopicName, TrackMap, UpdateState, VrState } from '../lib/types';
 
 export const state = {
@@ -48,6 +49,7 @@ export const client = new Client((t, d) => {
   }
   listeners.forEach((l) => l(t));
 });
+reportErrors(client, () => 'settings');
 client.subscribe('config', 'status', 'session', 'update', 'vr');
 
 /** Live data only some pages show: received only while one of them is open. */

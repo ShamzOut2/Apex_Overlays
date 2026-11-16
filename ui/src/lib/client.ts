@@ -43,6 +43,8 @@ export class Client {
   private gap = new Map<string, number>();
   private lastAt = new Map<string, number>();
   private timer = 0;
+  /** Error reports made before the connection was up. */
+  private outbox: string[] = [];
   readonly latest: Partial<TopicMap> = {};
   connected = false;
   /** Car index → fixed details, from the `drivers` topic. */
@@ -67,6 +69,7 @@ export class Client {
       this.connected = true;
       this.onConnection?.(true);
       if (this.topics.size) this.send({ op: 'sub', topics: [...this.topics] });
+      for (const m of this.outbox.splice(0)) ws.send(m);
     };
     ws.onmessage = (ev) => {
       // Messages are `{"t":"<topic>","d":<data>}`. Only the newest of each topic is used per
@@ -187,6 +190,13 @@ export class Client {
     const fresh = topics.filter((t) => !this.topics.has(t));
     fresh.forEach((t) => this.topics.add(t));
     if (fresh.length && this.ws?.readyState === WebSocket.OPEN) this.send({ op: 'sub', topics: fresh });
+  }
+
+  /** Writes an error or warning to the app's log file (apex.log). */
+  report(level: 'error' | 'warn', source: string, message: string) {
+    const m = JSON.stringify({ op: 'log', level, source, message });
+    if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(m);
+    else if (this.outbox.length < 20) this.outbox.push(m);
   }
 
   send(msg: object) {

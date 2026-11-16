@@ -3,19 +3,6 @@
 
 use std::path::PathBuf;
 
-struct Logger;
-impl log::Log for Logger {
-    fn enabled(&self, m: &log::Metadata) -> bool {
-        m.level() <= log::Level::Info
-    }
-    fn log(&self, r: &log::Record) {
-        if self.enabled(r.metadata()) {
-            eprintln!("[{}] {}", r.level(), r.args());
-        }
-    }
-    fn flush(&self) {}
-}
-
 const HELP: &str = "apex-overlays-server [--mock] [--port N] [--data-dir DIR] [--ui-dir DIR]
 
   --mock          run the built-in race simulator instead of reading iRacing
@@ -24,7 +11,6 @@ const HELP: &str = "apex-overlays-server [--mock] [--port N] [--data-dir DIR] [-
   --ui-dir DIR    serve UI files from DIR first (development)";
 
 fn main() {
-    let _ = log::set_logger(&Logger).map(|_| log::set_max_level(log::LevelFilter::Info));
     let mut opts = apex_core::Options { data_dir: apex_core::config::default_data_dir(), mock: false, ui_dir: None, port: None };
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
@@ -43,10 +29,11 @@ fn main() {
             }
         }
     }
+    apex_core::logging::init(&opts.data_dir, true);
     let app = match apex_core::start(opts) {
         Ok(a) => a,
         Err(e) => {
-            eprintln!("failed to start: {e}");
+            log::error!("failed to start: {e}");
             std::process::exit(1);
         }
     };

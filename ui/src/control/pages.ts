@@ -1,4 +1,4 @@
-import { h } from '../lib/dom';
+import { h, text } from '../lib/dom';
 import * as f from '../lib/format';
 import { commonFor, merge, type SettingDef } from '../lib/settings';
 import { applyUiTheme, PRESETS, THEME, themeValues } from '../lib/theme';
@@ -1511,6 +1511,37 @@ function monitoringCard(): HTMLElement {
   return c;
 }
 
+/** Where the log file is, to open its folder or copy it for a bug report. */
+function logsCard(): HTMLElement {
+  const where = h('code', '', '…');
+  const note = h('p', 'dim small');
+  const copyBtn = button('Copy log', async () => {
+    const r = await fetch('/api/log').then((x) => x.json()).catch(() => null);
+    if (!r?.text) return alert('The log is empty or could not be read.');
+    copy(r.text, copyBtn);
+  });
+  const c = card(
+    'Logs',
+    h('p', 'dim', 'Apex Overlays writes what it does and every error it meets (including errors inside the overlays) to apex.log. If something goes wrong, send that file, or copy the log and paste it, with your report. The run before this one is kept as apex.previous.log, so the log of a crash is still there after a restart.'),
+    (() => {
+      const p = h('p', '', 'Log folder: ');
+      p.append(where);
+      return p;
+    })(),
+    button('Open log folder', () => client.send({ op: 'openLogs' })),
+    copyBtn,
+    note,
+  );
+  fetch('/api/log')
+    .then((x) => x.json())
+    .then((r) => {
+      text(where, r.folder);
+      text(note, r.previous ? 'Copy log copies the end of this run’s log; the previous run’s is in the folder.' : '');
+    })
+    .catch(() => text(where, 'unknown'));
+  return c;
+}
+
 const generalPage: Page = {
   id: 'general',
   title: 'General',
@@ -1593,6 +1624,7 @@ const generalPage: Page = {
       vrCard(),
       monitoringCard(),
       updatesCard(),
+      logsCard(),
       cornersCard(() => this.render(el)),
       card(
         'Backup',

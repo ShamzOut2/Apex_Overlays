@@ -498,6 +498,7 @@ fn fetch(client: &mut Client, combo: &Combo, cfg: &Garage61Config, refs: &BTreeS
                 st.references.insert(key.clone(), r);
             }
             Err(e) => {
+                log::warn!("Garage 61 reference lap ({key}): {e}");
                 st.reference_notes.insert(key.clone(), e);
             }
         }
@@ -547,10 +548,9 @@ pub fn spawn(hub: Arc<Hub>, config: ConfigStore, combo: Arc<Mutex<Combo>>, data_
                         client = Some(Client::new(&cfg.token));
                     }
                     publish(&G61State { status: "loading".into(), car: cur.car_name.clone(), track: cur.track_name.clone(), ..Default::default() });
-                    let st = fetch(client.as_mut().unwrap(), &cur, &cfg, &wanted, &cache).unwrap_or_else(|e| G61State {
-                        status: "error".into(),
-                        message: e,
-                        ..Default::default()
+                    let st = fetch(client.as_mut().unwrap(), &cur, &cfg, &wanted, &cache).unwrap_or_else(|e| {
+                        log::warn!("Garage 61 ({} at {}): {e}", cur.car_name, cur.track_name);
+                        G61State { status: "error".into(), message: e, ..Default::default() }
                     });
                     publish(&st);
                     last = Some((cur, cfg, wanted));

@@ -273,6 +273,15 @@ fn handle_host_event(app: &AppHandle, ev: HostEvent) {
             reconcile(app);
         }
         HostEvent::OpenSettings => show_settings(app),
+        HostEvent::OpenFolder { path } => {
+            #[cfg(windows)]
+            let r = std::process::Command::new("explorer").arg(&path).spawn();
+            #[cfg(not(windows))]
+            let r = std::process::Command::new("xdg-open").arg(&path).spawn();
+            if let Err(e) = r {
+                log::warn!("could not open {}: {e}", path.display());
+            }
+        }
         HostEvent::AutoSize { id, width, height } => {
             let label = label_for(&id);
             let core = app.state::<Core>();
@@ -368,7 +377,10 @@ async fn check_update(app: AppHandle, prompt: bool) {
             }
         }
         Ok(None) => publish_update(&app, serde_json::json!({ "status": "none" })),
-        Err(e) => publish_update(&app, serde_json::json!({ "status": "error", "message": e })),
+        Err(e) => {
+            log::warn!("update check failed: {e}");
+            publish_update(&app, serde_json::json!({ "status": "error", "message": e }))
+        }
     }
 }
 
@@ -400,7 +412,10 @@ async fn install_update(app: AppHandle) {
             flush_geometry(&app);
             app.restart();
         }
-        Err(e) => publish_update(&app, serde_json::json!({ "status": "error", "message": e.to_string() })),
+        Err(e) => {
+            log::error!("update install failed: {e}");
+            publish_update(&app, serde_json::json!({ "status": "error", "message": e.to_string() }))
+        }
     }
 }
 
@@ -545,9 +560,18 @@ fn tray(app: &AppHandle) -> tauri::Result<()> {
 fn main() {
     let mock = std::env::args().any(|a| a == "--mock");
     let data_dir = apex_core::config::default_data_dir();
+    apex_core::logging::init(&data_dir, false);
     let opts = |port| apex_core::Options { data_dir: data_dir.clone(), mock, ui_dir: None, port };
     // If the configured port is taken, fall back to any free port so the app still works.
-    let core = apex_core::start(opts(None)).or_else(|_| apex_core::start(opts(Some(0)))).expect("failed to start Apex Overlays");
+    let core = apex_core::start(opts(None))
+        .or_else(|e| {
+            log::warn!("the configured port is not free ({e}): using another");
+            apex_core::start(opts(Some(0)))
+        })
+        .unwrap_or_else(|e| {
+            log::error!("could not start: {e}");
+            panic!("failed to start Apex Overlays: {e}")
+        });
 
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _, _| show_settings(app)))
