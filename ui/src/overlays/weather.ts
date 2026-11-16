@@ -24,6 +24,7 @@ export const weather: OverlayDef = {
   name: 'Weather',
   description: 'Live weather with a wind compass that turns with your car, so you can see head, tail and crosswind at a glance. Plus temperatures, humidity, pressure, sky, rain and track wetness.',
   topics: ['session', 'player'],
+  rates: { player: 15 },
   size: [300, 170],
   settings: [
     { key: 'compassSize', label: 'Compass size', type: 'number', default: 8, min: 4, max: 20, step: 0.5, unit: 'em', group: 'Compass' },

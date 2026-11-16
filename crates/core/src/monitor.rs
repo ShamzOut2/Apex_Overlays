@@ -82,6 +82,7 @@ pub fn spawn(hub: Arc<Hub>) {
         let mut list = System::new();
         let mut pids: Vec<Pid> = vec![];
         let mut found_at: Option<Instant> = None;
+        let mut found_clients = usize::MAX;
         loop {
             std::thread::sleep(Duration::from_secs(1));
             let now = (Instant::now(), counters(&hub));
@@ -93,11 +94,16 @@ pub fn spawn(hub: Arc<Hub>) {
                 warm = false;
                 continue;
             }
-            if found_at.is_none_or(|t| t.elapsed() > Duration::from_secs(5)) {
+            // Listing every process is itself a little spike, so it is only done every 30 s, or
+            // straight away when an overlay connects or one of ours has ended.
+            let clients = hub.clients.load(Ordering::Relaxed);
+            let gone = pids.iter().any(|p| sys.process(*p).is_none() && found_at.is_some_and(|t| t.elapsed() > Duration::from_secs(2)));
+            if found_at.is_none_or(|t| t.elapsed() > Duration::from_secs(30)) || clients != found_clients || gone {
                 // Who is who (parents), without reading every process's CPU and memory.
                 list.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::nothing());
                 pids = tree(&list, me).into_iter().collect();
                 found_at = Some(Instant::now());
+                found_clients = clients;
             }
             sys.refresh_processes_specifics(ProcessesToUpdate::Some(&pids), true, ProcessRefreshKind::nothing().with_cpu().with_memory());
             sys.refresh_cpu_usage();

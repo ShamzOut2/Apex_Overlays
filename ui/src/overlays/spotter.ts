@@ -77,14 +77,16 @@ export const spotter: OverlayDef = {
         const visible = on && (full ? i === 0 : d != null);
         b.hidden = !visible;
         if (!visible) return;
+        // Moved with a transform (no new layout each tick); a % of the block's own height.
         if (full) {
-          style(b, 'top', '0%');
           style(b, 'height', '100%');
+          style(b, 'transform', 'translateY(0%)');
         } else {
           // Positive = ahead of you = higher up the bar.
-          const top = (range - (d + L / 2)) / (2 * range);
-          style(b, 'top', `${Math.max(0, Math.min(1, top)) * 100}%`);
-          style(b, 'height', `${(L / (2 * range)) * 100}%`);
+          const hf = L / (2 * range);
+          const top = Math.max(0, Math.min(1, (range - (d + L / 2)) / (2 * range)));
+          style(b, 'height', `${hf * 100}%`);
+          style(b, 'transform', `translateY(${((top / hf) * 100).toFixed(2)}%)`);
         }
       });
     };

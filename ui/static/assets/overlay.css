@@ -304,7 +304,7 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .g61-dval.loss, .g61-sec.loss { color: var(--bad); }
 .g61-bar { position: relative; height: 0.45em; border-radius: 0.25em; background: var(--subtle, rgba(255, 255, 255, 0.08)); overflow: hidden; }
 .g61-bar::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--dim); }
-.g61-fill { position: absolute; top: 0; bottom: 0; background: var(--bad); transition: width 0.1s linear, left 0.1s linear; }
+.g61-fill { position: absolute; top: 0; bottom: 0; left: 50%; width: 50%; transform-origin: left center; transform: scaleX(0); background: var(--bad); transition: transform 0.1s linear; }
 .g61-fill.gain { background: var(--good); }
 .g61-sectors { grid-column: 1 / -1; display: flex; gap: 0.35em; font-size: 0.85em; font-weight: 700; }
 .g61-sec { flex: 1; text-align: center; padding: 0.1em 0.2em; border-radius: 3px; background: var(--subtle, rgba(255, 255, 255, 0.06)); white-space: nowrap; }
@@ -444,7 +444,7 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .sp-side { position: relative; width: var(--sp-bar); height: 100%; border-radius: calc(var(--sp-bar) / 2); --c: var(--sp-color); transition: background 0.15s; }
 .sp-side.on { background: color-mix(in srgb, var(--c) 18%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent); }
 .sp-side.danger { --c: var(--sp-danger); }
-.sp-block { position: absolute; left: 0; right: 0; border-radius: calc(var(--sp-bar) / 2); background: var(--c); transition: top 0.08s linear; }
+.sp-block { position: absolute; top: 0; left: 0; right: 0; border-radius: calc(var(--sp-bar) / 2); background: var(--c); transition: transform 0.08s linear; }
 .spotter.glow .sp-block { box-shadow: 0 0 calc(var(--sp-bar) * 0.9) var(--c); }
 .sp-car { position: relative; width: calc(var(--sp-bar) * 2.2); max-width: 40%; min-width: 10px; border: 2px solid rgba(255, 255, 255, 0.75); border-radius: 30% 30% 22% 22% / 18% 18% 12% 12%; background: rgba(11, 14, 19, 0.55); }
 .sp-car.danger { border-color: var(--sp-danger); }
@@ -497,7 +497,7 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 /* iRating: frosted pill with the estimated gain / loss beside it */
 .c-irating { display: flex; align-items: center; justify-content: center; gap: 0.25em; overflow: visible; }
-.ir-pill { display: inline-flex; align-items: center; gap: 0.3em; padding: 0 0.45em; border-radius: 999px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.16); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font-size: 0.92em; line-height: 1.35; text-shadow: none; }
+.ir-pill { display: inline-flex; align-items: center; gap: 0.3em; padding: 0 0.45em; border-radius: 999px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.16); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); font-size: 0.92em; line-height: 1.35; text-shadow: none; }
 .ir-pill[hidden], .ir-delta[hidden] { display: none; }
 /* In the licence colour (when the licence column is hidden); the ▲▼ take the pill's text colour. */
 .ir-pill.lic { background: color-mix(in srgb, var(--lic) 88%, transparent); border-color: color-mix(in srgb, var(--lic) 60%, #fff 25%); color: var(--lic-fg); font-weight: 700; }
@@ -560,7 +560,7 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .dl-pred { justify-self: start; color: var(--dim); font-size: 0.95em; }
 .dl-bar { position: relative; height: var(--bar-h, 10px); border-radius: calc(var(--bar-h, 10px) / 2); background: var(--subtle, rgba(255, 255, 255, 0.08)); overflow: hidden; }
 .dl-bar::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--dim); }
-.dl-fill { position: absolute; top: 0; bottom: 0; background: var(--tone); transition: width 0.08s linear, left 0.08s linear; }
+.dl-fill { position: absolute; top: 0; bottom: 0; left: 50%; width: 50%; transform-origin: left center; transform: scaleX(0); background: var(--tone); transition: transform 0.08s linear; }
 .dl-ref { font-size: 0.8em; color: var(--dim); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* SLOW: a car serving a slow-down penalty (iRacing's furled black flag). */

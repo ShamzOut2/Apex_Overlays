@@ -89,6 +89,7 @@ export const databox: OverlayDef = {
   name: 'Data box',
   description: 'A small box showing one value of your choice (speed, delta, fuel, position, track temperature, iRating change…). Add as many as you like, each with its own look and size.',
   topics: ['player', 'session', 'fuel', 'battle', 'relative'],
+  rates: { player: 20 },
   size: [160, 70],
   settings: [
     { key: 'field', label: 'Show', type: 'select', default: 'delta', options: FIELDS.map((x) => [x.id, `${x.group}: ${x.label}`]), group: 'Data' },

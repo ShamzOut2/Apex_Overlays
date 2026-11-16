@@ -17,6 +17,7 @@ export const garage61: OverlayDef = {
   description:
     'Live delta to your Garage 61 personal best (or your team’s best lap), sector by sector, plus your personal best and your teams’ leaderboard for the current car and track.',
   topics: ['garage61', 'player', 'trackmap'],
+  rates: { player: 20 },
   size: [300, 230],
   settings: [
     { key: 'showDelta', label: 'Live delta to the reference lap', type: 'bool', default: true, group: 'Delta', help: 'Choose your best or the team’s best on the Garage 61 settings page' },
@@ -103,8 +104,8 @@ export const garage61: OverlayDef = {
       show(bar, true);
       const range = s.deltaRange as number;
       const w = live == null ? 0 : (Math.min(range, Math.abs(live)) / range) * 50;
-      style(fill, 'width', `${w}%`);
-      style(fill, 'left', live != null && live < 0 ? `${50 - w}%` : '50%');
+      // The right half of the bar scaled from the middle (mirrored for the left): a transform.
+      style(fill, 'transform', `scaleX(${live != null && live < 0 ? '-' : ''}${(w / 50).toFixed(4)})`);
       fill.classList.toggle('gain', live != null && live < 0);
       show(sectors, !!s.showSectors);
       if (s.showSectors) sectorChips();

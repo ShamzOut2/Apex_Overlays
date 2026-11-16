@@ -49,6 +49,9 @@ pub struct State {
     slots: HashMap<i32, usize>,
     session_key: String,
     last_yaml: String,
+    /// Scoring time the session info was last built for: it only changes with scoring (5 a
+    /// second), so it is not rebuilt for every telemetry row (60 a second).
+    yaml_et: Option<f64>,
     /// The player's last world position (x, z) and compass heading (radians).
     last_pos: Option<(f64, f64)>,
     heading: f32,
@@ -217,6 +220,7 @@ pub fn apply(st: &mut State, snap: &Snapshot, tel: &mut Telemetry) -> Option<Str
         st.slots.clear();
         st.last_pos = None;
         st.green_at = None;
+        st.yaml_et = None;
     }
     for v in &snap.vehicles {
         if !st.slots.contains_key(&v.mID) && st.slots.len() < MAX_CARS {
@@ -438,6 +442,10 @@ pub fn apply(st: &mut State, snap: &Snapshot, tel: &mut Telemetry) -> Option<Str
         }
     }
 
+    if st.yaml_et == Some(info.mCurrentET) {
+        return None;
+    }
+    st.yaml_et = Some(info.mCurrentET);
     let yaml = session_yaml(snap, st, &track, track_m, player, pt, &class_pos);
     if yaml != st.last_yaml {
         st.last_yaml = yaml.clone();
@@ -541,7 +549,7 @@ fn session_yaml(
     let pace = snap.vehicles.iter().find(|v| is_pace_car(v)).and_then(|v| st.slots.get(&v.mID)).map_or(-1, |&i| i as i32);
     let _ = write!(
         y,
-        "DriverInfo:\n DriverCarIdx: {player_idx}\n PaceCarIdx: {pace}\n DriverCarFuelMaxLtr: {:.3}\n DriverCarMaxFuelPct: 1.000\n DriverCarRedLine: {max_rpm:.1}\n DriverCarSLFirstRPM: {:.1}\n DriverCarSLShiftRPM: {:.1}\n DriverCarSLLastRPM: {:.1}\n DriverCarSLBlinkRPM: {:.1}\n DriverCarEstLapTime: {:.4}\n DriverTires:\n - TireIndex: 0\n   TireCompoundType: \"Dry\"\n - TireIndex: 1\n   TireCompoundType: \"Wet\"\n Drivers:\n",
+        "DriverInfo:\n DriverCarIdx: {player_idx}\n PaceCarIdx: {pace}\n DriverCarFuelMaxLtr: {:.3}\n DriverCarMaxFuelPct: 1.000\n DriverCarRedLine: {max_rpm:.1}\n DriverCarSLFirstRPM: {:.1}\n DriverCarSLShiftRPM: {:.1}\n DriverCarSLLastRPM: {:.1}\n DriverCarSLBlinkRPM: {:.1}\n DriverCarEstLapTime: {:.0}\n DriverTires:\n - TireIndex: 0\n   TireCompoundType: \"Dry\"\n - TireIndex: 1\n   TireCompoundType: \"Wet\"\n Drivers:\n",
         pt.map_or(0.0, |t| t.mFuelCapacity),
         max_rpm * 0.82,
         max_rpm * 0.96,
@@ -565,7 +573,7 @@ fn session_yaml(
         let class_est = class_est_lap(snap, &v.mVehicleClass);
         let _ = write!(
             y,
-            " - CarIdx: {i}\n   UserName: {driver}\n   AbbrevName: {}\n   Initials: \n   UserID: -1\n   TeamName: {team}\n   CarNumber: \"{number}\"\n   CarNumberRaw: {}\n   CarID: {}\n   CarPath: {}\n   CarScreenName: {model}\n   CarScreenNameShort: {model}\n   CarClassID: {}\n   CarClassShortName: {class}\n   CarClassColor: 0x{:06x}\n   CarClassEstLapTime: {class_est:.4}\n   IRating: 0\n   LicString: \n   LicColor: 0xffffff\n   CarIsAI: {}\n   IsSpectator: 0\n   CarIsPaceCar: {}\n",
+            " - CarIdx: {i}\n   UserName: {driver}\n   AbbrevName: {}\n   Initials: \n   UserID: -1\n   TeamName: {team}\n   CarNumber: \"{number}\"\n   CarNumberRaw: {}\n   CarID: {}\n   CarPath: {}\n   CarScreenName: {model}\n   CarScreenNameShort: {model}\n   CarClassID: {}\n   CarClassShortName: {class}\n   CarClassColor: 0x{:06x}\n   CarClassEstLapTime: {class_est:.0}\n   IRating: 0\n   LicString: \n   LicColor: 0xffffff\n   CarIsAI: {}\n   IsSpectator: 0\n   CarIsPaceCar: {}\n",
             clean(&abbrev(&driver)),
             number.parse::<i32>().unwrap_or(-1),
             stable_id(&model, 1_000_000),

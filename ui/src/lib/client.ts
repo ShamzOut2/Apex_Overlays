@@ -39,6 +39,10 @@ export class Client {
   /** Newest raw message per topic, waiting for the next frame. */
   private pending = new Map<TopicName, string>();
   private frame = 0;
+  /** Topics delivered at most this often (ms between deliveries), and when each last was. */
+  private gap = new Map<string, number>();
+  private lastAt = new Map<string, number>();
+  private timer = 0;
   readonly latest: Partial<TopicMap> = {};
   connected = false;
   /** Car index → fixed details, from the `drivers` topic. */
@@ -72,7 +76,7 @@ export class Client {
       const end = raw.indexOf('"', 6);
       if (!raw.startsWith('{"t":"') || end < 0) return;
       this.pending.set(raw.slice(6, end) as TopicName, raw);
-      if (!this.frame) this.frame = requestAnimationFrame(() => this.flush());
+      this.schedule();
     };
     ws.onclose = () => {
       this.connected = false;
@@ -81,11 +85,49 @@ export class Client {
     };
   }
 
+  /** Milliseconds until `t` may be delivered again (0: now). */
+  private wait(t: string, now: number): number {
+    const gap = this.gap.get(t);
+    return gap ? Math.max(0, (this.lastAt.get(t) ?? -Infinity) + gap - now) : 0;
+  }
+
+  /** Next frame for topics that are due; a timer (no frame) for rate-limited ones that are not yet. */
+  private schedule() {
+    if (this.frame || !this.pending.size) return;
+    const now = performance.now();
+    let soonest = Infinity;
+    for (const t of this.pending.keys()) soonest = Math.min(soonest, this.wait(t, now));
+    if (soonest <= 1) {
+      clearTimeout(this.timer);
+      this.timer = 0;
+      this.frame = requestAnimationFrame(() => this.flush());
+    } else if (!this.timer) {
+      this.timer = window.setTimeout(() => {
+        this.timer = 0;
+        this.schedule();
+      }, soonest);
+    }
+  }
+
+  /** Deliver `topic` at most `hz` times a second (the newest data each time); 0 = as it comes. */
+  limit(topic: string, hz: number) {
+    if (hz > 0) this.gap.set(topic, 1000 / hz - 2);
+    else this.gap.delete(topic);
+  }
+
   private flush() {
     this.frame = 0;
+    const now = performance.now();
     // The drivers' details first, so rows in the same batch can use them.
-    const batch = [...this.pending].sort((a, b) => Number(b[0] === ('drivers' as TopicName)) - Number(a[0] === ('drivers' as TopicName)));
-    this.pending.clear();
+    const batch = [...this.pending]
+      .filter(([t]) => this.wait(t, now) <= 1)
+      .sort((a, b) => Number(b[0] === ('drivers' as TopicName)) - Number(a[0] === ('drivers' as TopicName)));
+    for (const [t] of batch) {
+      this.pending.delete(t);
+      if (this.gap.has(t)) this.lastAt.set(t, now);
+    }
+    // Rate-limited topics not due yet wait for their turn.
+    this.schedule();
     for (const [t, raw] of batch) {
       const d = (JSON.parse(raw) as { d: unknown }).d;
       if ((t as string) === 'drivers') {

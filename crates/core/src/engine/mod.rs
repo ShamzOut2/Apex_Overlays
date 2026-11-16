@@ -22,7 +22,7 @@ pub const STATE_RACING: i32 = 4;
 pub const STATE_CHECKERED: i32 = 5;
 
 /// Per-car data that only changes with the session info string or config.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Static {
     pub idx: usize,
     pub class: ClassKey,
@@ -643,8 +643,12 @@ impl Engine {
                 statics[idxs[k]].as_mut().unwrap().ir_expected = e;
             }
         }
-        self.statics = statics;
-        self.statics_rev += 1;
+        // iRacing re-sends the session info every few seconds in a race (each results change):
+        // the drivers' details are only sent out again to the overlays when they changed.
+        if statics != self.statics {
+            self.statics = statics;
+            self.statics_rev += 1;
+        }
     }
 
     /// Forget everything about the current session (simulator closed).
@@ -1170,6 +1174,18 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn drivers_details_only_resent_when_they_change() {
+        let mut e = engine(4, true);
+        let rev = e.statics_rev;
+        // iRacing re-sends the session info with new results every few seconds.
+        e.set_session(SessionInfo::parse(&session_yaml(4, true)));
+        assert_eq!(e.statics_rev, rev, "same drivers: not sent again");
+        e.set_session(SessionInfo::parse(&session_yaml(4, true).replace("UserName: Driver 2", "UserName: Driver Two")));
+        assert_eq!(e.statics_rev, rev + 1, "a changed name is sent");
+        assert_eq!(e.statics[2].as_ref().unwrap().name, "Driver Two");
+    }
+
+    #[test]
     fn fuel_put_in_by_the_player_in_litres() {
         let mut e = engine(2, true);
         place(&mut e, 0, 3, 0.95);
@@ -1481,6 +1497,15 @@ mod perf {
         }
         let tick = t0.elapsed() / reps;
         println!("tick: {tick:?}");
+        // A full-size iRacing session string (60 drivers, three sessions of results, the setup):
+        // re-sent every few seconds in a race.
+        let y = big_session_yaml(n);
+        let reps = 50;
+        let t0 = std::time::Instant::now();
+        for _ in 0..reps {
+            e.set_session(crate::model::SessionInfo::parse(&y));
+        }
+        println!("session info {} KB: {:?}", y.len() / 1024, t0.elapsed() / reps);
         for t in Topic::ALL {
             let t0 = std::time::Instant::now();
             let mut len = 0;
@@ -1489,5 +1514,26 @@ mod perf {
             }
             println!("{:10} {:?}  {} bytes", t.name(), t0.elapsed() / 300, len);
         }
+    }
+
+    fn big_session_yaml(n: usize) -> String {
+        let mut s = String::from("---\nWeekendInfo:\n TrackName: spa 2024 up\n TrackID: 525\n TrackLength: 6.93 km\n TrackDisplayName: Circuit de Spa-Francorchamps\n TrackConfigName: Grand Prix\n SeriesID: 228\n SubSessionID: 71234567\n LeagueID: 0\n Official: 1\n EventType: Race\n WeekendOptions:\n  StandingStart: 1\n  IncidentLimit: 25\n");
+        s += "SessionInfo:\n Sessions:\n";
+        for (num, kind) in ["Practice", "Qualify", "Race"].iter().enumerate() {
+            s += &format!(" - SessionNum: {num}\n   SessionLaps: unlimited\n   SessionTime: 1800.0000 sec\n   SessionType: {kind}\n   SessionName: {}\n   SessionTrackRubberState: moderate usage\n   ResultsPositions:\n", kind.to_uppercase());
+            for i in 0..n {
+                s += &format!("   - Position: {}\n     ClassPosition: {}\n     CarIdx: {i}\n     Lap: 12\n     Time: 1234.5678\n     FastestLap: 7\n     FastestTime: 138.1234\n     LastTime: 139.4321\n     LapsLed: 0\n     LapsComplete: 12\n     JokerLapsComplete: 0\n     LapsDriven: 12.0000\n     Incidents: 2\n     ReasonOutId: 0\n     ReasonOutStr: Running\n", i + 1, i / 2);
+            }
+            s += "   ResultsFastestLap:\n   - CarIdx: 3\n     FastestLap: 7\n     FastestTime: 137.9000\n   ResultsAverageLapTime: 140.1234\n   ResultsNumCautionFlags: 0\n   ResultsNumCautionLaps: 0\n   ResultsNumLeadChanges: 0\n   ResultsLapsComplete: 12\n   ResultsOfficial: 0\n";
+        }
+        s += "DriverInfo:\n DriverCarIdx: 0\n DriverCarEstLapTime: 138.5\n Drivers:\n";
+        for i in 0..n {
+            s += &format!(" - CarIdx: {i}\n   UserName: Firstname Lastname{i}\n   AbbrevName: Lastname{i}, F\n   Initials: FL\n   UserID: {}\n   TeamID: 0\n   TeamName: Firstname Lastname{i}\n   CarNumber: \"{i}\"\n   CarNumberRaw: {i}\n   CarPath: bmwm4gt3\n   CarClassID: 4083\n   CarID: 132\n   CarIsPaceCar: 0\n   CarIsAI: 0\n   CarIsElectric: 0\n   CarScreenName: BMW M4 GT3\n   CarScreenNameShort: BMW M4 GT3\n   CarClassShortName: GT3 Class\n   CarClassRelSpeed: 0\n   CarClassLicenseLevel: 0\n   CarClassMaxFuelPct: 1.000 %\n   CarClassWeightPenalty: 0.000 kg\n   CarClassPowerAdjust: 0.000 %\n   CarClassDryTireSetLimit: 0 %\n   CarClassColor: 0xffda59\n   CarClassEstLapTime: 138.5000\n   IRating: {}\n   LicLevel: 18\n   LicSubLevel: 349\n   LicString: A 3.49\n   LicColor: 0x0153db\n   IsSpectator: 0\n   CarDesignStr: 1,ffffff,000000,ff0000\n   HelmetDesignStr: 1,ffffff,000000,ff0000\n   SuitDesignStr: 1,ffffff,000000,ff0000\n   BodyType: 0\n   FaceType: 0\n   HelmetType: 0\n   CarNumberDesignStr: 0,0,ffffff,777777,000000\n   CarSponsor_1: 0\n   CarSponsor_2: 0\n   ClubName: Benelux\n   ClubID: 7\n   DivisionName: Division 3\n   DivisionID: 2\n   FlairName: Belgium\n   FlairID: 22\n   CurDriverIncidentCount: 2\n   TeamIncidentCount: 2\n", 100000 + i, 1500 + i * 30);
+        }
+        s += "CarSetup:\n UpdateCount: 3\n";
+        for k in 0..120 {
+            s += &format!(" Setting{k}: {k}.00 mm\n");
+        }
+        s
     }
 }
