@@ -140,7 +140,7 @@ impl Default for Config {
                 OverlayInstance { enabled: false, ..o("energy", "energy", 1540, 420, 330, 230) },
                 OverlayInstance { enabled: false, ..o("radar", "radar", 1220, 420, 220, 260) },
                 OverlayInstance { enabled: false, ..o("carsettings", "carsettings", 760, 770, 420, 72) },
-                OverlayInstance { enabled: false, ..o("tyredata", "tyredata", 1200, 600, 380, 230) },
+                OverlayInstance { enabled: false, ..o("tyredata", "tyredata", 1200, 600, 470, 280) },
                 o("spotter", "spotter", 850, 520, 220, 200),
                 o("pit", "pit", 845, 300, 230, 200),
                 o("safety", "safety", 760, 160, 400, 230),
