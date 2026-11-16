@@ -5,6 +5,7 @@ pub mod fuel;
 pub mod incidents;
 pub mod laps;
 pub mod pit;
+pub mod radar;
 pub mod ratings;
 pub mod sectors;
 pub mod trackmap;
@@ -213,6 +214,8 @@ pub struct Engine {
     pub order: Vec<Row>,
     pub classes: Vec<ClassSummary>,
     pub fuel: fuel::FuelTracker,
+    /// Virtual energy used per lap (Le Mans Ultimate), in % of the allowance.
+    pub energy: fuel::FuelTracker,
     /// Fuel use per car/track combination from earlier sessions.
     pub fuel_history: fuel::History,
     fuel_combo: String,
@@ -266,6 +269,7 @@ impl Engine {
             order: vec![],
             classes: vec![],
             fuel: Default::default(),
+            energy: Default::default(),
             fuel_history: fuel::History::load(data_dir.as_ref().map(|d| d.join("fuel-history.json"))),
             fuel_combo: String::new(),
             weather: Default::default(),
@@ -772,6 +776,7 @@ impl Engine {
             self.battle = Default::default();
             self.sectors = Default::default();
             self.fuel.new_session();
+            self.energy.new_session();
             self.checkered_at = None;
         }
         self.update_hist();
@@ -799,10 +804,14 @@ impl Engine {
         let combo = self.fuel_key();
         if combo != self.fuel_combo {
             self.fuel.clear();
+            self.energy.clear();
             self.fuel_combo = combo.clone();
         }
         let counted = self.fuel.counted;
         self.fuel.update(&self.tel, caution, &self.cfg.fuel);
+        if let Some(ve) = self.tel.virtual_energy {
+            self.energy.update_level(ve, &self.tel, caution, &self.cfg.fuel);
+        }
         if self.fuel.counted != counted && !combo.is_empty() {
             if let Some(lap) = self.fuel.laps.back().copied().filter(|l| l.valid) {
                 let me = self.info.driver(self.info.player_car_idx.max(0) as usize);
@@ -1188,6 +1197,65 @@ pub(crate) mod tests {
 
     pub fn place(e: &mut Engine, idx: usize, lap: i32, pct: f32) {
         e.tel.cars[idx] = CarTel { lap, pct, est_time: pct * 100.0, surface: surface::ON_TRACK, ..Default::default() };
+    }
+
+    #[test]
+    fn lap_times_with_sectors_and_the_best_possible_lap() {
+        let mut e = engine(2, true);
+        e.info.track_length_km = 3.0;
+        place(&mut e, 1, 1, 0.2);
+        // You drive 4 laps of about 90 s, 10 updates a second; the third is over track limits
+        // (Le Mans Ultimate) and the second has a quick middle sector.
+        let mut t = 0.0f64;
+        let mut lap_start = 0.0f64;
+        let mut lap = 1;
+        let mut pct = 0.0f64;
+        while lap <= 4 {
+            let speed = if lap == 2 && (0.34..0.66).contains(&pct) { 1.0 / 85.0 } else { 1.0 / 90.0 };
+            t += 0.1;
+            pct += speed * 0.1;
+            if pct >= 1.0 {
+                pct -= 1.0;
+                lap += 1;
+                e.tel.cars[0].last_lap = (t - lap_start) as f32;
+                // The game's best lap (track-limit laps do not count).
+                if lap != 4 && (e.tel.cars[0].best_lap <= 0.0 || e.tel.cars[0].last_lap < e.tel.cars[0].best_lap) {
+                    e.tel.cars[0].best_lap = e.tel.cars[0].last_lap;
+                }
+                lap_start = t;
+            }
+            e.tel.session_time = t;
+            e.tel.cars[0] = CarTel {
+                lap,
+                lap_completed: lap - 1,
+                pct: pct as f32,
+                surface: surface::ON_TRACK,
+                last_lap: e.tel.cars[0].last_lap,
+                best_lap: e.tel.cars[0].best_lap,
+                ..Default::default()
+            };
+            e.tel.lap_invalid = lap == 3 && pct > 0.5;
+            e.tel.lap_current_time = (t - lap_start) as f32;
+            e.tick();
+        }
+        let out = crate::topics::laptimes(&e);
+        let json = serde_json::to_string(&out).unwrap();
+        // Newest first; lap 1's first sector is not timed (the timing starts with the car).
+        let laps: Vec<i32> = out.laps.iter().map(|l| l.lap).collect();
+        assert_eq!(laps, [4, 3, 2, 1], "{json}");
+        assert_eq!(out.laps[3].sectors[0], None);
+        let l2 = out.laps.iter().find(|l| l.lap == 2).unwrap();
+        assert_eq!(l2.sectors.len(), 3);
+        assert!(l2.sectors.iter().all(|s| s.is_some()), "{json}");
+        assert!((l2.time.unwrap() - 88.6).abs() < 0.3, "official time: {json}");
+        assert!(l2.pb, "the quickest lap is the personal best: {json}");
+        assert!(out.laps.iter().find(|l| l.lap == 3).unwrap().invalid, "track limits");
+        assert!(!l2.invalid);
+        // Best possible lap: the best of each sector, from different laps.
+        let theo = out.theoretical.unwrap();
+        assert!(theo <= l2.time.unwrap() + 0.2 && theo > 85.0, "{json}");
+        assert_eq!(out.current_lap, 5);
+        assert!(out.current_time.is_some_and(|c| (0.0..10.0).contains(&c)));
     }
 
     #[test]

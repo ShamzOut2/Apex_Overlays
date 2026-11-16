@@ -4,6 +4,20 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 1.2.0
+
+### New features
+- Lap times overlay: your last laps with their sector times, personal bests in green and the class’s fastest lap in purple, the gap to your best, and the best possible lap (your best sectors added up). The lap under way fills in sector by sector, laps through the pit lane are tagged, and in Le Mans Ultimate laps taken away for track limits are struck out
+- Virtual energy overlay (Le Mans Ultimate): virtual energy planned like fuel, for the classes that race on it (Hypercar, LMGT3): laps of energy left against laps to go on a bar with the finish marked, energy per lap, what you will have at the flag, how much to add at the stop, the pit window and the hybrid battery. It hides itself in cars without virtual energy and in iRacing
+- Radar overlay (Le Mans Ultimate): the cars around you seen from above, exactly where they are, amber when close and red when alongside. It hides itself until a car is near
+- Car settings overlay: the settings you change from the wheel (brake bias, ABS, traction control, engine map, fuel mixture, hybrid deploy... whichever your car has, in the order you choose), each on a card coloured by kind with a meter of its steps (brake bias front / rear), and a big pop-up showing the new value and the one before whenever you change one. It can also run as pop-ups only. In Le Mans Ultimate it can show how many steps each setting has
+- Tyre data overlay: a card per wheel with the temperatures across the tyre as tall cells (blue when cold, green in the window, amber when hot, red-orange when critical), the pressure, tread left and brake temperature (coloured the same way), and a pill naming the worst problem (e.g. FR INNER 118°, TYRES COLD, RL TREAD 14%). Live in Le Mans Ultimate, which also gives each tyre’s ideal temperature (used for the window) and carcass temperature; iRacing measures tyres only at pit stops, so there it shows your last stop’s readings
+- LMU badges: overlays, settings and buttons for Le Mans Ultimate carry a small LMU badge in the settings, including the fuel-added columns in the relative and standings (every car in LMU, only you in iRacing)
+
+### Improvements
+- The Spotter is now iRacing only (with an iRacing badge), as the Radar is Le Mans Ultimate only: each is left out of the other game’s overlay list and stays hidden while the other game runs
+- Settings → Theme → Sponsored by Us: “the teams and leagues Apex Overlays sponsors” (JWB is a league)
+
 ## 1.1.2
 
 ### Improvements

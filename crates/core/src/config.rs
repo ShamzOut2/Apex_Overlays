@@ -136,6 +136,11 @@ impl Default for Config {
                 o("flags", "flags", 860, 70, 220, 110),
                 o("startLights", "startLights", 760, 190, 400, 110),
                 OverlayInstance { enabled: false, ..o("forecast", "forecast", 1240, 520, 460, 150) },
+                OverlayInstance { enabled: false, ..o("laptimes", "laptimes", 40, 700, 420, 260) },
+                OverlayInstance { enabled: false, ..o("energy", "energy", 1540, 420, 330, 230) },
+                OverlayInstance { enabled: false, ..o("radar", "radar", 1220, 420, 220, 260) },
+                OverlayInstance { enabled: false, ..o("carsettings", "carsettings", 760, 770, 420, 72) },
+                OverlayInstance { enabled: false, ..o("tyredata", "tyredata", 1200, 600, 470, 280) },
                 o("spotter", "spotter", 850, 520, 220, 200),
                 o("pit", "pit", 845, 300, 230, 200),
                 o("safety", "safety", 760, 160, 400, 230),
@@ -684,7 +689,7 @@ impl Config {
     /// they appear in the overlay list and the hotkeys straight away.
     pub fn add_new_kinds(&mut self) {
         let defaults = Config::default().overlays;
-        for kind in ["safety", "delta", "inputGraph", "startLights", "forecast"] {
+        for kind in ["safety", "delta", "inputGraph", "startLights", "forecast", "laptimes", "energy", "radar", "carsettings", "tyredata"] {
             if self.overlays.iter().any(|o| o.kind == kind) {
                 continue;
             }
@@ -922,10 +927,15 @@ mod tests {
                 ("delta", "delta", false),
                 ("inputGraph", "inputGraph", false),
                 ("startLights", "startLights", false),
-                ("forecast", "forecast", false)
+                ("forecast", "forecast", false),
+                ("laptimes", "laptimes", false),
+                ("energy", "energy", false),
+                ("radar", "radar", false),
+                ("carsettings", "carsettings", false),
+                ("tyredata", "tyredata", false)
             ]
         );
         c.add_new_kinds();
-        assert_eq!(c.overlays.len(), 6);
+        assert_eq!(c.overlays.len(), 11);
     }
 }

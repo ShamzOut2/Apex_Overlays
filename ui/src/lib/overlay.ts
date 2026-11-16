@@ -34,6 +34,11 @@ export interface OverlayDef {
   settings: SettingDef[];
   /** Overrides for the defaults of the common options (scale, autoHeight, ...). */
   commonDefaults?: Values;
+  /** For Le Mans Ultimate: shown with an LMU badge in the settings. */
+  lmu?: boolean;
+  /** Works in this game only: hidden while the other game runs, and left out of the other
+   *  game's overlay list. Shown with that game's badge. */
+  game?: 'lmu' | 'iracing';
   /** Topics this overlay needs less often than they are sent: at most this many times a second. */
   rates?: Partial<Record<TopicName, number>>;
   /** Has table columns, so "fit the window width to the columns" applies. */

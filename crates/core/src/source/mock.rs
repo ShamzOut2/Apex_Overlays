@@ -610,6 +610,45 @@ impl Mock {
         t.abs_active = t.brake > 0.95 && me.speed > 30.0;
         t.fuel_level = me.fuel as f32;
         t.fuel_level_pct = (me.fuel / 63.6) as f32;
+        // As if the car raced on virtual energy (Le Mans Ultimate): a little faster to run out
+        // than the fuel, with the hybrid battery swinging with throttle and brake.
+        t.virtual_energy = Some((me.fuel / 63.6 * 100.0 * 0.94).clamp(0.0, 100.0) as f32);
+        t.battery = Some((55.0 + 25.0 * (self.time * 0.3).sin()) as f32);
+        // Settings changed from the wheel now and then (TC every 25 s, bias every 40 s), and
+        // tyres and brakes warming with speed and braking, wearing over the stint.
+        use crate::model::{CarSetting, WheelTel};
+        let step = |period: f64, n: i32| (self.time / period) as i32 % n;
+        t.car_settings.clear();
+        for (id, value, max) in [
+            ("brakeBias", 54.5 + 0.5 * step(40.0, 3) as f32, None),
+            ("abs", 3.0, Some(11.0)),
+            ("tc", (3 + step(25.0, 3)) as f32, Some(11.0)),
+            ("tcCut", 2.0, Some(8.0)),
+            ("engineMap", 1.0, Some(5.0)),
+        ] {
+            t.car_settings.push(CarSetting { id, value, max });
+        }
+        let load = (me.speed / 70.0).clamp(0.0, 1.2) as f32;
+        let corner = (self.track.curv[ti] * 400.0).clamp(-1.0, 1.0) as f32;
+        let laps_on = ((me.lap - 1).max(0) % 22) as f32;
+        t.wheels = Some([0, 1, 2, 3].map(|i| {
+            let left = i % 2 == 0;
+            let front = i < 2;
+            // The tyres on the outside of the corner run hotter; the inside edge hotter than the outside (camber).
+            let side = if left { -corner } else { corner } * 6.0;
+            let base = 78.0 + 16.0 * load + side + if front { 3.0 } else { 0.0 };
+            let edge = if left { [-4.0, 0.0, 5.0] } else { [5.0, 0.0, -4.0] };
+            WheelTel {
+                temps: Some(edge.map(|d| base + d)),
+                carcass: Some(base - 4.0),
+                pressure: Some(172.0 + 12.0 * load + if front { 2.0 } else { 0.0 }),
+                wear: Some(100.0 - laps_on * if front { 2.6 } else { 2.1 }),
+                brake: Some(260.0 + 420.0 * t.brake + 140.0 * load + if front { 60.0 } else { 0.0 }),
+                flat: false,
+            }
+        }));
+        t.tyres_live = true;
+        t.tyre_optimal = Some(88.0);
         t.fuel_use_per_hour = (me.speed * 2.9) as f32;
         t.lap = me.lap;
         t.lap_completed = (me.lap - 1).max(0);

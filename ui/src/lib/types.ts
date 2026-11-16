@@ -785,7 +785,110 @@ export interface Forecast {
   note: string;
 }
 
+export interface LapRow {
+  lap: number;
+  time: number | null;
+  sectors: (number | null)[];
+  pit: boolean;
+  /** Taken away for track limits (Le Mans Ultimate). */
+  invalid: boolean;
+  pb: boolean;
+  classBest: boolean;
+}
+
+export interface LapTimes {
+  car: number | null;
+  currentLap: number;
+  currentTime: number | null;
+  currentSectors: (number | null)[];
+  currentInvalid: boolean;
+  /** Newest first. */
+  laps: LapRow[];
+  bestLap: number | null;
+  bestSectors: (number | null)[];
+  /** The best of each sector added up: the best possible lap. */
+  theoretical: number | null;
+  classBest: number | null;
+}
+
+/** Le Mans Ultimate's virtual energy, in % of the allowance. */
+export interface Energy {
+  available: boolean;
+  game: string;
+  level: number | null;
+  battery: number | null;
+  perLapAvg: number | null;
+  perLapLast: number | null;
+  lapsInTank: number | null;
+  lapsRemaining: number | null;
+  toFinish: number | null;
+  toAdd: number | null;
+  stops: number | null;
+  targetPerLap: number | null;
+  windowOpensLap: number | null;
+  windowClosesLap: number | null;
+  marginLaps: number;
+  history: number[];
+}
+
+export interface RadarCar {
+  idx: number;
+  /** Metres to the right (+) / left (-), and ahead (+) / behind (-). */
+  x: number;
+  y: number;
+  color: string;
+  number: string;
+}
+
+export interface Radar {
+  /** Driving in a game that gives car positions (Le Mans Ultimate). */
+  active: boolean;
+  range: number;
+  carLength: number;
+  cars: RadarCar[];
+}
+
+/** A setting changed from the wheel (`carsettings` topic). */
+export interface CarSetting {
+  id: string;
+  value: number;
+  /** The highest step, where the game says (Le Mans Ultimate). */
+  max: number | null;
+}
+
+export interface CarSettings {
+  game: string;
+  driving: boolean;
+  items: CarSetting[];
+}
+
+/** One wheel's tyre and brake (`tyredata` topic): temperatures °C, pressure kPa, wear = tread left %. */
+export interface WheelData {
+  /** Across the tyre, left to right as seen from above. */
+  temps: [number, number, number] | null;
+  carcass: number | null;
+  pressure: number | null;
+  wear: number | null;
+  brake: number | null;
+  flat: boolean;
+}
+
+export interface TyreData {
+  game: string;
+  driving: boolean;
+  /** Read as you drive (Le Mans Ultimate), or measured at the last stop (iRacing). */
+  live: boolean;
+  optimal: number | null;
+  /** Front-left, front-right, rear-left, rear-right. */
+  wheels: [WheelData, WheelData, WheelData, WheelData] | null;
+}
+
 export interface TopicMap {
+  laptimes: LapTimes;
+  energy: Energy;
+  radar: Radar;
+  carsettings: CarSettings;
+  tyredata: TyreData;
   forecast: Forecast;
   session: Session;
   player: Player;

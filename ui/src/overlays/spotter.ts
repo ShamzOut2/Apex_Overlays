@@ -8,8 +8,9 @@ const SAMPLE: Spotter = { state: 'left', left: [2.2], right: [] };
 export const spotter: OverlayDef = {
   kind: 'spotter',
   name: 'Spotter',
+  game: 'iracing',
   description:
-    'Left and right spotter bars that stay invisible until a car is alongside you. A block shows where the other car overlaps yours, and the bar turns red when you are three wide or have two cars on one side.',
+    'Left and right spotter bars that stay invisible until a car is alongside you. A block shows where the other car overlaps yours, and the bar turns red when you are three wide or have two cars on one side. iRacing only; in Le Mans Ultimate, use the Radar.',
   topics: ['spotter', 'status'],
   size: [220, 200],
   settings: [

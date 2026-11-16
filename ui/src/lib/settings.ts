@@ -4,6 +4,9 @@
 export interface ColumnDef {
   id: string;
   label: string;
+  /** For Le Mans Ultimate: shown with an LMU badge (text: the badge's tooltip, when it is
+   *  more than "Le Mans Ultimate only"). */
+  lmu?: boolean | string;
 }
 
 export interface ColumnSetting {
@@ -19,6 +22,8 @@ interface Base {
   /** Shown only when this holds for the current values (e.g. a custom title only when the
    *  title is set to custom); hidden settings keep their values. */
   when?: (v: Values) => boolean;
+  /** Only for Le Mans Ultimate: shown with an LMU badge. */
+  lmu?: boolean;
 }
 
 /** Column `id` is switched on in a columns setting (or there is no such setting). */

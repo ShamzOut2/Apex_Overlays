@@ -15,6 +15,21 @@ pub struct SectorTime {
     pub delta: Option<f64>,
 }
 
+/// A finished lap of the focus car: its sector times and how it went.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SectorLap {
+    /// The car's lap number (the lap that was driven).
+    pub lap: i32,
+    /// Sector times (None for a sector not timed cleanly).
+    pub sectors: Vec<Option<f64>>,
+    /// Session time the line was crossed.
+    pub end_at: f64,
+    /// Driven through the pit lane at some point.
+    pub pit: bool,
+    /// The game took the lap away (track limits; Le Mans Ultimate).
+    pub invalid: bool,
+}
+
 #[derive(Debug, Default)]
 pub struct SectorTracker {
     car: Option<usize>,
@@ -25,15 +40,23 @@ pub struct SectorTracker {
     valid: bool,
     prev_pct: f32,
     prev_t: f64,
-    best: Vec<Option<f64>>,
+    /// Best time in each sector this session (focus car).
+    pub best: Vec<Option<f64>>,
     pub last: Vec<Option<SectorTime>>,
     pub lap: u32,
     pub lap_end_at: Option<f64>,
+    /// The lap in progress: its sectors so far, pit lane, invalidated, and the car's lap number.
+    pub current: Vec<Option<f64>>,
+    cur_pit: bool,
+    cur_invalid: bool,
+    prev_lap: i32,
+    /// Finished laps, newest last (the last 30).
+    pub laps: std::collections::VecDeque<SectorLap>,
 }
 
 impl SectorTracker {
     fn reset(&mut self, starts: Vec<f32>, car: Option<usize>) {
-        *self = Self { best: vec![None; starts.len()], last: vec![None; starts.len()], starts, car, ..Default::default() };
+        *self = Self { best: vec![None; starts.len()], last: vec![None; starts.len()], current: vec![None; starts.len()], starts, car, ..Default::default() };
     }
 
     /// Sector starts from the session info; three equal sectors when the track has none.
@@ -90,10 +113,22 @@ impl SectorTracker {
                             self.best[k] = Some(time);
                         }
                         self.last[k] = Some(SectorTime { lap: self.lap, time, delta });
+                        self.current[k] = Some(time);
                     }
                     if next == 0 {
                         self.lap += 1;
                         self.lap_end_at = Some(at);
+                        // The lap is done: kept with its sectors (a lap begun part-way is not).
+                        if self.current.iter().any(|s| s.is_some()) {
+                            let sectors = std::mem::replace(&mut self.current, vec![None; n]);
+                            self.laps.push_back(SectorLap { lap: self.prev_lap, sectors, end_at: at, pit: self.cur_pit, invalid: self.cur_invalid });
+                            if self.laps.len() > 30 {
+                                self.laps.pop_front();
+                            }
+                        }
+                        self.current = vec![None; n];
+                        self.cur_pit = c.on_pit_road;
+                        self.cur_invalid = false;
                     }
                     self.entered_at = at;
                     self.valid = !c.on_pit_road;
@@ -106,6 +141,15 @@ impl SectorTracker {
         }
         if c.on_pit_road {
             self.valid = false;
+            self.cur_pit = true;
+        }
+        // Le Mans Ultimate says when the player's lap no longer counts.
+        if tel.lap_invalid && tel.player_idx == idx as i32 {
+            self.cur_invalid = true;
+        }
+        // The lap number during the lap (the game may count the new one as the line is crossed).
+        if !(pct < self.prev_pct && self.prev_pct - pct > 0.5) {
+            self.prev_lap = c.lap;
         }
         self.prev_pct = pct;
         self.prev_t = now;
