@@ -156,7 +156,7 @@ export function overlayFont(t: Values): { family: string; stretch: string } {
   return { family: (t.fontFamily as string) || STANDARD_FONT, stretch: 'normal' };
 }
 
-/** A built-in theme. `sponsored`: a team we sponsor (listed under "Sponsored by Us"), with its
+/** A built-in theme. `sponsored`: a team or league we sponsor (listed under "Sponsored by Us"), with its
  *  logo (an image in /assets/teams) as the card's picture. */
 type Preset = { name: string; values: Values; sponsored?: boolean; logo?: string };
 

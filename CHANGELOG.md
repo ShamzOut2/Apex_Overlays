@@ -4,6 +4,11 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### Improvements
+- Settings → Theme → Sponsored by Us: “the teams and leagues Apex Overlays sponsors” (JWB is a league)
+
 ## 1.1.2
 
 ### Improvements

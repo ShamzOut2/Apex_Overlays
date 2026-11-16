@@ -774,7 +774,7 @@ const themePage: Page = {
         h('h3', '', 'Presets'),
         presets,
         h('h3', '', 'Sponsored by Us'),
-        h('p', 'dim small', 'The colours of the teams Apex Overlays sponsors.'),
+        h('p', 'dim small', 'The colours of the teams and leagues Apex Overlays sponsors.'),
         sponsored,
         h('h3', '', 'My themes'),
         saved,

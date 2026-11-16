@@ -32,5 +32,7 @@ team colour on the timing overlays (League builder → Team builder, Number colo
 
 The same five images for the VCR (Virtual Circuit Racing), Gassed Up Motorsports and JWB themes
 (Settings → Theme → Sponsored by Us), with the team's logo, and three GT3 cars of the mock race
-(#114, #118, #111) in the team colour: `vcr/vcr-*.png`, `gassed-up/gassed-up-motorsports-*.png` and `jwb/jwb-*.png`
+(#114, #118, #111) in the team colour: `vcr/vcr-*.png`, `gassed-up/gassed-up-motorsports-*.png` and `jwb/jwb-*.png`.
+JWB is a racing league (TCR) rather than a team, so its images show a league round instead: every car in
+one TCR class, with live league points and the championship totals on the relative and standings
 (hero 1920×1080; timing, track map and theme 1600×900; social 1080×1080).
