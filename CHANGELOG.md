@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.1.2
 
 ### Improvements
 - VCR theme: VCR’s new colours, yellow (#E9B949) in place of red, with its new logo on the theme card. Cars a lap ahead are now soft red, so they stand apart from your car’s yellow
