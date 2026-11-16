@@ -670,3 +670,39 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .c-teamLogo { display: flex; align-items: center; justify-content: center; }
 .c-teamLogo img.team-logo { display: block; height: 1.3em; max-width: 2.4em; object-fit: contain; }
 .c-teamLogo img.team-logo[hidden] { display: none; }
+
+/* Lap times */
+.panel.laptimes { padding: 0.45em 0.6em 0.55em; gap: 0.35em; }
+.lt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.8em; }
+.lt-title { font-size: 0.75em; font-weight: 800; letter-spacing: 0.18em; color: var(--dim); }
+.lt-cur { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lt-cur.invalid { color: var(--bad); text-decoration: line-through; }
+.lt-table { display: flex; flex-direction: column; }
+.lt-row { display: grid; grid-template-columns: var(--lt-cols); align-items: center; column-gap: 0.5em; padding: 0.16em 0.2em; border-radius: 4px; }
+.lt-row:nth-child(even):not(.lt-hd) { background: var(--row-alt); }
+.lt-hd { font-size: 0.7em; font-weight: 700; letter-spacing: 0.08em; color: var(--dim); }
+.lt-c { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.lt-hd .lt-c:first-child, .lt-lap { text-align: left; }
+.lt-lap { display: flex; align-items: center; gap: 0.3em; color: var(--dim); }
+.lt-tag { padding: 0 0.3em; border-radius: 3px; background: var(--subtle); color: var(--pit); font-size: 0.66em; font-weight: 800; letter-spacing: 0.04em; }
+.lt-tag.inv { color: var(--bad); }
+.lt-time { font-weight: 700; }
+.lt-c.pb { color: var(--good); }
+.lt-c.best { color: var(--best); }
+.lt-c.slow { color: var(--warn); }
+.lt-d { color: var(--dim); font-size: 0.9em; }
+.lt-d.good { color: var(--good); font-weight: 700; }
+.lt-row.invalid .lt-time, .lt-row.invalid .lt-s { text-decoration: line-through; opacity: 0.55; }
+.lt-row.pit { opacity: 0.75; }
+.lt-empty { padding: 0.4em 0.2em; font-size: 0.85em; }
+.lt-foot { display: flex; flex-wrap: wrap; gap: 0 0.3em; padding-top: 0.3em; border-top: 1px solid var(--track); font-size: 0.75em; color: var(--dim); letter-spacing: 0.06em; white-space: pre; }
+.lt-foot b { color: var(--text); font-size: 1.25em; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.lt-foot b.pb { color: var(--good); }
+.lt-foot b.best { color: var(--best); }
+
+/* Virtual energy (reuses the fuel calculator's look) */
+.energy .en-none { font-size: 0.85em; padding: 0.2em 0; }
+
+/* Radar */
+.panel.radar { padding: 0; }
+.rd-canvas { width: 100%; height: 100%; display: block; }

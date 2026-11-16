@@ -27,11 +27,17 @@ pub enum Topic {
     Safety,
     Delta,
     Forecast,
+    /// Your recent laps with their sector times (lap times overlay).
+    Laptimes,
+    /// Le Mans Ultimate's virtual energy: per lap, to the finish.
+    Energy,
+    /// Cars around you, in metres ahead and to the side.
+    Radar,
 }
 
 impl Topic {
     // Drivers first: when they change, they reach the clients before the rows that use them.
-    pub const ALL: [Topic; 17] = [
+    pub const ALL: [Topic; 20] = [
         Topic::Drivers,
         Topic::Session,
         Topic::Player,
@@ -49,6 +55,9 @@ impl Topic {
         Topic::Safety,
         Topic::Delta,
         Topic::Forecast,
+        Topic::Laptimes,
+        Topic::Energy,
+        Topic::Radar,
     ];
 
     pub fn name(self) -> &'static str {
@@ -70,6 +79,9 @@ impl Topic {
             Topic::Safety => "safety",
             Topic::Delta => "delta",
             Topic::Forecast => "forecast",
+            Topic::Laptimes => "laptimes",
+            Topic::Energy => "energy",
+            Topic::Radar => "radar",
         }
     }
 
@@ -83,7 +95,9 @@ impl Topic {
             Topic::Cars | Topic::Pit => 2,
             Topic::Relative | Topic::Safety => 3,
             Topic::Standings | Topic::Battle => 6,
-            Topic::Session | Topic::Fuel | Topic::Tyres | Topic::Incidents => 15,
+            Topic::Session | Topic::Fuel | Topic::Tyres | Topic::Incidents | Topic::Laptimes | Topic::Energy => 15,
+            // Cars around you: 30 a second.
+            Topic::Radar => 2,
             // Weather changes slowly: once a second.
             Topic::Forecast => 60,
             // Only re-sent when they change (see `publish`).
@@ -136,6 +150,9 @@ impl Topic {
             Topic::Safety => serde_json::to_string(&crate::safety::build(e)),
             Topic::Delta => serde_json::to_string(&DeltaOut { session: e.laps.session.as_ref(), all_time: e.laps.all_time.as_ref() }),
             Topic::Forecast => serde_json::to_string(&forecast(e)),
+            Topic::Laptimes => serde_json::to_string(&laptimes(e)),
+            Topic::Energy => serde_json::to_string(&energy_out(e)),
+            Topic::Radar => serde_json::to_string(&crate::engine::radar::build(e)),
         };
         r.unwrap_or_else(|_| "null".into())
     }
@@ -1340,5 +1357,151 @@ mod tests {
         // Spectating / replay: nothing.
         e.tel.is_replay_playing = true;
         assert_eq!(spotter(&e).state, "");
+    }
+}
+
+/// One lap in the lap times overlay.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LapRow {
+    pub lap: i32,
+    /// The game's lap time (or the sectors added up when it has none).
+    pub time: Option<f32>,
+    pub sectors: Vec<Option<f32>>,
+    pub pit: bool,
+    /// Taken away for track limits (Le Mans Ultimate).
+    pub invalid: bool,
+    /// The driver's best lap of the session, and the fastest in the class.
+    pub pb: bool,
+    pub class_best: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LapTimesOut {
+    /// The car shown (yours, or the one you are watching).
+    pub car: Option<usize>,
+    /// Lap in progress: its time so far and the sectors done.
+    pub current_lap: i32,
+    pub current_time: Option<f32>,
+    pub current_sectors: Vec<Option<f32>>,
+    pub current_invalid: bool,
+    /// Newest first.
+    pub laps: Vec<LapRow>,
+    pub best_lap: Option<f32>,
+    /// Best time in each sector this session, and their sum (best possible lap).
+    pub best_sectors: Vec<Option<f32>>,
+    pub theoretical: Option<f32>,
+    pub class_best: Option<f32>,
+}
+
+pub fn laptimes(e: &Engine) -> LapTimesOut {
+    let s = &e.sectors;
+    let car = e.tel.focus_idx();
+    let best = car.and_then(|i| e.best_lap(i));
+    let class_best = car.and_then(|i| {
+        let cid = e.static_of(i).map(|s| s.class.id.clone())?;
+        e.classes.iter().find(|k| k.key.id == cid).and_then(|k| k.best_lap).map(|b| b.1)
+    });
+    let hist = car.map(|i| &e.hist[i].laps);
+    let now = e.tel.session_time;
+    let laps = s
+        .laps
+        .iter()
+        .rev()
+        .map(|l| {
+            // The game's own time for the lap: the one that came in just after the line.
+            let official = hist.and_then(|h| h.iter().rev().find(|r| r.at >= l.end_at - 0.5 && r.at <= l.end_at + 6.0)).map(|r| r.time);
+            let summed = l.sectors.iter().all(|x| x.is_some()).then(|| l.sectors.iter().flatten().sum::<f64>() as f32);
+            let time = official.or(summed).filter(|t| *t > 0.0);
+            let same = |a: Option<f32>, b: Option<f32>| matches!((a, b), (Some(a), Some(b)) if (a - b).abs() < 1e-3);
+            LapRow {
+                lap: l.lap,
+                time: time.map(r3),
+                sectors: l.sectors.iter().map(|x| x.map(|v| r3(v as f32))).collect(),
+                pit: l.pit,
+                invalid: l.invalid,
+                pb: !l.invalid && same(time, best),
+                class_best: !l.invalid && same(time, class_best),
+            }
+        })
+        .collect();
+    let best_sectors: Vec<Option<f32>> = s.best.iter().map(|b| b.map(|v| r3(v as f32))).collect();
+    let theoretical = (!best_sectors.is_empty() && best_sectors.iter().all(|b| b.is_some())).then(|| r3(best_sectors.iter().flatten().sum()));
+    LapTimesOut {
+        car,
+        current_lap: car.map(|i| e.tel.cars[i].lap).unwrap_or(0),
+        // Your own lap: the game's timer; another car's: since it crossed the line.
+        current_time: if car.is_some() && car == usize::try_from(e.tel.player_idx).ok() && e.tel.lap_current_time > 0.0 {
+            Some(round(e.tel.lap_current_time, 1))
+        } else {
+            s.lap_end_at.map(|at| round((now - at).max(0.0) as f32, 1))
+        },
+        current_sectors: s.current.iter().map(|x| x.map(|v| r3(v as f32))).collect(),
+        current_invalid: e.tel.lap_invalid,
+        laps,
+        best_lap: best.map(r3),
+        best_sectors,
+        theoretical,
+        class_best: class_best.map(r3),
+    }
+}
+
+/// Le Mans Ultimate's virtual energy, planned like fuel (in % of the allowance).
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EnergyOut {
+    /// The car races on virtual energy (Le Mans Ultimate's Hypercars, LMGT3...).
+    pub available: bool,
+    pub game: &'static str,
+    pub level: Option<f32>,
+    pub battery: Option<f32>,
+    pub per_lap_avg: Option<f32>,
+    pub per_lap_last: Option<f32>,
+    pub laps_in_tank: Option<f32>,
+    pub laps_remaining: Option<f32>,
+    /// Energy needed to the flag, to add at the stop, stops, and what per lap would make it.
+    pub to_finish: Option<f32>,
+    pub to_add: Option<f32>,
+    pub stops: Option<i32>,
+    pub target_per_lap: Option<f32>,
+    pub window_opens_lap: Option<i32>,
+    pub window_closes_lap: Option<i32>,
+    pub margin_laps: f32,
+    pub history: Vec<f32>,
+}
+
+pub fn energy_out(e: &Engine) -> EnergyOut {
+    let t = &e.tel;
+    let cfg = &e.cfg.fuel;
+    let avg = e.energy.average(cfg.avg_laps);
+    let focus = usize::try_from(t.player_idx).ok().filter(|&i| i < t.cars.len());
+    let laps_left = focus.and_then(|f| fuel::laps_remaining(&race_clock(e, f))).map(|v| v as f32);
+    let level = t.virtual_energy;
+    let plan = match (level, avg, laps_left) {
+        (Some(l), Some(a), Some(left)) => Some(fuel::plan(l, 100.0, a, left, cfg.margin_laps)),
+        _ => None,
+    };
+    let lap = t.lap.max(0);
+    EnergyOut {
+        available: level.is_some(),
+        game: e.source,
+        level: level.map(|v| round(v, 1)),
+        battery: t.battery.map(|v| round(v, 0)),
+        per_lap_avg: avg.map(|v| round(v, 2)),
+        per_lap_last: e.energy.laps.back().map(|l| round(l.used, 2)),
+        laps_in_tank: match (level, avg) {
+            (Some(l), Some(a)) if a > 0.0 => Some(round(l / a, 1)),
+            _ => None,
+        },
+        laps_remaining: laps_left.map(|v| round(v, 1)),
+        to_finish: plan.as_ref().map(|p| round(p.fuel_to_finish, 1)),
+        to_add: plan.as_ref().map(|p| round(p.fuel_to_add, 1)),
+        stops: plan.as_ref().map(|p| p.stops),
+        target_per_lap: plan.as_ref().filter(|p| p.target_per_lap > 0.0).map(|p| round(p.target_per_lap, 2)),
+        window_opens_lap: plan.as_ref().filter(|p| p.stops > 0).map(|p| lap + p.window_opens_in.ceil() as i32),
+        window_closes_lap: plan.as_ref().filter(|p| p.stops > 0).map(|p| lap + p.window_closes_in.floor() as i32),
+        margin_laps: cfg.margin_laps,
+        history: e.energy.laps.iter().rev().filter(|l| l.valid).take(10).map(|l| round(l.used, 2)).collect(),
     }
 }

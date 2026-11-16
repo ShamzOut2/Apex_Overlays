@@ -128,6 +128,8 @@ pub struct CarTel {
     pub session_flags: u32,
     /// Share of a full tank left (0..1), where the game tells it for this car (LMU: every car).
     pub fuel: Option<f32>,
+    /// Position in the world (east, north) in metres, where the game tells it (LMU: every car).
+    pub pos: Option<[f32; 2]>,
 }
 
 impl CarTel {
@@ -169,6 +171,12 @@ pub struct Telemetry {
 
     pub fuel_level: f32,
     pub fuel_level_pct: f32,
+    /// Le Mans Ultimate's virtual energy left, % (classes that race on it), and the hybrid
+    /// battery's charge, %.
+    pub virtual_energy: Option<f32>,
+    pub battery: Option<f32>,
+    /// The lap in progress no longer counts (track limits; LMU).
+    pub lap_invalid: bool,
     pub fuel_use_per_hour: f32,
 
     pub lap: i32,
@@ -249,6 +257,9 @@ impl Default for Telemetry {
             abs_active: false,
             fuel_level: 0.0,
             fuel_level_pct: 0.0,
+            virtual_energy: None,
+            battery: None,
+            lap_invalid: false,
             fuel_use_per_hour: 0.0,
             lap: 0,
             lap_completed: 0,

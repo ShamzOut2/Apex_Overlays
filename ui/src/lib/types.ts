@@ -785,7 +785,74 @@ export interface Forecast {
   note: string;
 }
 
+export interface LapRow {
+  lap: number;
+  time: number | null;
+  sectors: (number | null)[];
+  pit: boolean;
+  /** Taken away for track limits (Le Mans Ultimate). */
+  invalid: boolean;
+  pb: boolean;
+  classBest: boolean;
+}
+
+export interface LapTimes {
+  car: number | null;
+  currentLap: number;
+  currentTime: number | null;
+  currentSectors: (number | null)[];
+  currentInvalid: boolean;
+  /** Newest first. */
+  laps: LapRow[];
+  bestLap: number | null;
+  bestSectors: (number | null)[];
+  /** The best of each sector added up: the best possible lap. */
+  theoretical: number | null;
+  classBest: number | null;
+}
+
+/** Le Mans Ultimate's virtual energy, in % of the allowance. */
+export interface Energy {
+  available: boolean;
+  game: string;
+  level: number | null;
+  battery: number | null;
+  perLapAvg: number | null;
+  perLapLast: number | null;
+  lapsInTank: number | null;
+  lapsRemaining: number | null;
+  toFinish: number | null;
+  toAdd: number | null;
+  stops: number | null;
+  targetPerLap: number | null;
+  windowOpensLap: number | null;
+  windowClosesLap: number | null;
+  marginLaps: number;
+  history: number[];
+}
+
+export interface RadarCar {
+  idx: number;
+  /** Metres to the right (+) / left (-), and ahead (+) / behind (-). */
+  x: number;
+  y: number;
+  color: string;
+  number: string;
+}
+
+export interface Radar {
+  /** Exact positions (Le Mans Ultimate) or placed from lap distance (iRacing). */
+  exact: boolean;
+  active: boolean;
+  range: number;
+  carLength: number;
+  cars: RadarCar[];
+}
+
 export interface TopicMap {
+  laptimes: LapTimes;
+  energy: Energy;
+  radar: Radar;
   forecast: Forecast;
   session: Session;
   player: Player;

@@ -1,3 +1,4 @@
+import { lmuBadge, withLmuBadge } from '../lib/badges';
 import { h, text } from '../lib/dom';
 import * as f from '../lib/format';
 import { commonFor, merge, type SettingDef } from '../lib/settings';
@@ -239,7 +240,7 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
       'danger',
     ],
   ]);
-  head.append(title, enabled, copyBtn, more);
+  head.append(title, ...(def.lmu ? [lmuBadge()] : []), enabled, copyBtn, more);
 
   // Live preview of this overlay with its current settings.
   const preview = h('div', 'preview');
@@ -399,7 +400,9 @@ function addOverlayDialog(onAdd: (kind: string) => void) {
   for (const d of OVERLAYS) {
     const card = h('button', 'gallery-item');
     const n = count(d.kind);
-    card.append(h('span', 'g-name', d.name), h('span', 'g-desc', d.description));
+    const gname = h('span', 'g-name', d.name);
+    if (d.lmu) gname.append(lmuBadge());
+    card.append(gname, h('span', 'g-desc', d.description));
     if (n) card.append(h('span', 'g-count', n === 1 ? '✓ In your layout' : `✓ ${n} in your layout`));
     card.onclick = (e) => {
       e.preventDefault();
@@ -631,7 +634,9 @@ const overlaysPage: Page = {
       const item = h('div', `ov-item${o.id === selected ? ' sel' : ''}${o.enabled ? '' : ' off'}`);
       item.tabIndex = 0;
       const names = h('span', 'ov-names');
-      names.append(h('span', 'ov-name', o.name || d?.name || o.kind));
+      const oname = h('span', 'ov-name', o.name || d?.name || o.kind);
+      if (d?.lmu) oname.append(lmuBadge());
+      names.append(oname);
       if (o.name && d) names.append(h('span', 'ov-kind', d.name));
       const sw = h('input');
       sw.type = 'checkbox';
@@ -1350,7 +1355,7 @@ function gameCard(): HTMLElement {
       'dim small',
       'In Le Mans Ultimate there are no iRating, licences or incident points, so those columns stay empty. Track maps are drawn from where the cars on track are, usually within a minute, and kept; tracks in the shared map library appear straight away.',
     ),
-    button('Export my LMU track maps', async () => {
+    withLmuBadge(button('Export my LMU track maps', async () => {
       // For the shared map library, so other drivers get these tracks without mapping them.
       try {
         const r = await fetch('/api/lmu-track-maps');
@@ -1363,7 +1368,7 @@ function gameCard(): HTMLElement {
       } catch {
         alert('Could not read the track maps.');
       }
-    }),
+    })),
   );
   return c;
 }

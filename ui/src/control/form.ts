@@ -1,5 +1,6 @@
 // Renders forms from a settings schema (see lib/settings.ts).
 
+import { lmuBadge } from '../lib/badges';
 import { h } from '../lib/dom';
 import type { ColumnSetting, SettingDef, Values } from '../lib/settings';
 
@@ -240,7 +241,9 @@ export function field(s: SettingDef, values: Values, onChange: OnChange): HTMLEl
   row.dataset.key = s.key;
   const build = () => {
     const lab = h('span', 'field-label');
-    lab.append(h('span', 'field-name', s.label));
+    const name = h('span', 'field-name', s.label);
+    if (s.lmu) name.append(lmuBadge());
+    lab.append(name);
     if (s.help) lab.append(h('small', 'help', s.help));
     const reset = h('button', 'reset', '↺');
     reset.title = 'Back to the default';

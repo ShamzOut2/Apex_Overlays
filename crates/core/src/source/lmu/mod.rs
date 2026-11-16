@@ -310,6 +310,7 @@ pub fn apply(st: &mut State, snap: &Snapshot, tel: &mut Telemetry) -> Option<Str
             rpm: t.map_or(0.0, |t| t.mEngineRPM as f32),
             session_flags: car_flags,
             fuel: Some(v.mFuelFraction as f32 / 255.0),
+            pos: t.map(|t| [t.mPos.x as f32, t.mPos.z as f32]),
         };
     }
 
@@ -401,6 +402,12 @@ pub fn apply(st: &mut State, snap: &Snapshot, tel: &mut Telemetry) -> Option<Str
             tel.abs_active = t.mABSActive != 0;
             tel.fuel_level = t.mFuel as f32;
             tel.fuel_level_pct = if t.mFuelCapacity > 0.0 { (t.mFuel / t.mFuelCapacity) as f32 } else { 0.0 };
+            // Virtual energy (Hypercar, LMGT3...): a share of the allowance, sent as 0..1 (taken
+            // as % when larger). None for cars that do not race on it.
+            let pct = |v: f64| if v > 1.0 { v.min(100.0) as f32 } else { (v * 100.0) as f32 };
+            tel.virtual_energy = (t.mVirtualEnergy > 0.0).then(|| pct(t.mVirtualEnergy as f64));
+            tel.battery = (t.mBatteryChargeFraction > 0.0).then(|| pct(t.mBatteryChargeFraction));
+            tel.lap_invalid = t.mLapInvalidated != 0;
             let me = &tel.cars[tel.player_idx.max(0) as usize];
             tel.lap = me.lap;
             tel.lap_completed = me.lap_completed;
@@ -439,6 +446,9 @@ pub fn apply(st: &mut State, snap: &Snapshot, tel: &mut Telemetry) -> Option<Str
             tel.is_on_track = false;
             tel.speed = 0.0;
             tel.car_left_right = 0;
+            tel.virtual_energy = None;
+            tel.battery = None;
+            tel.lap_invalid = false;
         }
     }
 
@@ -960,6 +970,36 @@ pub mod tests {
             e.connected = true;
             e.tick();
         }
+    }
+
+    #[test]
+    fn virtual_energy_per_lap_and_to_the_finish() {
+        let mut e = crate::engine::Engine::new(crate::config::Config::default(), None);
+        e.source = "lmu";
+        let (mut st, mut snap) = (State::default(), snapshot());
+        // The player's Hypercar: 90% of its virtual energy, using 6% a lap.
+        snap.telemetry[1].mVirtualEnergy = 0.90;
+        snap.telemetry[1].mBatteryChargeFraction = 0.42;
+        run(&mut e, &mut st, &mut snap, 3, |_| {});
+        for _ in 0..4 {
+            run(&mut e, &mut st, &mut snap, 1, |s| {
+                for v in s.vehicles.iter_mut() {
+                    v.mTotalLaps += 1;
+                }
+                s.telemetry[1].mVirtualEnergy -= 0.06;
+            });
+        }
+        let out = crate::topics::energy_out(&e);
+        let json = serde_json::to_string(&out).unwrap();
+        assert!(out.available && out.game == "lmu", "{json}");
+        assert!((out.level.unwrap() - 66.0).abs() < 0.2, "{json}");
+        assert_eq!(out.battery, Some(42.0));
+        assert!((out.per_lap_avg.unwrap() - 6.0).abs() < 0.05, "{json}");
+        assert!((out.laps_in_tank.unwrap() - 11.0).abs() < 0.1, "{json}");
+        // A car that does not race on virtual energy (LMP2): nothing to show.
+        snap.telemetry[1].mVirtualEnergy = 0.0;
+        run(&mut e, &mut st, &mut snap, 1, |_| {});
+        assert!(!crate::topics::energy_out(&e).available);
     }
 
     #[test]

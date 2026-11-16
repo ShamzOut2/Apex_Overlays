@@ -34,6 +34,8 @@ export interface OverlayDef {
   settings: SettingDef[];
   /** Overrides for the defaults of the common options (scale, autoHeight, ...). */
   commonDefaults?: Values;
+  /** Only for Le Mans Ultimate: shown with an LMU badge in the settings. */
+  lmu?: boolean;
   /** Topics this overlay needs less often than they are sent: at most this many times a second. */
   rates?: Partial<Record<TopicName, number>>;
   /** Has table columns, so "fit the window width to the columns" applies. */

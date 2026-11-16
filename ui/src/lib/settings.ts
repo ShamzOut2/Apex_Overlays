@@ -19,6 +19,8 @@ interface Base {
   /** Shown only when this holds for the current values (e.g. a custom title only when the
    *  title is set to custom); hidden settings keep their values. */
   when?: (v: Values) => boolean;
+  /** Only for Le Mans Ultimate: shown with an LMU badge. */
+  lmu?: boolean;
 }
 
 /** Column `id` is switched on in a columns setting (or there is no such setting). */

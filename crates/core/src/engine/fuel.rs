@@ -35,7 +35,11 @@ impl FuelTracker {
     }
 
     pub fn update(&mut self, t: &Telemetry, caution: bool, cfg: &FuelConfig) {
-        let fuel = t.fuel_level;
+        self.update_level(t.fuel_level, t, caution, cfg);
+    }
+
+    /// The same for another level than the fuel's (Le Mans Ultimate's virtual energy, in %).
+    pub fn update_level(&mut self, fuel: f32, t: &Telemetry, caution: bool, cfg: &FuelConfig) {
         if fuel > self.prev_fuel + 0.05 {
             self.refuel = true;
         }

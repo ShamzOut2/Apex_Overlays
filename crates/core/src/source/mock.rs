@@ -610,6 +610,10 @@ impl Mock {
         t.abs_active = t.brake > 0.95 && me.speed > 30.0;
         t.fuel_level = me.fuel as f32;
         t.fuel_level_pct = (me.fuel / 63.6) as f32;
+        // As if the car raced on virtual energy (Le Mans Ultimate): a little faster to run out
+        // than the fuel, with the hybrid battery swinging with throttle and brake.
+        t.virtual_energy = Some((me.fuel / 63.6 * 100.0 * 0.94).clamp(0.0, 100.0) as f32);
+        t.battery = Some((55.0 + 25.0 * (self.time * 0.3).sin()) as f32);
         t.fuel_use_per_hour = (me.speed * 2.9) as f32;
         t.lap = me.lap;
         t.lap_completed = (me.lap - 1).max(0);

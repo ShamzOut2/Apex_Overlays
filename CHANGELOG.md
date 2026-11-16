@@ -6,6 +6,12 @@ Each version groups its changes under `### New features`, `### Improvements` and
 
 ## Unreleased
 
+### New features
+- Lap times overlay: your last laps with their sector times, personal bests in green and the class’s fastest lap in purple, the gap to your best, and the best possible lap (your best sectors added up). The lap under way fills in sector by sector, laps through the pit lane are tagged, and in Le Mans Ultimate laps taken away for track limits are struck out
+- Virtual energy overlay (Le Mans Ultimate): virtual energy planned like fuel, for the classes that race on it (Hypercar, LMGT3): laps of energy left against laps to go on a bar with the finish marked, energy per lap, what you will have at the flag, how much to add at the stop, the pit window and the hybrid battery. It hides itself in cars without virtual energy and in iRacing
+- Radar overlay: the cars around you seen from above, amber when close and red when alongside. Exact in Le Mans Ultimate, which gives every car’s position; in iRacing the cars are placed by how far round the lap they are, with the ones beside you on the side iRacing reports. It hides itself until a car is near
+- LMU badges: overlays, settings and buttons that are only for Le Mans Ultimate carry a small LMU badge in the settings
+
 ### Improvements
 - Settings → Theme → Sponsored by Us: “the teams and leagues Apex Overlays sponsors” (JWB is a league)
 
