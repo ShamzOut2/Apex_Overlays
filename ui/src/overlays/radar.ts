@@ -1,6 +1,5 @@
-// Cars around you, seen from above: your car in the middle, the others where they are. Exact in
-// Le Mans Ultimate (it says where every car is); in iRacing the cars are placed by how far
-// round the lap they are, with the ones alongside on the side iRacing reports.
+// Cars around you, seen from above: your car in the middle, the others where they are. Le Mans
+// Ultimate only, as it says where every car is (iRacing does not: its spotter overlay is there).
 
 import { fitCanvas, h, toggle } from '../lib/dom';
 import type { OverlayDef } from '../lib/overlay';
@@ -8,7 +7,6 @@ import type { Radar, Status } from '../lib/types';
 
 /** Shown while placing the overlay: a car alongside on the right, one close behind, one ahead. */
 const SAMPLE: Radar = {
-  exact: true,
   active: true,
   range: 40,
   carLength: 4.8,
@@ -22,8 +20,9 @@ const SAMPLE: Radar = {
 export const radar: OverlayDef = {
   kind: 'radar',
   name: 'Radar',
+  game: 'lmu',
   description:
-    'The cars around you, seen from above: your car in the middle and the others where they are, amber when close and red when alongside. Exact in Le Mans Ultimate, which says where every car is; in iRacing the cars are placed by how far round the lap they are, with the ones beside you on the side iRacing reports. Hides itself until a car is near.',
+    'The cars around you, seen from above, exactly where they are: your car in the middle, the others amber when close and red when alongside. Hides itself until a car is near. Le Mans Ultimate only, as it is the game that says where every car is; in iRacing, use the Spotter.',
   topics: ['radar', 'status'],
   size: [220, 260],
   settings: [

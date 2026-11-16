@@ -1,4 +1,4 @@
-import { lmuBadge, withLmuBadge } from '../lib/badges';
+import { otherGameOnly, overlayBadges, withLmuBadge } from '../lib/badges';
 import { h, text } from '../lib/dom';
 import * as f from '../lib/format';
 import { commonFor, merge, type SettingDef } from '../lib/settings';
@@ -31,6 +31,8 @@ const button = (label: string, onClick: () => void, cls = '') => {
 export const overlayUrl = (id: string) => `${location.origin}/o/${encodeURIComponent(id)}`;
 
 let selected = '';
+/** Overlays listed in the settings: not internal ones, nor ones only the other game has. */
+const listed = (o: OverlayInstance) => !hiddenKind(o.kind) && !otherGameOnly(byKind(o.kind), state.config?.layoutGame);
 
 /** Shared files: one overlay, or a whole layout (overlays + theme). No personal data. */
 type SharedOverlay = Pick<OverlayInstance, 'kind' | 'name' | 'enabled' | 'x' | 'y' | 'width' | 'height' | 'settings'>;
@@ -240,7 +242,7 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
       'danger',
     ],
   ]);
-  head.append(title, ...(def.lmu ? [lmuBadge()] : []), enabled, copyBtn, more);
+  head.append(title, ...overlayBadges(def), enabled, copyBtn, more);
 
   // Live preview of this overlay with its current settings.
   const preview = h('div', 'preview');
@@ -397,11 +399,11 @@ function addOverlayDialog(onAdd: (kind: string) => void) {
   head.append(h('h2', '', 'Add an overlay'), button('✕', close, 'subtle'));
   const grid = h('div', 'gallery');
   const count = (kind: string) => state.config!.overlays.filter((o) => o.kind === kind).length;
-  for (const d of OVERLAYS) {
+  for (const d of OVERLAYS.filter((x) => !otherGameOnly(x, state.config!.layoutGame))) {
     const card = h('button', 'gallery-item');
     const n = count(d.kind);
     const gname = h('span', 'g-name', d.name);
-    if (d.lmu) gname.append(lmuBadge());
+    gname.append(...overlayBadges(d));
     card.append(gname, h('span', 'g-desc', d.description));
     if (n) card.append(h('span', 'g-count', n === 1 ? '✓ In your layout' : `✓ ${n} in your layout`));
     card.onclick = (e) => {
@@ -422,7 +424,7 @@ const overlaysPage: Page = {
   render(el) {
     const cfg = state.config!;
     const rerender = () => this.render(el);
-    if (!cfg.overlays.some((o) => o.id === selected)) selected = cfg.overlays[0]?.id ?? '';
+    if (!cfg.overlays.some((o) => o.id === selected && listed(o))) selected = cfg.overlays.find(listed)?.id ?? '';
     const editing = state.status?.editMode ?? false;
     const visible = state.status?.visible ?? true;
 
@@ -629,13 +631,13 @@ const overlaysPage: Page = {
     };
     const list = h('div', 'ov-list');
     list.append(button('＋ Add overlay', () => addOverlayDialog(addOverlay), 'add-btn'));
-    for (const o of cfg.overlays.filter((x) => !hiddenKind(x.kind))) {
+    for (const o of cfg.overlays.filter(listed)) {
       const d = byKind(o.kind);
       const item = h('div', `ov-item${o.id === selected ? ' sel' : ''}${o.enabled ? '' : ' off'}`);
       item.tabIndex = 0;
       const names = h('span', 'ov-names');
       const oname = h('span', 'ov-name', o.name || d?.name || o.kind);
-      if (d?.lmu) oname.append(lmuBadge());
+      oname.append(...overlayBadges(d));
       names.append(oname);
       if (o.name && d) names.append(h('span', 'ov-kind', d.name));
       const sw = h('input');
@@ -1232,7 +1234,7 @@ function hotkeysCard(): HTMLElement {
     ),
     group(
       'Show / hide one overlay',
-      ...cfg.overlays.filter((o) => !hiddenKind(o.kind)).map((o) =>
+      ...cfg.overlays.filter(listed).map((o) =>
         row(
           o.name || byKind(o.kind)?.name || o.kind,
           () => hk.overlays[o.id] ?? '',
@@ -1672,7 +1674,7 @@ const streamingPage: Page = {
   id: 'streaming',
   title: 'Streaming / OBS',
   render(el) {
-    const rows = state.config!.overlays.filter((o) => !hiddenKind(o.kind)).map((o) => {
+    const rows = state.config!.overlays.filter(listed).map((o) => {
       const tr = h('tr');
       const url = overlayUrl(o.id);
       const b = button('Copy', () => copy(url, b));

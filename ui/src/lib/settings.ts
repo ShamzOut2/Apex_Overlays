@@ -4,6 +4,8 @@
 export interface ColumnDef {
   id: string;
   label: string;
+  /** Works fully only in Le Mans Ultimate: shown with an LMU badge. */
+  lmu?: boolean;
 }
 
 export interface ColumnSetting {

@@ -364,5 +364,7 @@ dialog.csv-dialog select { max-width: 60%; }
 
 /* Le Mans Ultimate only */
 .lmu-badge { display: inline-flex; align-items: center; margin-left: 7px; padding: 1px 6px; border-radius: 4px; background: linear-gradient(180deg, #2b7bff, #1557d6); color: #fff; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; line-height: 1.4; vertical-align: 1px; white-space: nowrap; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18); }
+.iracing-badge { background: linear-gradient(180deg, #f2533a, #c42d1b); letter-spacing: 0.03em; }
 .editor-head > .lmu-badge { margin-left: 0; align-self: center; }
 button > .lmu-badge { margin-left: 8px; }
+button.chip > .lmu-badge, .col-name > .lmu-badge { margin-left: 6px; padding: 0 5px; font-size: 9px; }

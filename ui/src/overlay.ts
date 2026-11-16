@@ -173,7 +173,10 @@ function updateVisibility() {
   if (settings.hideInPits && player?.onPitRoad) visible = false;
   if (settings.raceOnly && !session?.isRace) visible = false;
   if (!client.connected) visible = false;
-  document.body.classList.toggle('hidden', !(visible || editing || preview));
+  // Only for the other game: hidden, even while moving overlays.
+  const src = status?.source;
+  const wrongGame = !preview && !!def?.game && (src === 'iracing' || src === 'lmu') && src !== def.game;
+  document.body.classList.toggle('hidden', wrongGame || !(visible || editing || preview));
   if (!document.body.classList.contains('hidden') && stale.size) {
     for (const t of stale) if (client.latest[t] !== undefined) deliver(t, client.latest[t]);
     stale.clear();

@@ -841,8 +841,7 @@ export interface RadarCar {
 }
 
 export interface Radar {
-  /** Exact positions (Le Mans Ultimate) or placed from lap distance (iRacing). */
-  exact: boolean;
+  /** Driving in a game that gives car positions (Le Mans Ultimate). */
   active: boolean;
   range: number;
   carLength: number;

@@ -17,6 +17,11 @@ function columnsControl(s: Extract<SettingDef, { type: 'columns' }>, value: Colu
   const box = h('div', 'columns');
   const cols = value.map((c) => ({ ...c }));
   const label = (id: string) => s.columns.find((c) => c.id === id)?.label ?? id;
+  const lmu = (id: string) => !!s.columns.find((c) => c.id === id)?.lmu;
+  const badge = (el: HTMLElement, id: string) => {
+    if (lmu(id)) el.append(lmuBadge('Every car in Le Mans Ultimate; only you in iRacing'));
+    return el;
+  };
   const commit = () => {
     onChange(s.key, cols.map((x) => ({ ...x })));
     draw();
@@ -97,7 +102,7 @@ function columnsControl(s: Extract<SettingDef, { type: 'columns' }>, value: Colu
         c.on = false;
         commit();
       };
-      const name = h('span', 'col-name', label(c.id));
+      const name = badge(h('span', 'col-name', label(c.id)), c.id);
       name.title = `${label(c.id)} — drag to move`;
       item.append(h('span', 'col-grip', '⠿'), h('span', 'col-pos', String(i + 1)), name, up, down, remove);
       list.append(item);
@@ -114,7 +119,7 @@ function columnsControl(s: Extract<SettingDef, { type: 'columns' }>, value: Colu
     const hidden = cols.filter((c) => !c.on);
     const chips = h('div', 'col-chips');
     for (const c of hidden) {
-      const b = h('button', 'chip', `+ ${label(c.id)}`);
+      const b = badge(h('button', 'chip', `+ ${label(c.id)}`), c.id);
       b.title = 'Click to add at the end, or drag it to where it should go';
       dragFrom(b, c.id);
       b.onclick = (e) => {
