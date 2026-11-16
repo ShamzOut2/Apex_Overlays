@@ -37,7 +37,7 @@ export const tyredata: OverlayDef = {
   description:
     'Your tyres and brakes, wheel by wheel: temperatures across each tyre (coloured cold, in the window, hot), pressures and tread left, plus brake temperatures. Live in Le Mans Ultimate; iRacing only measures tyres at pit stops, so there it shows the readings from your last stop.',
   topics: ['tyredata', 'status'],
-  size: [330, 300],
+  size: [380, 230],
   commonDefaults: { autoHeight: true, hideWhenNotDriving: true },
   settings: [
     { key: 'showTemps', label: 'Temperatures across each tyre', type: 'bool', default: true, group: 'What to show' },
@@ -64,55 +64,62 @@ export const tyredata: OverlayDef = {
     style(root, '--td-cold', s.coldColor as string);
     style(root, '--td-ok', s.okColor as string);
     style(root, '--td-hot', s.hotColor as string);
+    toggle(root, 'no-brakes', s.showBrakes === false);
     const head = h('div', 'td-head');
     const tag = h('span', 'td-tag');
-    head.append(h('span', 'td-title', 'TYRES'), tag);
-    const grid = h('div', 'td-grid');
+    const ideal = h('span', 'td-ideal');
+    const headRight = h('span', 'td-head-r');
+    headRight.append(ideal, tag);
+    head.append(h('span', 'td-title', 'TYRES'), headRight);
+    // A car from above: the wheels at its corners, each wheel's readings beside it.
+    const car = h('div', 'td-car');
+    const body = h('div', 'td-body');
+    body.append(h('span', 'td-wing front'), h('span', 'td-cockpit'), h('span', 'td-wing rear'));
     const note = h('div', 'td-note dim');
-    root.append(head, grid, note);
+    root.append(head, car, note);
 
     const wheels = CORNERS.map((name, i) => {
-      const el = h('div', `td-wheel ${i % 2 ? 'right' : 'left'}`);
-      const top = h('div', 'td-wtop');
+      const right = i % 2 === 1;
+      const side = right ? 'right' : 'left';
+      const wheel = h('div', `td-wheel ${side}`);
+      const tyre = h('div', 'td-tyre');
       const flat = h('span', 'td-flat', 'FLAT');
-      top.append(h('span', 'td-corner', name), flat);
+      tyre.append(flat);
+      const disc = h('div', 'td-disc');
+      wheel.append(...(right ? [disc, tyre] : [tyre, disc]));
+      const info = h('div', `td-info ${side}`);
+      const corner = h('span', 'td-corner', name);
       const temps = h('div', 'td-temps');
-      const cells = [0, 1, 2].map(() => {
-        const c = h('span', 'td-t');
-        temps.append(c);
-        return c;
-      });
-      const carcass = h('div', 'td-row td-carcass');
-      const press = h('div', 'td-row td-press');
-      const wear = h('div', 'td-row td-wear');
+      const cells = [0, 1, 2].map(() => temps.appendChild(h('span', 'td-t')));
+      const press = h('div', 'td-press');
+      const pVal = h('span', 'td-pv');
+      const pUnit = h('span', 'td-pu');
+      press.append(pVal, pUnit);
+      const wear = h('div', 'td-wear');
       const wearBar = h('span', 'td-wearbar');
-      const wearVal = h('span', 'td-v');
-      wear.append(h('span', 'td-k', 'TREAD'), wearBar, wearVal);
-      const brake = h('div', 'td-row td-brake');
-      el.append(top, temps, carcass, press, wear, brake);
-      grid.append(el);
+      const wearVal = h('span', 'td-wv');
+      wear.append(wearBar, wearVal);
+      const extra = h('div', 'td-extra');
+      const carcass = h('span', 'td-x td-carcass');
+      const brake = h('span', 'td-x td-brake');
+      extra.append(carcass, brake);
+      info.append(corner, temps, press, wear, extra);
       show(temps, s.showTemps !== false);
-      show(carcass, !!s.showCarcass);
       show(press, s.showPressure !== false);
       show(wear, s.showWear !== false);
-      show(brake, s.showBrakes !== false);
-      return { el, flat, cells, carcass, press, wear, wearBar, wearVal, brake };
+      return { info, wheel, tyre, flat, disc, cells, pVal, pUnit, wear, wearBar, wearVal, extra, carcass, brake };
     });
+    // Grid: info | wheel | body | wheel | info, front axle then rear.
+    const [fl, fr, rl, rr] = wheels;
+    car.append(fl.info, fl.wheel, body, fr.wheel, fr.info, rl.info, rl.wheel, rr.wheel, rr.info);
 
     /** cold / ok / hot, blended near the window's edges so a tyre coming in shows as it warms. */
     const tone = (v: number, lo: number, hi: number) => {
       const band = Math.max(4, (hi - lo) * 0.2);
-      if (v < lo) return { c: 'var(--td-cold)', k: Math.min(1, (lo - v) / band) };
-      if (v > hi) return { c: 'var(--td-hot)', k: Math.min(1, (v - hi) / band) };
-      return { c: 'var(--td-ok)', k: 1 };
-    };
-    const paint = (el: HTMLElement, v: number | null, lo: number, hi: number) => {
-      if (v == null) {
-        style(el, '--td-c', '');
-        return;
-      }
-      const t = tone(v, lo, hi);
-      style(el, '--td-c', t.k >= 1 ? t.c : `color-mix(in srgb, ${t.c} ${Math.round(t.k * 100)}%, var(--td-ok))`);
+      const mix = (c: string, k: number) => (k >= 1 ? c : `color-mix(in srgb, ${c} ${Math.round(k * 100)}%, var(--td-ok))`);
+      if (v < lo) return mix('var(--td-cold)', Math.min(1, (lo - v) / band));
+      if (v > hi) return mix('var(--td-hot)', Math.min(1, (v - hi) / band));
+      return 'var(--td-ok)';
     };
 
     let editing = false;
@@ -128,35 +135,52 @@ export const tyredata: OverlayDef = {
         const u = ctx.units;
         text(tag, d.wheels ? (d.live ? 'LIVE' : 'LAST STOP') : '');
         toggle(tag, 'stop', !d.live);
-        const ideal = s.useGameWindow !== false && d.optimal != null ? d.optimal : null;
-        const lo = ideal != null ? ideal - (s.windowMargin as number) : (s.coldBelow as number);
-        const hi = ideal != null ? ideal + (s.windowMargin as number) : (s.hotAbove as number);
+        const opt = s.useGameWindow !== false && d.optimal != null ? d.optimal : null;
+        text(ideal, opt == null ? '' : `IDEAL ${temp(opt, u)}`);
+        const lo = opt != null ? opt - (s.windowMargin as number) : (s.coldBelow as number);
+        const hi = opt != null ? opt + (s.windowMargin as number) : (s.hotAbove as number);
         const measured = !!d.wheels?.some((wh) => wh.temps || wh.pressure != null || wh.wear != null);
-        show(grid, !!d.wheels);
+        show(car, !!d.wheels);
         show(note, !measured);
         text(note, d.game === 'iracing' ? 'iRacing measures the tyres at a pit stop: readings show after your first stop.' : 'No tyre readings yet.');
         if (!d.wheels) return;
         d.wheels.forEach((wh, i) => {
           const v = wheels[i];
           show(v.flat, wh.flat);
-          toggle(v.el, 'flat', wh.flat);
+          toggle(v.wheel, 'flat', wh.flat);
+          // The tyre shaded across its width from the three temperatures (or the carcass's).
+          const t = wh.temps ?? (wh.carcass != null ? [wh.carcass, wh.carcass, wh.carcass] : null);
+          toggle(v.tyre, 'unknown', !t);
           v.cells.forEach((c, k) => {
-            const t = wh.temps?.[k] ?? null;
-            text(c, t == null ? '–' : temp(t, u));
-            paint(c, t, lo, hi);
+            const tv = wh.temps?.[k] ?? null;
+            text(c, tv == null ? '–' : temp(tv, u));
+            style(c, 'color', tv == null ? '' : tone(tv, lo, hi));
+            style(v.tyre, `--t${k}`, t ? tone(t[k], lo, hi) : '');
           });
-          text(v.carcass, wh.carcass == null ? '' : `CORE ${temp(wh.carcass, u)}`);
-          paint(v.carcass, wh.carcass, lo, hi);
-          show(v.carcass, !!s.showCarcass && wh.carcass != null);
-          text(v.press, wh.pressure == null ? '–' : pressure(wh.pressure, s.pressureUnit as string, u));
+          if (wh.pressure == null) {
+            text(v.pVal, '–');
+            text(v.pUnit, '');
+          } else {
+            const [val, unit] = pressure(wh.pressure, s.pressureUnit as string, u).split(' ');
+            text(v.pVal, val);
+            text(v.pUnit, unit);
+          }
           const wear = wh.wear;
           text(v.wearVal, wear == null ? '–' : `${Math.round(wear)}%`);
           style(v.wearBar, '--p', String(wear == null ? 0 : Math.max(0, Math.min(1, wear / 100))));
           toggle(v.wear, 'warn', wear != null && wear < (s.wearWarn as number) && wear >= (s.wearBad as number));
           toggle(v.wear, 'bad', wear != null && wear < (s.wearBad as number));
-          show(v.brake, s.showBrakes !== false && wh.brake != null);
-          text(v.brake, wh.brake == null ? '' : `BRAKE ${temp(wh.brake, u)}`);
-          paint(v.brake, wh.brake, s.brakeCold as number, s.brakeHot as number);
+          show(v.carcass, !!s.showCarcass && wh.carcass != null);
+          text(v.carcass, wh.carcass == null ? '' : `CORE ${temp(wh.carcass, u)}`);
+          style(v.carcass, 'color', wh.carcass == null ? '' : tone(wh.carcass, lo, hi));
+          const brakes = s.showBrakes !== false && wh.brake != null;
+          show(v.brake, brakes);
+          show(v.disc, brakes);
+          const bc = wh.brake == null ? '' : tone(wh.brake, s.brakeCold as number, s.brakeHot as number);
+          text(v.brake, wh.brake == null ? '' : `BRK ${temp(wh.brake, u)}`);
+          style(v.brake, 'color', bc);
+          style(v.disc, '--bc', bc);
+          show(v.extra, brakes || (!!s.showCarcass && wh.carcass != null));
         });
       },
     };
