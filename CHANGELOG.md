@@ -4,6 +4,12 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 1.1.1
+
+### New features
+- Nimbus Motorsport theme: black, lime green and grey
+- Settings → Theme: the team themes (Gassed Up Motorsports, VCR, JWB and Nimbus Motorsport) have a section of their own, Sponsored by Us, and the teams’ cards show their logos (VCR with its full Virtual Circuit Racing logo)
+
 ## 1.1.0
 
 ### New features

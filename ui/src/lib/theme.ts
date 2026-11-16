@@ -156,7 +156,9 @@ export function overlayFont(t: Values): { family: string; stretch: string } {
   return { family: (t.fontFamily as string) || STANDARD_FONT, stretch: 'normal' };
 }
 
-type Preset = { name: string; values: Values };
+/** A built-in theme. `sponsored`: a team we sponsor (listed under "Sponsored by Us"), with its
+ *  logo (an image in /assets/teams) as the card's picture. */
+type Preset = { name: string; values: Values; sponsored?: boolean; logo?: string };
 
 /** Built-in colour themes. Only colours are set; fonts and shapes are left as they are. */
 export const PRESETS: Preset[] = [
@@ -185,19 +187,32 @@ export const PRESETS: Preset[] = [
     name: 'High Contrast',
     values: { background: '#000000', headerBackground: '#000000', textColor: '#ffffff', dimColor: '#d0d0d0', accent: '#ffe600', playerColor: '#ffe600', bestColor: '#ff4dff', goodColor: '#00ff6a', badColor: '#ff3b3b', lapAheadColor: '#ff6b6b', lapBehindColor: '#4dc3ff', backgroundOpacity: 92, shadow: false },
   },
-  // Team themes: each team's three colours as background, accent (header line, badges) and
+  // Sponsored by Us: each team's three colours as background, accent (header line, badges) and
   // your-car highlight, with text and status colours chosen to stay readable on them.
   {
     name: 'Gassed Up Motorsports',
+    sponsored: true,
+    logo: '/assets/teams/gassed-up-motorsports.png',
     values: { background: '#3e424d', headerBackground: '#30333b', textColor: '#ffffff', dimColor: '#bcc1cc', accent: '#01fddc', playerColor: '#ffb400', bestColor: '#d08cff', goodColor: '#3ddc84', badColor: '#ff5c5c', lapAheadColor: '#ff8a8a', lapBehindColor: '#7cc0ff' },
   },
   {
     name: 'VCR',
+    sponsored: true,
+    logo: '/assets/teams/vcr.png',
     values: { background: '#000000', headerBackground: '#140000', textColor: '#ffffff', dimColor: '#a8a8a8', accent: '#e60000', playerColor: '#e60000', bestColor: '#c27bff', goodColor: '#3ddc84', badColor: '#ff5c5c', lapAheadColor: '#ffa04d', lapBehindColor: '#6cb4ff' },
   },
   {
     name: 'JWB',
+    sponsored: true,
+    logo: '/assets/teams/jwb.png',
     values: { background: '#271831', headerBackground: '#1c1024', textColor: '#ffffff', dimColor: '#c4b6d0', accent: '#ffb400', playerColor: '#ffb400', bestColor: '#e08cff', goodColor: '#3ddc84', badColor: '#ff6b6b', lapAheadColor: '#ff8a8a', lapBehindColor: '#7cc0ff' },
+  },
+  {
+    // Black, lime green and grey.
+    name: 'Nimbus Motorsport',
+    sponsored: true,
+    logo: '/assets/teams/nimbus-motorsport.png',
+    values: { background: '#000000', headerBackground: '#121410', textColor: '#ffffff', dimColor: '#a5a5a5', accent: '#85ff00', playerColor: '#85ff00', bestColor: '#c27bff', goodColor: '#85ff00', badColor: '#ff5c5c', lapAheadColor: '#ff8a8a', lapBehindColor: '#7cc0ff' },
   },
   {
     name: 'Light',

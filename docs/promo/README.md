@@ -13,3 +13,24 @@ Ultimate are named as the games the app works with; no game artwork or footage i
 | `apex-overlays-weather-and-start-lights-1600x900.png` | 1600×900 | Feature: weather forecast and start lights |
 | `apex-overlays-two-games-1600x900.png` | 1600×900 | Feature: iRacing and Le Mans Ultimate, the settings window |
 | `apex-overlays-social-1080x1080.png` | 1080×1080 | Social posts |
+
+## Nimbus Motorsport
+
+Images of the Nimbus Motorsport theme, with the team's logo (Settings → Theme → Sponsored by Us → Nimbus Motorsport: #000000, #85FF00,
+#A5A5A5), made the same way, with the team's cars (#114, #118 and #21 in the mock race) in the
+team colour on the timing overlays (League builder → Team builder, Number colour → Team).
+
+| File | Size |
+| --- | --- |
+| `nimbus/nimbus-motorsport-hero-1920x1080.png` | 1920×1080 |
+| `nimbus/nimbus-motorsport-timing-1600x900.png` | 1600×900 |
+| `nimbus/nimbus-motorsport-track-map-1600x900.png` | 1600×900 |
+| `nimbus/nimbus-motorsport-theme-1600x900.png` | 1600×900 |
+| `nimbus/nimbus-motorsport-social-1080x1080.png` | 1080×1080 |
+
+## VCR, Gassed Up Motorsports and JWB
+
+The same five images for the VCR (Virtual Circuit Racing), Gassed Up Motorsports and JWB themes
+(Settings → Theme → Sponsored by Us), with the team's logo, and three GT3 cars of the mock race
+(#114, #118, #111) in the team colour: `vcr/vcr-*.png`, `gassed-up/gassed-up-motorsports-*.png` and `jwb/jwb-*.png`
+(hero 1920×1080; timing, track map and theme 1600×900; social 1080×1080).
