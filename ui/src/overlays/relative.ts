@@ -5,7 +5,7 @@ import type { OverlayDef } from '../lib/overlay';
 import { columns, enabledColumns, NAME_STYLES } from '../lib/settings';
 import { type Col, columnFitter, Table } from '../lib/table';
 import type { RelRow, Relative, Session } from '../lib/types';
-import { COLUMN_STYLE_SETTINGS, driverCols, extraCols, stripeColor, tireCell } from './common';
+import { COLUMN_STYLE_SETTINGS, driverCols, extraCols, STRIPE_COLOR_SETTING, stripeColor, tireCell } from './common';
 
 const COLS = [
   { id: 'pos', label: 'Class position — POS' },
@@ -67,7 +67,8 @@ export const relative: OverlayDef = {
     ...headerSettings(['time', 'sof', 'incidents']),
     { key: 'showColumnTitles', label: 'Show column titles', type: 'bool', default: true, group: 'Header' },
     { key: 'lapColors', label: 'Colour cars a lap ahead / behind', type: 'bool', default: true, group: 'Colours' },
-    { key: 'classStripe', label: 'Class colour stripe', type: 'bool', default: true, group: 'Colours' },
+    { key: 'classStripe', label: 'Colour bar by each driver', type: 'bool', default: true, group: 'Colours' },
+    { ...STRIPE_COLOR_SETTING, when: (v) => v.classStripe !== false },
     { key: 'dimPitCars', label: 'Dim cars in the pits', type: 'bool', default: true, group: 'Colours' },
   ],
   create(root, ctx) {

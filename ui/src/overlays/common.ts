@@ -281,7 +281,7 @@ export function numberChip(c: HTMLElement, label: string, r: Colored, s: Values)
 }
 
 /** The colour stripe by each row (Stripe colour setting): the number's colour, a class's or the team's. */
-export const stripeColor = (r: Colored, s: Values) => colorFrom(r, s.stripeColor === 'number' || s.stripeColor == null ? s.numberColor : s.stripeColor) || 'transparent';
+export const stripeColor = (r: Colored, s: Values) => colorFrom(r, s.stripeColor === 'number' ? s.numberColor : s.stripeColor) || 'transparent';
 
 /** Team logo cell: the full or small logo (whichever the team has when only one). */
 function teamLogoCell(c: HTMLElement, r: Driver, small: boolean) {
@@ -375,18 +375,25 @@ export function extraCols<R extends Driver & Extras>(s: Values, units: () => Uni
   ];
 }
 
+/** The colour of the bar by each driver (relative and standings). */
+export const STRIPE_COLOR_SETTING = {
+  key: 'stripeColor',
+  label: 'Colour bar by each driver',
+  type: 'select' as const,
+  default: 'class',
+  options: [
+    ['class', 'Main class colour'],
+    ['secondary', 'Secondary class colour (League builder)'],
+    ['team', 'Team colour (League builder → Team builder)'],
+    ['number', 'As the car number'],
+  ] as [string, string][],
+  help: 'Secondary class: no bar for drivers without one. Team colour: the class colour for drivers in a team with no colour, or in no team',
+  group: 'Colours',
+};
+
 /** Settings shared by every column-based overlay. */
 export const COLUMN_STYLE_SETTINGS = [
   { ...NUMBER_COLOR_SETTING, when: (v: Values) => columnOn(v, 'number'), group: 'Column style' },
-  {
-    key: 'stripeColor', when: (v: Values) => v.classStripe !== false,
-    label: 'Stripe colour',
-    type: 'select' as const,
-    default: 'number',
-    options: [['number', 'As the car number'], ['class', 'Main class colour'], ['secondary', 'Secondary class colour'], ['team', 'Team colour']] as [string, string][],
-    help: 'The coloured stripe by each row. Secondary class: no stripe for drivers without one; team colour: the class colour for a team with no colour',
-    group: 'Column style',
-  },
   { key: 'teamStyle', when: (v: Values) => columnOn(v, 'team'), label: 'Team name', type: 'select' as const, default: 'full', options: [['full', 'Full name'], ['short', 'Short name (Team builder), when set']] as [string, string][], group: 'Column style' },
   { key: 'teamLogoKind', when: (v: Values) => columnOn(v, 'teamLogo'), label: 'Team logo', type: 'select' as const, default: 'full', options: [['full', 'Full logo'], ['small', 'Small logo']] as [string, string][], help: 'From the Team builder. A team with only one of the two shows that one', group: 'Column style' },
   { key: 'flagStyle', when: (v: Values) => columnOn(v, 'flag'), label: 'Flag style', type: 'select' as const, default: 'emoji', options: [['emoji', 'Flag'], ['code', 'Country code']] as [string, string][], group: 'Column style' },
