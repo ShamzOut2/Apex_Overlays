@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.2.0
 
 ### New features
 - Lap times overlay: your last laps with their sector times, personal bests in green and the class’s fastest lap in purple, the gap to your best, and the best possible lap (your best sectors added up). The lap under way fills in sector by sector, laps through the pit lane are tagged, and in Le Mans Ultimate laps taken away for track limits are struck out
