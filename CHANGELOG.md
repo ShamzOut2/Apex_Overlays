@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.1.0
 
 ### New features
 - Secondary classes (League builder), as in the Apex Commentator app: a class running across the main ones, e.g. a Rookie Cup or a Pro-Am trophy. Each class is a main or a secondary one (Kind, or Add secondary class); secondary classes are never picked by rules, but for each driver in the roster’s new 2nd class column, and the driver keeps their main class everywhere. Switching a class’s kind moves its drivers to the other column. Re-importing a league from iRacing keeps them
