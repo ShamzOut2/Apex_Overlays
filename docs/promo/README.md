@@ -13,3 +13,17 @@ Ultimate are named as the games the app works with; no game artwork or footage i
 | `apex-overlays-weather-and-start-lights-1600x900.png` | 1600×900 | Feature: weather forecast and start lights |
 | `apex-overlays-two-games-1600x900.png` | 1600×900 | Feature: iRacing and Le Mans Ultimate, the settings window |
 | `apex-overlays-social-1080x1080.png` | 1080×1080 | Social posts |
+
+## Nimbus Motorsport
+
+Images of the Nimbus Motorsport theme (Settings → Theme → Nimbus Motorsport: #000000, #85FF00,
+#A5A5A5), made the same way, with the team's cars (#114, #118 and #21 in the mock race) in the
+team colour on the timing overlays (League builder → Team builder, Number colour → Team).
+
+| File | Size |
+| --- | --- |
+| `nimbus/nimbus-motorsport-hero-1920x1080.png` | 1920×1080 |
+| `nimbus/nimbus-motorsport-timing-1600x900.png` | 1600×900 |
+| `nimbus/nimbus-motorsport-track-map-1600x900.png` | 1600×900 |
+| `nimbus/nimbus-motorsport-theme-1600x900.png` | 1600×900 |
+| `nimbus/nimbus-motorsport-social-1080x1080.png` | 1080×1080 |

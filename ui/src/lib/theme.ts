@@ -200,6 +200,11 @@ export const PRESETS: Preset[] = [
     values: { background: '#271831', headerBackground: '#1c1024', textColor: '#ffffff', dimColor: '#c4b6d0', accent: '#ffb400', playerColor: '#ffb400', bestColor: '#e08cff', goodColor: '#3ddc84', badColor: '#ff6b6b', lapAheadColor: '#ff8a8a', lapBehindColor: '#7cc0ff' },
   },
   {
+    // Black, lime green and grey.
+    name: 'Nimbus Motorsport',
+    values: { background: '#000000', headerBackground: '#121410', textColor: '#ffffff', dimColor: '#a5a5a5', accent: '#85ff00', playerColor: '#85ff00', bestColor: '#c27bff', goodColor: '#85ff00', badColor: '#ff5c5c', lapAheadColor: '#ff8a8a', lapBehindColor: '#7cc0ff' },
+  },
+  {
     name: 'Light',
     values: { background: '#f5f7fa', headerBackground: '#e4e8ef', textColor: '#11161d', dimColor: '#5b6472', accent: '#e10600', playerColor: '#b07a00', bestColor: '#8a2be2', goodColor: '#0f9d58', badColor: '#d93025', lapAheadColor: '#c62828', lapBehindColor: '#1565c0', pitColor: '#8a8f98', warnColor: '#c77700', backgroundOpacity: 88, shadow: false },
   },

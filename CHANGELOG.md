@@ -4,6 +4,11 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### New features
+- Nimbus Motorsport theme (Settings → Theme → presets): black, lime green and grey
+
 ## 1.1.0
 
 ### New features
