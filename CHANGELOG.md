@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.0.2
 
 ### Performance
 - Driver inputs and Input graph: the scrolling trace draws only its newest sliver each tick and slides the rest along, instead of redrawing every line in full 60 times a second. It looks the same, for about a third of the drawing work (the Input graph overlay uses around 55% less CPU)
