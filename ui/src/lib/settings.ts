@@ -4,8 +4,9 @@
 export interface ColumnDef {
   id: string;
   label: string;
-  /** Works fully only in Le Mans Ultimate: shown with an LMU badge. */
-  lmu?: boolean;
+  /** For Le Mans Ultimate: shown with an LMU badge (text: the badge's tooltip, when it is
+   *  more than "Le Mans Ultimate only"). */
+  lmu?: boolean | string;
 }
 
 export interface ColumnSetting {

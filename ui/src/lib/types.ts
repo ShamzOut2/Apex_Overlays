@@ -848,10 +848,47 @@ export interface Radar {
   cars: RadarCar[];
 }
 
+/** A setting changed from the wheel (`carsettings` topic). */
+export interface CarSetting {
+  id: string;
+  value: number;
+  /** The highest step, where the game says (Le Mans Ultimate). */
+  max: number | null;
+}
+
+export interface CarSettings {
+  game: string;
+  driving: boolean;
+  items: CarSetting[];
+}
+
+/** One wheel's tyre and brake (`tyredata` topic): temperatures °C, pressure kPa, wear = tread left %. */
+export interface WheelData {
+  /** Across the tyre, left to right as seen from above. */
+  temps: [number, number, number] | null;
+  carcass: number | null;
+  pressure: number | null;
+  wear: number | null;
+  brake: number | null;
+  flat: boolean;
+}
+
+export interface TyreData {
+  game: string;
+  driving: boolean;
+  /** Read as you drive (Le Mans Ultimate), or measured at the last stop (iRacing). */
+  live: boolean;
+  optimal: number | null;
+  /** Front-left, front-right, rear-left, rear-right. */
+  wheels: [WheelData, WheelData, WheelData, WheelData] | null;
+}
+
 export interface TopicMap {
   laptimes: LapTimes;
   energy: Energy;
   radar: Radar;
+  carsettings: CarSettings;
+  tyredata: TyreData;
   forecast: Forecast;
   session: Session;
   player: Player;

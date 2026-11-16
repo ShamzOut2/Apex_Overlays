@@ -14,7 +14,7 @@ pub mod extras;
 pub mod map;
 
 use self::data::{text, ScoringInfo, VehicleScoring, VehicleTelemetry};
-use crate::model::{flags, surface, CarTel, Telemetry, MAX_CARS};
+use crate::model::{flags, surface, CarSetting, CarTel, Telemetry, WheelTel, MAX_CARS};
 use std::collections::HashMap;
 use std::fmt::Write as _;
 
@@ -408,6 +408,11 @@ pub fn apply(st: &mut State, snap: &Snapshot, tel: &mut Telemetry) -> Option<Str
             tel.virtual_energy = (t.mVirtualEnergy > 0.0).then(|| pct(t.mVirtualEnergy as f64));
             tel.battery = (t.mBatteryChargeFraction > 0.0).then(|| pct(t.mBatteryChargeFraction));
             tel.lap_invalid = t.mLapInvalidated != 0;
+            car_settings(t, &mut tel.car_settings);
+            tel.wheels = Some(wheels(t));
+            tel.tyres_live = true;
+            let opt = t.mWheels[0].mOptimalTemp;
+            tel.tyre_optimal = (opt > 0.0).then_some(if opt > 200.0 { opt - 273.15 } else { opt });
             let me = &tel.cars[tel.player_idx.max(0) as usize];
             tel.lap = me.lap;
             tel.lap_completed = me.lap_completed;
@@ -449,6 +454,9 @@ pub fn apply(st: &mut State, snap: &Snapshot, tel: &mut Telemetry) -> Option<Str
             tel.virtual_energy = None;
             tel.battery = None;
             tel.lap_invalid = false;
+            tel.car_settings.clear();
+            tel.wheels = None;
+            tel.tyre_optimal = None;
         }
     }
 
@@ -462,6 +470,47 @@ pub fn apply(st: &mut State, snap: &Snapshot, tel: &mut Telemetry) -> Option<Str
         return Some(yaml);
     }
     None
+}
+
+/// The settings changed from the wheel that the car has (a maximum of 0: the car has none).
+fn car_settings(t: &VehicleTelemetry, out: &mut Vec<CarSetting>) {
+    out.clear();
+    // The share of braking at the rear: shown as the front's %, as on the dash.
+    if t.mRearBrakeBias > 0.0 && t.mRearBrakeBias < 1.0 {
+        out.push(CarSetting { id: "brakeBias", value: ((1.0 - t.mRearBrakeBias) * 1000.0).round() as f32 / 10.0, max: None });
+    }
+    for (id, v, max) in [
+        ("abs", t.mABS, t.mABSMax),
+        ("tc", t.mTC, t.mTCMax),
+        ("tcSlip", t.mTCSlip, t.mTCSlipMax),
+        ("tcCut", t.mTCCut, t.mTCCutMax),
+        ("engineMap", t.mMotorMap, t.mMotorMapMax),
+        ("migration", t.mMigration, t.mMigrationMax),
+        ("arbFront", t.mFrontAntiSway, t.mFrontAntiSwayMax),
+        ("arbRear", t.mRearAntiSway, t.mRearAntiSwayMax),
+    ] {
+        if max > 0 {
+            out.push(CarSetting { id, value: v as f32, max: Some(max as f32) });
+        }
+    }
+}
+
+/// Tyres and brakes, live: the game sends temperatures in kelvin and tread left as 0..1.
+fn wheels(t: &VehicleTelemetry) -> [WheelTel; 4] {
+    let c = |k: f64| (k > 1.0).then_some((k - 273.15) as f32);
+    let w = t.mWheels;
+    [0, 1, 2, 3].map(|i| {
+        let wh = w[i];
+        let temps = wh.mTemperature;
+        WheelTel {
+            temps: (temps[0] > 1.0).then(|| temps.map(|k| (k - 273.15) as f32)),
+            carcass: c(wh.mTireCarcassTemperature),
+            pressure: (wh.mPressure > 0.0).then_some(wh.mPressure as f32),
+            wear: Some((wh.mWear.clamp(0.0, 1.0) * 100.0) as f32),
+            brake: c(wh.mBrakeTemp),
+            flat: wh.mFlat != 0,
+        }
+    })
 }
 
 /// Cars beside the player, as iRacing's CarLeftRight (1 clear, 2 car left, 3 car right,
@@ -953,6 +1002,35 @@ pub mod tests {
         assert!(!rel.rows.is_empty(), "the relative has cars");
         let st = crate::topics::standings(&e);
         assert_eq!(st.classes.len(), 3, "Hyper, LMP2 and GT3");
+    }
+
+    #[test]
+    fn car_settings_and_live_tyres() {
+        let mut e = crate::engine::Engine::new(crate::config::Config::default(), None);
+        e.source = "lmu";
+        let (mut st, mut snap) = (State::default(), snapshot());
+        let t = &mut snap.telemetry[1];
+        t.mRearBrakeBias = 0.452;
+        (t.mTC, t.mTCMax, t.mMotorMap, t.mMotorMapMax) = (4, 11, 2, 5);
+        let mut w = t.mWheels;
+        w[0].mTemperature = [353.15, 358.15, 363.15];
+        w[0].mPressure = 171.4;
+        w[0].mWear = 0.83;
+        w[0].mBrakeTemp = 773.15;
+        w[0].mTireCarcassTemperature = 348.15;
+        t.mWheels = w;
+        run(&mut e, &mut st, &mut snap, 2, |_| {});
+        let json = serde_json::to_string(&crate::topics::car_settings(&e)).unwrap();
+        assert_eq!(
+            json,
+            r#"{"game":"lmu","driving":true,"items":[{"id":"brakeBias","value":54.8,"max":null},{"id":"tc","value":4.0,"max":11.0},{"id":"engineMap","value":2.0,"max":5.0}]}"#,
+            "no ABS on this car"
+        );
+        let out = crate::topics::tyre_data(&e);
+        assert!(out.live);
+        let fl = out.wheels.unwrap()[0];
+        assert_eq!(fl.temps, Some([80.0, 85.0, 90.0]));
+        assert_eq!((fl.carcass, fl.pressure, fl.wear, fl.brake), (Some(75.0), Some(171.4), Some(83.0), Some(500.0)));
     }
 
     /// An engine fed from LMU scoring, `steps` updates at 5 Hz with `step` run between them.

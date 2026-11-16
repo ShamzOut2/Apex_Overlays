@@ -17,9 +17,9 @@ function columnsControl(s: Extract<SettingDef, { type: 'columns' }>, value: Colu
   const box = h('div', 'columns');
   const cols = value.map((c) => ({ ...c }));
   const label = (id: string) => s.columns.find((c) => c.id === id)?.label ?? id;
-  const lmu = (id: string) => !!s.columns.find((c) => c.id === id)?.lmu;
   const badge = (el: HTMLElement, id: string) => {
-    if (lmu(id)) el.append(lmuBadge('Every car in Le Mans Ultimate; only you in iRacing'));
+    const lmu = s.columns.find((c) => c.id === id)?.lmu;
+    if (lmu) el.append(lmuBadge(typeof lmu === 'string' ? lmu : undefined));
     return el;
   };
   const commit = () => {

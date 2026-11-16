@@ -108,6 +108,34 @@ pub fn start_lights(session_flags: u32) -> &'static str {
     }
 }
 
+/// One setting the driver changes from the wheel: brake bias, ABS, traction control, engine
+/// map... `id` names it for the overlays (see `car_settings` in the iRacing and LMU sources).
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+pub struct CarSetting {
+    pub id: &'static str,
+    pub value: f32,
+    /// The highest step, where the game says (Le Mans Ultimate).
+    pub max: Option<f32>,
+}
+
+/// One wheel's tyre and brake: front-left, front-right, rear-left, rear-right.
+#[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WheelTel {
+    /// Tread temperatures (°C) across the tyre, left to right as seen from above: the outside
+    /// edge first on the left-hand tyres, the inside edge first on the right-hand ones.
+    pub temps: Option<[f32; 3]>,
+    /// Carcass temperature (°C; Le Mans Ultimate).
+    pub carcass: Option<f32>,
+    /// Pressure, kPa (iRacing: the cold pressure set at the last stop).
+    pub pressure: Option<f32>,
+    /// Tread left, % (100 = new).
+    pub wear: Option<f32>,
+    /// Brake disc temperature (°C; Le Mans Ultimate).
+    pub brake: Option<f32>,
+    pub flat: bool,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct CarTel {
     pub lap: i32,
@@ -178,6 +206,14 @@ pub struct Telemetry {
     /// The lap in progress no longer counts (track limits; LMU).
     pub lap_invalid: bool,
     pub fuel_use_per_hour: f32,
+    /// The player's car: settings changed from the wheel (those the car has), and its tyres
+    /// and brakes. `tyres_live`: read as you drive (Le Mans Ultimate); iRacing only updates
+    /// tyre readings when the crew measures them at a stop.
+    pub car_settings: Vec<CarSetting>,
+    pub wheels: Option<[WheelTel; 4]>,
+    pub tyres_live: bool,
+    /// The tyre's ideal temperature where the game says (°C; Le Mans Ultimate).
+    pub tyre_optimal: Option<f32>,
 
     pub lap: i32,
     pub lap_completed: i32,
@@ -261,6 +297,10 @@ impl Default for Telemetry {
             battery: None,
             lap_invalid: false,
             fuel_use_per_hour: 0.0,
+            car_settings: Vec::new(),
+            wheels: None,
+            tyres_live: false,
+            tyre_optimal: None,
             lap: 0,
             lap_completed: 0,
             lap_dist_pct: 0.0,

@@ -139,6 +139,8 @@ impl Default for Config {
                 OverlayInstance { enabled: false, ..o("laptimes", "laptimes", 40, 700, 420, 260) },
                 OverlayInstance { enabled: false, ..o("energy", "energy", 1540, 420, 330, 230) },
                 OverlayInstance { enabled: false, ..o("radar", "radar", 1220, 420, 220, 260) },
+                OverlayInstance { enabled: false, ..o("carsettings", "carsettings", 760, 780, 400, 64) },
+                OverlayInstance { enabled: false, ..o("tyredata", "tyredata", 1200, 600, 330, 300) },
                 o("spotter", "spotter", 850, 520, 220, 200),
                 o("pit", "pit", 845, 300, 230, 200),
                 o("safety", "safety", 760, 160, 400, 230),
@@ -687,7 +689,7 @@ impl Config {
     /// they appear in the overlay list and the hotkeys straight away.
     pub fn add_new_kinds(&mut self) {
         let defaults = Config::default().overlays;
-        for kind in ["safety", "delta", "inputGraph", "startLights", "forecast", "laptimes", "energy", "radar"] {
+        for kind in ["safety", "delta", "inputGraph", "startLights", "forecast", "laptimes", "energy", "radar", "carsettings", "tyredata"] {
             if self.overlays.iter().any(|o| o.kind == kind) {
                 continue;
             }
@@ -928,10 +930,12 @@ mod tests {
                 ("forecast", "forecast", false),
                 ("laptimes", "laptimes", false),
                 ("energy", "energy", false),
-                ("radar", "radar", false)
+                ("radar", "radar", false),
+                ("carsettings", "carsettings", false),
+                ("tyredata", "tyredata", false)
             ]
         );
         c.add_new_kinds();
-        assert_eq!(c.overlays.len(), 9);
+        assert_eq!(c.overlays.len(), 11);
     }
 }

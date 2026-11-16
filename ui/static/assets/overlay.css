@@ -706,3 +706,52 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 /* Radar */
 .panel.radar { padding: 0; }
 .rd-canvas { width: 100%; height: 100%; display: block; }
+
+/* Car settings: the strip of settings, and the pop-up when one changes. */
+.panel.carsettings { padding: 0.35em 0.45em; justify-content: center; }
+.cs-strip { display: flex; gap: 0.35em; }
+.cs-column .cs-strip { flex-direction: column; }
+.cs-item { display: flex; align-items: baseline; gap: 0.4em; padding: 0.25em 0.6em; border-radius: 5px; background: var(--subtle); white-space: nowrap; transition: background 0.25s, box-shadow 0.25s; }
+.cs-column .cs-item { justify-content: space-between; }
+.cs-label { font-size: 0.7em; font-weight: 800; letter-spacing: 0.1em; color: var(--dim); }
+.cs-val { font-size: 1.25em; font-weight: 800; font-variant-numeric: tabular-nums; }
+.cs-max { font-size: 0.8em; color: var(--dim); font-variant-numeric: tabular-nums; }
+.cs-max:empty { display: none; }
+.cs-item.changed { background: color-mix(in srgb, var(--cs-hi) 26%, transparent); box-shadow: inset 0 0 0 1.5px var(--cs-hi); }
+.cs-item.changed .cs-val { color: var(--cs-hi); }
+.cs-pop { display: flex; align-items: center; justify-content: center; gap: 0.6em; padding: 0.2em 0.9em; border-radius: var(--radius); background: var(--header); box-shadow: inset 0 0 0 2px var(--cs-hi); white-space: nowrap; }
+.cs-pop-over .cs-pop { position: absolute; inset: 0.3em; z-index: 2; }
+.cs-pop-over.cs-popping .cs-strip { visibility: hidden; }
+.cs-pop-name { font-size: 0.85em; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+.cs-pop-val { font-size: 1.9em; font-weight: 900; color: var(--cs-hi); font-variant-numeric: tabular-nums; line-height: 1.05; }
+.cs-pop-only .cs-pop-val { font-size: 2.4em; }
+.cs-pop-max { font-size: 1em; color: var(--dim); font-variant-numeric: tabular-nums; }
+.cs-pop-max:empty { display: none; }
+.cs-empty { padding: 0.4em; font-size: 0.85em; }
+
+/* Tyre data: a 2×2 grid of wheels, each with its temperatures across the tyre. */
+.panel.tyredata { padding: 0.45em 0.55em 0.55em; gap: 0.4em; }
+.td-head { display: flex; align-items: center; justify-content: space-between; }
+.td-title { font-size: 0.75em; font-weight: 800; letter-spacing: 0.18em; color: var(--dim); }
+.td-tag { padding: 0.05em 0.45em; border-radius: 3px; background: color-mix(in srgb, var(--good) 22%, transparent); color: var(--good); font-size: 0.66em; font-weight: 800; letter-spacing: 0.1em; }
+.td-tag.stop { background: var(--subtle); color: var(--dim); }
+.td-tag:empty { display: none; }
+.td-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45em 0.6em; }
+.td-wheel { display: flex; flex-direction: column; gap: 0.22em; padding: 0.35em 0.4em 0.4em; border-radius: 5px; background: var(--subtle); }
+.td-wheel.flat { box-shadow: inset 0 0 0 1.5px var(--bad); }
+.td-wtop { display: flex; justify-content: space-between; align-items: center; }
+.td-corner { font-size: 0.7em; font-weight: 800; letter-spacing: 0.12em; color: var(--dim); }
+.td-flat { color: var(--bad); font-size: 0.66em; font-weight: 900; letter-spacing: 0.1em; }
+.td-temps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+.td-t { padding: 0.25em 0; border-radius: 3px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; background: color-mix(in srgb, var(--td-c, var(--track)) 70%, transparent); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
+.td-row { display: flex; align-items: center; gap: 0.4em; font-size: 0.82em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.td-press { justify-content: center; font-weight: 700; }
+.td-carcass, .td-brake { justify-content: center; font-weight: 700; color: var(--td-c, var(--text)); letter-spacing: 0.02em; }
+.td-k { font-size: 0.8em; font-weight: 800; letter-spacing: 0.08em; color: var(--dim); }
+.td-wearbar { flex: 1; height: 0.45em; border-radius: 3px; background: linear-gradient(90deg, var(--good) calc(var(--p, 0) * 100%), var(--track) 0); }
+.td-wear.warn .td-wearbar { background: linear-gradient(90deg, var(--warn) calc(var(--p, 0) * 100%), var(--track) 0); }
+.td-wear.bad .td-wearbar { background: linear-gradient(90deg, var(--bad) calc(var(--p, 0) * 100%), var(--track) 0); }
+.td-wear.warn .td-v { color: var(--warn); }
+.td-wear.bad .td-v { color: var(--bad); }
+.td-v { min-width: 2.6em; text-align: right; font-weight: 700; }
+.td-note { font-size: 0.85em; padding: 0.2em 0; }

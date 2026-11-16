@@ -33,11 +33,15 @@ pub enum Topic {
     Energy,
     /// Cars around you, in metres ahead and to the side.
     Radar,
+    /// Settings changed from the wheel: brake bias, ABS, TC, engine map...
+    CarSettings,
+    /// Tyre temperatures, pressures and wear, and brake temperatures.
+    TyreData,
 }
 
 impl Topic {
     // Drivers first: when they change, they reach the clients before the rows that use them.
-    pub const ALL: [Topic; 20] = [
+    pub const ALL: [Topic; 22] = [
         Topic::Drivers,
         Topic::Session,
         Topic::Player,
@@ -58,6 +62,8 @@ impl Topic {
         Topic::Laptimes,
         Topic::Energy,
         Topic::Radar,
+        Topic::CarSettings,
+        Topic::TyreData,
     ];
 
     pub fn name(self) -> &'static str {
@@ -82,6 +88,8 @@ impl Topic {
             Topic::Laptimes => "laptimes",
             Topic::Energy => "energy",
             Topic::Radar => "radar",
+            Topic::CarSettings => "carsettings",
+            Topic::TyreData => "tyredata",
         }
     }
 
@@ -98,6 +106,9 @@ impl Topic {
             Topic::Session | Topic::Fuel | Topic::Tyres | Topic::Incidents | Topic::Laptimes | Topic::Energy => 15,
             // Cars around you: 30 a second.
             Topic::Radar => 2,
+            // A change shows within a tenth of a second (only sent when something changes).
+            Topic::CarSettings => 6,
+            Topic::TyreData => 15,
             // Weather changes slowly: once a second.
             Topic::Forecast => 60,
             // Only re-sent when they change (see `publish`).
@@ -153,6 +164,8 @@ impl Topic {
             Topic::Laptimes => serde_json::to_string(&laptimes(e)),
             Topic::Energy => serde_json::to_string(&energy_out(e)),
             Topic::Radar => serde_json::to_string(&crate::engine::radar::build(e)),
+            Topic::CarSettings => serde_json::to_string(&car_settings(e)),
+            Topic::TyreData => serde_json::to_string(&tyre_data(e)),
         };
         r.unwrap_or_else(|_| "null".into())
     }
@@ -1445,6 +1458,52 @@ pub fn laptimes(e: &Engine) -> LapTimesOut {
         theoretical,
         class_best: class_best.map(r3),
     }
+}
+
+/// The player's settings changed from the wheel.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CarSettingsOut<'a> {
+    pub game: &'static str,
+    /// In the car (settings are only shown for your own car).
+    pub driving: bool,
+    pub items: &'a [model::CarSetting],
+}
+
+pub fn car_settings(e: &Engine) -> CarSettingsOut<'_> {
+    let t = &e.tel;
+    let driving = t.driving();
+    CarSettingsOut { game: e.source, driving, items: if driving { &t.car_settings } else { &[] } }
+}
+
+/// The player's tyres and brakes.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TyreDataOut {
+    pub game: &'static str,
+    pub driving: bool,
+    /// Read as you drive (Le Mans Ultimate), or as measured at the last stop (iRacing).
+    pub live: bool,
+    /// The tyre's ideal temperature where the game says (°C).
+    pub optimal: Option<f32>,
+    /// Front-left, front-right, rear-left, rear-right.
+    pub wheels: Option<[model::WheelTel; 4]>,
+}
+
+pub fn tyre_data(e: &Engine) -> TyreDataOut {
+    let t = &e.tel;
+    // Rounded to what is shown, so small wobbles are not re-sent.
+    let wheels = t.wheels.map(|ws| {
+        ws.map(|w| model::WheelTel {
+            temps: w.temps.map(|a| a.map(|v| v.round())),
+            carcass: w.carcass.map(f32::round),
+            pressure: w.pressure.map(|v| round(v, 1)),
+            wear: w.wear.map(|v| round(v, 1)),
+            brake: w.brake.map(|v| (v / 5.0).round() * 5.0),
+            flat: w.flat,
+        })
+    });
+    TyreDataOut { game: e.source, driving: t.driving(), live: t.tyres_live, optimal: t.tyre_optimal.map(f32::round), wheels }
 }
 
 /// Le Mans Ultimate's virtual energy, planned like fuel (in % of the allowance).

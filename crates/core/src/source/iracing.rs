@@ -1,7 +1,7 @@
 //! Live iRacing source (Windows). Elsewhere it simply reports "disconnected".
 
 use super::{Poll, Source};
-use crate::model::{Telemetry, MAX_CARS};
+use crate::model::{CarSetting, Telemetry, WheelTel, MAX_CARS};
 use apex_irsdk::{Row, Var, VarTable};
 
 macro_rules! vars {
@@ -39,6 +39,51 @@ vars! {
     car_est = "CarIdxEstTime", car_f2 = "CarIdxF2Time", car_pos = "CarIdxPosition", car_class_pos = "CarIdxClassPosition",
     car_pit = "CarIdxOnPitRoad", car_surface = "CarIdxTrackSurface", car_last = "CarIdxLastLapTime",
     car_best = "CarIdxBestLapTime", car_tire = "CarIdxTireCompound", car_gear = "CarIdxGear", car_rpm = "CarIdxRPM", car_flags = "CarIdxSessionFlags",
+    // Settings changed from the wheel: each car has only some of these.
+    dc_brake_bias = "dcBrakeBias", dc_peak_bias = "dcPeakBrakeBias", dc_abs = "dcABS", dc_tc = "dcTractionControl",
+    dc_tc2 = "dcTractionControl2", dc_throttle = "dcThrottleShape", dc_fuel_mix = "dcFuelMixture",
+    dc_engine_braking = "dcEngineBraking", dc_engine_power = "dcEnginePower", dc_arb_front = "dcAntiRollFront",
+    dc_arb_rear = "dcAntiRollRear", dc_weight_jacker = "dcWeightJackerRight", dc_diff_entry = "dcDiffEntry",
+    dc_diff_middle = "dcDiffMiddle", dc_diff_exit = "dcDiffExit", dc_deploy = "dcMGUKDeployMode",
+    dc_regen = "dcMGUKRegenGain", dc_boost = "dcBoostLevel",
+}
+
+/// One wheel's tyre readings (iRacing updates them when the crew measures them at a stop).
+#[derive(Default, Clone, Copy)]
+pub struct WheelVars {
+    temps: [Option<Var>; 3],
+    wear: [Option<Var>; 3],
+    cold_pressure: Option<Var>,
+}
+
+/// Front-left, front-right, rear-left, rear-right.
+pub fn wheel_vars(t: &VarTable) -> [WheelVars; 4] {
+    ["LF", "RF", "LR", "RR"].map(|w| WheelVars {
+        temps: ["CL", "CM", "CR"].map(|s| t.get(&format!("{w}temp{s}"))),
+        wear: ["L", "M", "R"].map(|s| t.get(&format!("{w}wear{s}"))),
+        cold_pressure: t.get(&format!("{w}coldPressure")),
+    })
+}
+
+/// The player's tyres: temperatures (°C, left to right), tread left and cold pressures.
+pub fn fill_wheels(w: &[WheelVars; 4], r: Row, t: &mut Telemetry) {
+    t.tyres_live = false;
+    t.tyre_optimal = None;
+    if w.iter().all(|w| w.temps[0].is_none() && w.cold_pressure.is_none()) {
+        t.wheels = None;
+        return;
+    }
+    t.wheels = Some(w.map(|w| {
+        let temps = w.temps.map(|v| r.f32(v));
+        let wear = w.wear.map(|v| r.f32(v));
+        WheelTel {
+            // All zero: not measured yet.
+            temps: temps.iter().any(|&v| v != 0.0).then_some(temps),
+            pressure: w.cold_pressure.map(|v| r.f32(Some(v))).filter(|&p| p > 0.0),
+            wear: wear.iter().any(|&v| v > 0.0).then(|| (wear.iter().sum::<f32>() / 3.0 * 100.0).clamp(0.0, 100.0)),
+            ..Default::default()
+        }
+    }));
 }
 
 /// Copy one telemetry row into the normalised model.
@@ -103,6 +148,32 @@ pub fn fill(v: &Vars, r: Row, t: &mut Telemetry) {
     t.pit_opt_repair_left = r.f32(v.pit_opt_repair_left);
     t.cam_group = r.i32(v.cam_group);
     t.cam_camera = r.i32(v.cam_camera);
+    t.car_settings.clear();
+    let dc = [
+        (v.dc_brake_bias, "brakeBias"),
+        (v.dc_peak_bias, "peakBias"),
+        (v.dc_abs, "abs"),
+        (v.dc_tc, "tc"),
+        (v.dc_tc2, "tc2"),
+        (v.dc_throttle, "throttleMap"),
+        (v.dc_fuel_mix, "fuelMix"),
+        (v.dc_engine_braking, "engineBraking"),
+        (v.dc_engine_power, "enginePower"),
+        (v.dc_arb_front, "arbFront"),
+        (v.dc_arb_rear, "arbRear"),
+        (v.dc_weight_jacker, "weightJacker"),
+        (v.dc_diff_entry, "diffEntry"),
+        (v.dc_diff_middle, "diffMiddle"),
+        (v.dc_diff_exit, "diffExit"),
+        (v.dc_deploy, "deployMode"),
+        (v.dc_regen, "regenGain"),
+        (v.dc_boost, "boost"),
+    ];
+    for (var, id) in dc {
+        if var.is_some() {
+            t.car_settings.push(CarSetting { id, value: r.f32(var), max: None });
+        }
+    }
     for (i, c) in t.cars.iter_mut().enumerate().take(MAX_CARS) {
         c.lap = r.i32_at(v.car_lap, i);
         c.lap_completed = r.i32_at(v.car_lap_completed, i);
@@ -128,6 +199,8 @@ pub struct IRacing {
     #[cfg(windows)]
     vars: Vars,
     #[cfg(windows)]
+    wheels: [WheelVars; 4],
+    #[cfg(windows)]
     row: Vec<u8>,
     #[cfg(windows)]
     last_tick: i32,
@@ -150,6 +223,8 @@ impl IRacing {
             shm: None,
             #[cfg(windows)]
             vars: Vars::default(),
+            #[cfg(windows)]
+            wheels: Default::default(),
             #[cfg(windows)]
             row: Vec::new(),
             #[cfg(windows)]
@@ -209,6 +284,7 @@ impl Source for IRacing {
         if (h.num_vars, h.var_header_offset) != self.layout {
             self.layout = (h.num_vars, h.var_header_offset);
             self.vars = Vars::resolve(shm.vars(&h));
+            self.wheels = wheel_vars(shm.vars(&h));
         }
         let Some(tick) = shm.read_row(&mut self.row) else { return Poll::Idle };
         if tick == self.last_tick {
@@ -217,10 +293,68 @@ impl Source for IRacing {
         self.last_tick = tick;
         tel.tick = tick;
         fill(&self.vars, Row(&self.row), tel);
+        fill_wheels(&self.wheels, Row(&self.row), tel);
         let session_yaml = (h.session_info_update != self.last_session_update).then(|| {
             self.last_session_update = h.session_info_update;
             shm.session_info(&h)
         });
         Poll::Data { session_yaml }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use apex_irsdk::{VarHeader, VarType};
+
+    /// A variable table of floats, and one row holding their values.
+    fn table(vars: &[(&str, f32)]) -> (VarTable, Vec<u8>) {
+        let headers = vars
+            .iter()
+            .enumerate()
+            .map(|(i, (name, _))| VarHeader {
+                ty: VarType::Float,
+                offset: i * 4,
+                count: 1,
+                count_as_time: false,
+                name: name.to_string(),
+                desc: String::new(),
+                unit: String::new(),
+            })
+            .collect();
+        (VarTable::new(headers), vars.iter().flat_map(|(_, v)| v.to_le_bytes()).collect())
+    }
+
+    #[test]
+    fn settings_the_car_has_and_tyres_from_the_last_stop() {
+        let (vars, row) = table(&[
+            ("dcBrakeBias", 54.5),
+            ("dcABS", 3.0),
+            ("dcTractionControl", 4.0),
+            ("LFtempCL", 80.0),
+            ("LFtempCM", 85.0),
+            ("LFtempCR", 90.0),
+            ("LFwearL", 0.9),
+            ("LFwearM", 0.88),
+            ("LFwearR", 0.86),
+            ("LFcoldPressure", 165.0),
+            ("RFtempCL", 0.0),
+        ]);
+        let mut t = Telemetry::default();
+        fill(&Vars::resolve(&vars), Row(&row), &mut t);
+        fill_wheels(&wheel_vars(&vars), Row(&row), &mut t);
+        let ids: Vec<_> = t.car_settings.iter().map(|s| (s.id, s.value)).collect();
+        assert_eq!(ids, vec![("brakeBias", 54.5), ("abs", 3.0), ("tc", 4.0)]);
+        let w = t.wheels.unwrap();
+        assert_eq!(w[0].temps, Some([80.0, 85.0, 90.0]));
+        assert_eq!(w[0].pressure, Some(165.0));
+        assert!((w[0].wear.unwrap() - 88.0).abs() < 0.01);
+        assert_eq!(w[1].temps, None, "not measured yet");
+        assert!(!t.tyres_live);
+        // A car without any of these.
+        let (vars, row) = table(&[("Speed", 10.0)]);
+        fill(&Vars::resolve(&vars), Row(&row), &mut t);
+        fill_wheels(&wheel_vars(&vars), Row(&row), &mut t);
+        assert!(t.car_settings.is_empty() && t.wheels.is_none());
     }
 }
