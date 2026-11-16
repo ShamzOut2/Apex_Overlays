@@ -33,6 +33,8 @@ const COLS = [
   { id: 'pits', label: 'Pit stops — STOPS' },
   { id: 'tire', label: 'Tyre (wet/dry) — TYRE' },
   { id: 'points', label: 'League points for position — PTS' },
+  { id: 'fuelAdded', label: 'Fuel added at the last stop (LMU: every car; iRacing: you) — FUEL+' },
+  { id: 'fuelTotal', label: 'Fuel added this session (LMU: every car; iRacing: you) — FUEL Σ' },
   { id: 'seasonPoints', label: 'Championship total (projected) — CHAMP' },
 ];
 
@@ -126,7 +128,7 @@ export const standings: OverlayDef = {
       { id: 'laps', label: 'Laps', width: '2.6em', align: 'center', render: (c, r) => text(c, String(r.laps)) },
       { id: 'pits', label: 'Stops', width: '2.8em', align: 'center', render: (c, r) => text(c, r.pitStops ? String(r.pitStops) : '') },
       { id: 'tire', label: 'Tyre', width: '2.4em', align: 'center', render: (c, r) => tireCell(c, r.tireWet) },
-      ...extraCols<StandRow>(s),
+      ...extraCols<StandRow>(s, () => ctx.units),
     ];
     const order = enabledColumns(s.columns);
     let sections: Section[] = [];

@@ -10,7 +10,7 @@ const driverSample = (d: Partial<Driver & Extras>): Driver & Extras => ({
   idx: 0, number: '', name: '', abbrev: '', team: '', car: '', classId: '', className: '', classColor: '#888888', userId: 0, carId: 0,
   irating: 0, license: '', licenseColor: '#888888', club: '', flair: '', country: '', make: '', isPlayer: false, isFocus: false,
   lap: 0, stintState: 'lap', stintLap: null, bestLap: null, lastLap: null, classBest: false, lastIsPb: false, finished: false, lapsLed: 0,
-  flags: [], penalty: null, penaltyServed: false, incidents: null, irDelta: null, srDelta: null, points: null, seasonPoints: null, slowdown: null, ...d,
+  flags: [], penalty: null, penaltyServed: false, incidents: null, irDelta: null, srDelta: null, points: null, seasonPoints: null, slowdown: null, fuelAdded: null, ...d,
 });
 
 /** Shown while positioning the overlay: a stopped car ahead and a faster class behind. */

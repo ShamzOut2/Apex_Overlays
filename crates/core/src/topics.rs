@@ -700,6 +700,22 @@ pub struct Extras {
     pub season_points: Option<f32>,
     /// Serving a slow-down penalty: for how long, and the time given up so far (estimated).
     pub slowdown: Option<SlowdownOut>,
+    /// Fuel put in at pit stops, where the game tells it for this car (LMU: every car;
+    /// iRacing: only the player).
+    pub fuel_added: Option<FuelAddedOut>,
+}
+
+#[derive(Serialize, Clone, Copy)]
+#[serde(rename_all = "camelCase")]
+pub struct FuelAddedOut {
+    /// At the last stop, or so far at the stop under way.
+    pub last: f32,
+    /// Over the session.
+    pub total: f32,
+    /// "L" (litres) or "%" (of a full tank).
+    pub unit: &'static str,
+    /// Filling up now.
+    pub filling: bool,
 }
 
 #[derive(Serialize, Clone, Copy)]
@@ -744,6 +760,12 @@ pub fn extras(e: &Engine, idx: usize) -> Extras {
         slowdown: e.hist[idx]
             .slowdown_since
             .map(|since| SlowdownOut { seconds: round((e.tel.session_time - since) as f32, 1), lost: round(e.hist[idx].slowdown_lost, 1) }),
+        fuel_added: e.hist[idx].fuel_added().map(|(last, total)| FuelAddedOut {
+            last: round(last, 1),
+            total: round(total, 1),
+            unit: if e.hist[idx].fuel_litres { "L" } else { "%" },
+            filling: e.hist[idx].fuel_filling,
+        }),
     }
 }
 

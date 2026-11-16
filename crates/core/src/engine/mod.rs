@@ -100,6 +100,15 @@ pub struct CarHist {
     pub slowdown_since: Option<f64>,
     pub slowdown_lost: f32,
     slowdown_at: (f64, f32),
+    /// Fuel put in at pit stops: the amount at the last stop (or so far at this one), the
+    /// session total, and whether in litres (else % of a full tank). Lowest reading on this
+    /// pit visit and what has gone in since.
+    pub fuel_last: Option<f32>,
+    pub fuel_total: f32,
+    pub fuel_litres: bool,
+    pub fuel_filling: bool,
+    fuel_low: Option<f32>,
+    fuel_now: f32,
 }
 
 /// Where a car is in its stint, for the "stint lap" column.
@@ -112,6 +121,37 @@ pub enum Stint {
 }
 
 impl CarHist {
+    /// Fuel put in at the last stop (or so far at this one) and over the session.
+    pub fn fuel_added(&self) -> Option<(f32, f32)> {
+        if self.fuel_filling {
+            Some((self.fuel_now, self.fuel_total + self.fuel_now))
+        } else {
+            self.fuel_last.map(|l| (l, self.fuel_total))
+        }
+    }
+
+    /// Follows the fuel level through pit visits: what goes in while on pit road is added.
+    fn track_fuel(&mut self, reading: Option<(f32, bool)>, in_pits: bool) {
+        let Some((f, litres)) = reading.filter(|_| in_pits) else {
+            // Left the pit lane (or the car went to its garage): the stop is done.
+            if self.fuel_low.take().is_some() && self.fuel_filling {
+                self.fuel_last = Some(self.fuel_now);
+                self.fuel_total += self.fuel_now;
+            }
+            self.fuel_filling = false;
+            return;
+        };
+        self.fuel_litres = litres;
+        let low = self.fuel_low.map_or(f, |l| l.min(f));
+        self.fuel_low = Some(low);
+        // More than reading noise (LMU tells fuel in steps of 1/255 of a tank).
+        let step = if litres { 0.3 } else { 0.5 };
+        if f - low > step {
+            self.fuel_filling = true;
+            self.fuel_now = f - low;
+        }
+    }
+
     /// Median of the last few non-pit laps; a robust pace estimate.
     pub fn pace(&self) -> Option<f32> {
         let mut v: Vec<f32> = self.laps.iter().rev().filter(|l| !l.pit && l.time > 0.0).take(5).map(|l| l.time).collect();
@@ -907,10 +947,19 @@ impl Engine {
         let overall_leader = self.order.first().map(|r| r.idx);
         let class_leaders: Vec<usize> = self.order.iter().filter(|r| r.class_pos == 1).map(|r| r.idx).collect();
         let checkered_at = self.checkered_at;
+        // The player's own fuel in litres where the game only tells it for the player (iRacing).
+        let player = usize::try_from(self.tel.player_idx).ok();
+        let my_fuel = (self.tel.fuel_level > 0.0).then_some(self.tel.fuel_level);
         for i in 0..MAX_CARS {
             let c = &self.tel.cars[i];
             let wet = self.info.tire_is_wet(c.tire_compound);
             let h = &mut self.hist[i];
+            let fuel = match c.fuel {
+                Some(f) => Some((f * 100.0, false)),
+                None if player == Some(i) => my_fuel.map(|l| (l, true)),
+                None => None,
+            };
+            h.track_fuel(fuel, c.on_pit_road && c.in_world());
             if !c.in_world() {
                 continue;
             }
@@ -1118,6 +1167,29 @@ pub(crate) mod tests {
 
     pub fn place(e: &mut Engine, idx: usize, lap: i32, pct: f32) {
         e.tel.cars[idx] = CarTel { lap, pct, est_time: pct * 100.0, surface: surface::ON_TRACK, ..Default::default() };
+    }
+
+    #[test]
+    fn fuel_put_in_by_the_player_in_litres() {
+        let mut e = engine(2, true);
+        place(&mut e, 0, 3, 0.95);
+        place(&mut e, 1, 3, 0.50);
+        e.tel.fuel_level = 8.0;
+        e.tick();
+        // In the pit box: 41.5 litres go in, then back out on track.
+        e.tel.cars[0].on_pit_road = true;
+        for l in [8.0, 7.9, 20.0, 35.0, 49.4] {
+            e.tel.fuel_level = l;
+            e.tick();
+        }
+        assert_eq!(e.hist[0].fuel_added().map(|a| a.0), Some(41.5));
+        assert!(e.hist[0].fuel_filling);
+        e.tel.cars[0].on_pit_road = false;
+        e.tick();
+        let a = crate::topics::extras(&e, 0).fuel_added.unwrap();
+        assert_eq!((a.last, a.total, a.unit, a.filling), (41.5, 41.5, "L", false));
+        // iRacing does not tell other cars' fuel.
+        assert!(crate::topics::extras(&e, 1).fuel_added.is_none());
     }
 
     #[test]

@@ -4,6 +4,16 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### New features
+- Fuel added column on the relative and standings: how much fuel each car put in at its last pit stop (FUEL+), and in total this session (FUEL Σ), lit up while the car is filling. In Le Mans Ultimate it shows for every car, as a share of a full tank (LMU tells every car’s fuel level, or virtual energy for the classes that run on it); in iRacing it shows for you, in litres or gallons, as iRacing does not tell other cars’ fuel. Turn the columns on under Columns
+
+### Fixes
+- Le Mans Ultimate: the gaps on the relative and standings (gap, interval and the relative’s time to each car) work: they showed 0 for every car
+- Le Mans Ultimate: a car crossing the line counts its new lap straight away, so the gaps no longer jump for a moment at the line
+- Le Mans Ultimate: gaps work from the first laps of a session, before the game has an estimated lap time for the class (the class’s best lap is used)
+
 ## 1.0.0
 
 ### Improvements
