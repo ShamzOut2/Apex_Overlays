@@ -41,6 +41,11 @@ pub struct Static {
     pub flair: String,
     pub country: String,
     pub make: String,
+    /// League team (Team builder): colour (None: none set), short name and logo files.
+    pub team_color: Option<u32>,
+    pub team_short: String,
+    pub team_logo: String,
+    pub team_logo_small: String,
     pub hidden: bool,
     /// iRacing car class (iRating is calculated per iRacing class even when league classes are shown).
     pub ir_class: i64,
@@ -599,6 +604,11 @@ impl Engine {
                 continue;
             }
             let (name, team, hidden) = self.resolver.display(d);
+            let lt = self.resolver.team_of(&team);
+            let (team_color, team_short, team_logo, team_logo_small) = match lt {
+                Some(t) => (crate::league::parse_color(&t.color), t.short.trim().to_string(), t.logo.clone(), t.logo_small.clone()),
+                None => (None, String::new(), String::new(), String::new()),
+            };
             let mut class = self.resolver.class_of(d);
             if class.id.starts_with("ir") {
                 if let Some(short) = self.short_class(d) {
@@ -626,6 +636,10 @@ impl Engine {
                     .or_else(|| self.remote_countries.get(&d.user_id).cloned())
                     .unwrap_or_default(),
                 make: d.make.clone(),
+                team_color,
+                team_short,
+                team_logo,
+                team_logo_small,
                 hidden,
                 ir_class: d.class_id,
                 lic_class: d.licence().0,
@@ -1171,6 +1185,44 @@ pub(crate) mod tests {
 
     pub fn place(e: &mut Engine, idx: usize, lap: i32, pct: f32) {
         e.tel.cars[idx] = CarTel { lap, pct, est_time: pct * 100.0, surface: surface::ON_TRACK, ..Default::default() };
+    }
+
+    #[test]
+    fn league_teams_give_their_colour_short_name_and_logos() {
+        use crate::config::{League, LeagueTeam};
+        let mut e = engine(3, true);
+        let cfg = Config {
+            league_mode: "always".into(),
+            active_league: Some("l".into()),
+            leagues: vec![League {
+                id: "l".into(),
+                teams: vec![
+                    LeagueTeam {
+                        name: "Red Bull Racing".into(),
+                        short: "RBR".into(),
+                        color: "#1e41ff".into(),
+                        logo: "0123456789abcdef.png".into(),
+                        ..Default::default()
+                    },
+                    LeagueTeam { name: "No Colour GP".into(), ..Default::default() },
+                ],
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        e.set_config(cfg);
+        // iRacing's team names (team events): matched ignoring case.
+        let y = session_yaml(3, true)
+            .replace("UserName: Driver 1\n", "UserName: Driver 1\n   TeamName: red bull racing \n")
+            .replace("UserName: Driver 2\n", "UserName: Driver 2\n   TeamName: No Colour GP\n");
+        e.set_session(SessionInfo::parse(&y));
+        let s1 = e.statics[1].as_ref().unwrap();
+        assert_eq!((s1.team_color, s1.team_short.as_str(), s1.team_logo.as_str()), (Some(0x1e41ff), "RBR", "0123456789abcdef.png"));
+        assert_eq!(e.statics[2].as_ref().unwrap().team_color, None, "a team with no colour");
+        assert_eq!(e.statics[0].as_ref().unwrap().team_color, None, "no team");
+        let json = crate::topics::Topic::Drivers.build(&e);
+        assert!(json.contains(r##""teamColor":"#1e41ff","teamShort":"RBR","teamLogo":"/team-logos/0123456789abcdef.png","teamLogoSmall":"""##), "{json}");
+        assert!(json.contains(r#""teamColor":"","teamShort":"","teamLogo":"","teamLogoSmall":"""#), "{json}");
     }
 
     #[test]

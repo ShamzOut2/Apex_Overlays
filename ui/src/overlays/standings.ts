@@ -15,6 +15,7 @@ const COLS = [
   { id: 'flag', label: 'Country flag — NAT' },
   { id: 'name', label: 'Driver' },
   { id: 'team', label: 'Team' },
+  { id: 'teamLogo', label: 'Team logo (Team builder)' },
   { id: 'make', label: 'Manufacturer — MAKE' },
   { id: 'class', label: 'Class' },
   { id: 'car', label: 'Car' },

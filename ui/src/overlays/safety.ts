@@ -4,11 +4,11 @@ import type { OverlayDef } from '../lib/overlay';
 import { NAME_STYLES } from '../lib/settings';
 import { chip } from '../lib/table';
 import type { Approach, Driver, Extras, Hazard, Overtake, Safety, Status } from '../lib/types';
-import { flagEmoji, iratingCell } from './common';
+import { flagEmoji, iratingCell, NUMBER_COLOR_SETTING, numberBg } from './common';
 
 const driverSample = (d: Partial<Driver & Extras>): Driver & Extras => ({
   idx: 0, number: '', name: '', abbrev: '', team: '', car: '', classId: '', className: '', classColor: '#888888', userId: 0, carId: 0,
-  irating: 0, license: '', licenseColor: '#888888', club: '', flair: '', country: '', make: '', isPlayer: false, isFocus: false,
+  irating: 0, license: '', licenseColor: '#888888', club: '', flair: '', country: '', make: '', teamColor: '', teamShort: '', teamLogo: '', teamLogoSmall: '', isPlayer: false, isFocus: false,
   lap: 0, stintState: 'lap', stintLap: null, bestLap: null, lastLap: null, classBest: false, lastIsPb: false, finished: false, lapsLed: 0,
   flags: [], penalty: null, penaltyServed: false, incidents: null, irDelta: null, srDelta: null, points: null, seasonPoints: null, slowdown: null, fuelAdded: null, ...d,
 });
@@ -122,6 +122,7 @@ export const safety: OverlayDef = {
     { key: 'maxApproach', when: (v) => v.showApproach !== false, label: 'Cars shown at once', type: 'number', default: 1, min: 1, max: 4, group: 'Faster class behind' },
     { key: 'nameStyle', label: 'Driver name', type: 'select', default: 'full', options: NAME_STYLES, group: 'What to show' },
     { key: 'showNumber', label: 'Car number', type: 'bool', default: true, group: 'What to show' },
+    { ...NUMBER_COLOR_SETTING, when: (v) => v.showNumber !== false, group: 'What to show' },
     { key: 'showCountry', label: 'Country flag', type: 'bool', default: true, group: 'What to show' },
     { key: 'showLicense', label: 'Licence', type: 'bool', default: true, group: 'What to show' },
     { key: 'showIrating', label: 'iRating', type: 'bool', default: true, group: 'What to show' },
@@ -156,7 +157,7 @@ export const safety: OverlayDef = {
 
     const fillDriver = (c: Card, d: Driver) => {
       show(c.num, !!s.showNumber && !!d.number);
-      if (s.showNumber) chip(c.num, `#${d.number}`, d.classColor);
+      if (s.showNumber) chip(c.num, `#${d.number}`, numberBg(d, s));
       const nat = s.showCountry ? flagEmoji(d.country) : '';
       text(c.nat, nat);
       show(c.nat, !!nat);

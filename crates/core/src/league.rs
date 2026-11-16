@@ -1,7 +1,7 @@
 //! League builder: user-defined classes that override iRacing's car classes,
 //! plus per-driver display overrides.
 
-use crate::config::{League, LeagueClass};
+use crate::config::{League, LeagueClass, LeagueTeam};
 use crate::model::Driver;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -70,6 +70,16 @@ impl Resolver {
             .and_then(|l| l.driver_overrides.iter().find(|o| o.customer_id == d.user_id && !o.car_number.trim().is_empty()))
             .map(|o| o.car_number.trim().to_string())
             .unwrap_or_else(|| d.car_number.clone())
+    }
+
+    /// The league team a driver races for: by the team name shown for them (their roster
+    /// row's, else iRacing's), ignoring case and spaces at the ends.
+    pub fn team_of(&self, team_name: &str) -> Option<&LeagueTeam> {
+        let name = team_name.trim();
+        if name.is_empty() {
+            return None;
+        }
+        self.league.as_ref()?.teams.iter().find(|t| t.name.trim().eq_ignore_ascii_case(name))
     }
 
     /// (display name, team name, hidden)

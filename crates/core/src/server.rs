@@ -58,6 +58,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/session-info", get(session_info))
         .route("/api/lmu-track-maps", get(lmu_track_maps))
         .route("/api/log", get(log_file))
+        .route("/api/team-logo", axum::routing::post(upload_team_logo).layer(axum::extract::DefaultBodyLimit::max(TEAM_LOGO_MAX)))
+        .route("/team-logos/{file}", get(team_logo))
         .fallback(|s: State<AppState>, uri: Uri| async move { asset(&s, uri.path().trim_start_matches('/')) })
         .with_state(state)
 }
@@ -99,6 +101,65 @@ async fn session_info(State(s): State<AppState>) -> Response {
         return (StatusCode::NOT_FOUND, "No session yet - join a session in iRacing first").into_response();
     }
     ([(header::CONTENT_TYPE, "text/yaml; charset=utf-8"), (header::CONTENT_DISPOSITION, "attachment; filename=\"apex-session-info.yaml\"")], y).into_response()
+}
+
+/// Team logos (Team builder) are files in `<data dir>/team-logos`, named after their content
+/// so the same image is stored once and can be cached for good.
+const TEAM_LOGO_MAX: usize = 8 * 1024 * 1024;
+
+/// The kind of image in `bytes` (png, jpg, webp or svg), from its first bytes.
+pub fn image_kind(bytes: &[u8]) -> Option<&'static str> {
+    if bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
+        Some("png")
+    } else if bytes.starts_with(&[0xff, 0xd8, 0xff]) {
+        Some("jpg")
+    } else if bytes.len() > 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
+        Some("webp")
+    } else {
+        let head = String::from_utf8_lossy(&bytes[..bytes.len().min(1024)]).to_lowercase();
+        (head.trim_start().starts_with('<') && head.contains("<svg")).then_some("svg")
+    }
+}
+
+/// Stores a team logo; answers `{"file": "<name>"}` for the league's team.
+async fn upload_team_logo(State(s): State<AppState>, body: axum::body::Bytes) -> Response {
+    use sha2::{Digest, Sha256};
+    let Some(ext) = image_kind(&body) else {
+        return (StatusCode::UNSUPPORTED_MEDIA_TYPE, "Not a PNG, JPEG, WebP or SVG image").into_response();
+    };
+    let hash = Sha256::digest(&body);
+    let file = format!("{}.{ext}", hash.iter().take(8).map(|b| format!("{b:02x}")).collect::<String>());
+    let dir = s.data_dir.join("team-logos");
+    let path = dir.join(&file);
+    if !path.exists() {
+        if let Err(e) = std::fs::create_dir_all(&dir).and_then(|_| std::fs::write(&path, &body)) {
+            log::error!("could not save team logo {}: {e}", path.display());
+            return (StatusCode::INTERNAL_SERVER_ERROR, format!("Could not save the logo: {e}")).into_response();
+        }
+    }
+    ([(header::CONTENT_TYPE, "application/json")], serde_json::json!({ "file": file }).to_string()).into_response()
+}
+
+/// A team logo by its file name (only names the upload makes).
+async fn team_logo(State(s): State<AppState>, Path(file): Path<String>) -> Response {
+    let ok =
+        file.split_once('.').is_some_and(|(h, e)| h.len() == 16 && h.bytes().all(|b| b.is_ascii_hexdigit()) && matches!(e, "png" | "jpg" | "webp" | "svg"));
+    if !ok {
+        return StatusCode::BAD_REQUEST.into_response();
+    }
+    match std::fs::read(s.data_dir.join("team-logos").join(&file)) {
+        // An SVG opened on its own runs no scripts.
+        Ok(bytes) => (
+            [
+                (header::CONTENT_TYPE, mime_for(&file)),
+                (header::CACHE_CONTROL, "max-age=31536000, immutable"),
+                (header::CONTENT_SECURITY_POLICY, "script-src 'none'"),
+            ],
+            bytes,
+        )
+            .into_response(),
+        Err(_) => StatusCode::NOT_FOUND.into_response(),
+    }
 }
 
 /// User-supplied manufacturer logos: `<data dir>/logos/<make>.svg|png|webp`.
@@ -461,6 +522,8 @@ fn import_league(s: AppState, league_id: i64, season_id: Option<i64>) {
                                 None => league.driver_overrides.push(n),
                             }
                         }
+                        // Teams are built here (Team builder), not in iRacing.
+                        league.teams = existing.teams.clone();
                         if league.points.table.is_empty() {
                             league.points.table = existing.points.table.clone();
                         }
@@ -504,6 +567,34 @@ pub fn merge_json(target: &mut serde_json::Value, patch: &serde_json::Value) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[allow(clippy::result_large_err)]
+    fn team_logos_are_stored_by_content_and_served() {
+        let dir = std::env::temp_dir().join(format!("apex-team-logos-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let app = crate::start(crate::Options { data_dir: dir.clone(), mock: true, ui_dir: None, port: Some(0) }).unwrap();
+        let base = format!("http://127.0.0.1:{}", app.addr.port());
+        let png: &[u8] = b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR fake";
+        let up = |body: &[u8]| ureq::post(&format!("{base}/api/team-logo")).send_bytes(body);
+        let file = up(png).unwrap().into_json::<serde_json::Value>().unwrap()["file"].as_str().unwrap().to_string();
+        assert!(file.ends_with(".png") && file.len() == 20, "{file}");
+        // The same image again: the same file.
+        assert_eq!(up(png).unwrap().into_json::<serde_json::Value>().unwrap()["file"], file.as_str());
+        let r = ureq::get(&format!("{base}/team-logos/{file}")).call().unwrap();
+        assert_eq!(r.header("content-type"), Some("image/png"));
+        let mut got = vec![];
+        std::io::Read::read_to_end(&mut r.into_reader(), &mut got).unwrap();
+        assert_eq!(got, png);
+        // Not an image, or a name the upload does not make: refused.
+        assert!(matches!(up(b"hello"), Err(ureq::Error::Status(415, _))));
+        assert!(matches!(ureq::get(&format!("{base}/team-logos/config.json")).call(), Err(ureq::Error::Status(400, _))));
+        let svg = up(br#"<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"/>"#).unwrap().into_json::<serde_json::Value>().unwrap();
+        let svg = svg["file"].as_str().unwrap();
+        let r = ureq::get(&format!("{base}/team-logos/{svg}")).call().unwrap();
+        assert_eq!(r.header("content-security-policy"), Some("script-src 'none'"));
+        let _ = std::fs::remove_dir_all(dir);
+    }
 
     #[test]
     fn merge_patch() {

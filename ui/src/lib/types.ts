@@ -151,6 +151,11 @@ export interface Driver {
   /** ISO country code ('' if unknown); may be 'GB-SCT' style for UK nations. */
   country: string;
   make: string;
+  /** League team (Team builder): colour ('' for none), short name, logo URLs ('' for none). */
+  teamColor: string;
+  teamShort: string;
+  teamLogo: string;
+  teamLogoSmall: string;
   isPlayer: boolean;
   isFocus: boolean;
 }
@@ -494,6 +499,21 @@ export interface League {
   importedAt: string;
   /** Leave out class tags in names: "(P) Max Power" shows as "Max Power". */
   stripNameClass: boolean;
+  /** Team builder: a driver is in the team named on their roster row (or iRacing's team name). */
+  teams: LeagueTeam[];
+}
+
+export interface LeagueTeam {
+  name: string;
+  /** Used where space is tight. */
+  short: string;
+  /** "#rrggbb", or "" for none (the class colour is used instead). */
+  color: string;
+  /** Logo files (served at /team-logos/<file>), "" for none: the full logo and a small badge. */
+  logo: string;
+  logoSmall: string;
+  /** Other leagues (ids) this team is kept in step with. */
+  shared: string[];
 }
 
 export interface LeagueImport {

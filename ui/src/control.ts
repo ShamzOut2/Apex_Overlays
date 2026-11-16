@@ -2,6 +2,7 @@
 
 import { h, text } from './lib/dom';
 import { leaguesPage } from './control/leagues';
+import { teamsPage } from './control/teams';
 import { raceControlPage } from './control/racecontrol';
 import { renderUpdatePrompt } from './control/updatePrompt';
 import { renderClosePrompt } from './control/closePrompt';
@@ -55,7 +56,9 @@ if (promptMode) {
   document.body.classList.add('prompt');
 }
 
-const current = () => pages.find((p) => `#${p.id}` === location.hash) ?? pages[0];
+// Pages opened from another page rather than the sidebar (and the sidebar entry they belong to).
+const subPages: [Page, string][] = [[teamsPage, 'leagues']];
+const current = () => pages.find((p) => `#${p.id}` === location.hash) ?? subPages.find(([p]) => `#${p.id}` === location.hash)?.[0] ?? pages[0];
 
 function render() {
   if (!state.config) {
@@ -67,7 +70,8 @@ function render() {
   if (promptMode) return renderUpdatePrompt(main);
   const p = current();
   pageTopics(p.id);
-  links.forEach((a, id) => a.classList.toggle('sel', id === p.id));
+  const parent = subPages.find(([s]) => s === p)?.[1];
+  links.forEach((a, id) => a.classList.toggle('sel', id === p.id || id === parent));
   p.render(main);
 }
 

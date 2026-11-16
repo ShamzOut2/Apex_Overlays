@@ -398,6 +398,25 @@ pub struct League {
     /// Leave out the class tags some leagues put in names ("(P) Max Power" shows as
     /// "Max Power").
     pub strip_name_class: bool,
+    /// Teams (Team builder): a driver is in the team named on their roster row (or the
+    /// team iRacing gives them), matched by name.
+    pub teams: Vec<LeagueTeam>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct LeagueTeam {
+    pub name: String,
+    /// Used where space is tight.
+    pub short: String,
+    /// CSS hex colour, "" for none (the class colour is used instead).
+    pub color: String,
+    /// Logo files in the data folder's team-logos (see `server.rs`): the full logo and a small
+    /// one (a badge that reads well tiny); "" for none.
+    pub logo: String,
+    pub logo_small: String,
+    /// Other leagues (ids) this team is kept in step with.
+    pub shared: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

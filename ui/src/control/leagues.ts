@@ -9,8 +9,15 @@ import { showFlagCodes } from './flagCodes';
 import { fromCommentator, isCommentatorLeague } from './leagueImport';
 import type { Page } from './pages';
 import { download, save, state, uid, upload } from './state';
+import { arrowNav, teamsFromFile, teamsOf } from './teams';
 
 let selected = '';
+
+/** The league being edited (shared with the Team builder). */
+export const selectedLeague = () => selected;
+export function selectLeague(id: string) {
+  selected = id;
+}
 
 const RULES: [keyof ClassRules, string, 'num' | 'text', string][] = [
   ['carNumbers', 'Car numbers', 'text', '1, 7, 42'],
@@ -58,6 +65,7 @@ const newLeague = (name: string): League => ({
   seasonPoints: [],
   importedAt: '',
   stripNameClass: false,
+  teams: [],
 });
 
 function btn(label: string, fn: () => void, cls = '') {
@@ -420,7 +428,9 @@ function rosterCard(l: League, rerender: () => void) {
     };
     cell(cls);
     cell(input(o.displayName, (v) => (o.displayName = v), 'Nickname'));
-    cell(input(o.teamName, (v) => (o.teamName = v), 'Team'));
+    const team = input(o.teamName, (v) => (o.teamName = v), 'Team');
+    team.setAttribute('list', 'league-teams');
+    cell(team);
     const hide = h('input');
     hide.type = 'checkbox';
     hide.checked = o.hidden;
@@ -442,7 +452,12 @@ function rosterCard(l: League, rerender: () => void) {
     );
     table.append(tr);
   });
-  c.append(bar, l.driverOverrides.length ? table : h('p', 'dim', 'No drivers on the roster yet.'));
+  // The Team column suggests the league's teams (Team builder); a new name makes a new team.
+  const teams = h('datalist');
+  teams.id = 'league-teams';
+  for (const t of teamsOf(l)) teams.append(h('option', '', t.name));
+  arrowNav(table);
+  c.append(bar, l.driverOverrides.length ? table : h('p', 'dim', 'No drivers on the roster yet.'), teams);
   return c;
 }
 
@@ -550,14 +565,17 @@ export const leaguesPage: Page = {
           // From the commentator app: update the league with the same iRacing league ID, or add it.
           const leagueId = Number(file.league.league_id) || 0;
           const same = leagueId > 0 ? cfg.leagues.find((x) => x.iracingLeagueId === leagueId) : undefined;
+          // Teams with their logos (stored like uploaded ones).
+          const teams = await teamsFromFile({ teams: (file.league as { teams?: [] }).teams, images: (file as { images?: Record<string, string> }).images }).catch(() => []);
           if (same && confirm(`Update “${same.name || 'unnamed league'}” (iRacing league ${leagueId}) with this file?\n\nOK: update it. Cancel: add it as a new league.`)) {
             Object.assign(same, fromCommentator(file, same));
+            same.teams = teams.map((t) => ({ ...t, shared: same.teams?.find((x) => x.name.toLowerCase() === t.name.toLowerCase())?.shared ?? [] }));
             selected = same.id;
             save();
             rerender();
             return;
           }
-          return add(fromCommentator(file, newLeague(file.league.name || 'Imported league')));
+          return add({ ...fromCommentator(file, newLeague(file.league.name || 'Imported league')), teams });
         }
         const l = file as League;
         if (!l || !Array.isArray(l.classes)) return alert('That file is not a league export (from Apex Overlays or the commentator app).');
@@ -614,6 +632,7 @@ export const leaguesPage: Page = {
         save();
         rerender();
       }, 'primary'),
+      Object.assign(btn('Team builder →', () => (location.hash = '#teams')), { title: 'Teams of this league: names, short names, colours, logos and who drives for each' }),
       btn('Export league', () => download(`${l.name || 'league'}.json`, l)),
       btn('Delete league', () => {
         if (!confirm(`Delete ${l.name}?`)) return;

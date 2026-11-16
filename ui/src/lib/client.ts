@@ -31,6 +31,10 @@ const UNKNOWN_DRIVER = {
   flair: '',
   country: '',
   make: '',
+  teamColor: '',
+  teamShort: '',
+  teamLogo: '',
+  teamLogoSmall: '',
 };
 
 export class Client {

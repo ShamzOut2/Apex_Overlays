@@ -636,6 +636,11 @@ pub struct DriverInfo<'a> {
     /// ISO country code for the flag ("" if unknown).
     pub country: &'a str,
     pub make: &'a str,
+    /// League team (Team builder): colour ("" for none), short name, logo URLs ("" for none).
+    pub team_color: String,
+    pub team_short: &'a str,
+    pub team_logo: String,
+    pub team_logo_small: String,
 }
 
 #[derive(Serialize)]
@@ -667,6 +672,19 @@ pub fn driver_info(s: &Static) -> DriverInfo<'_> {
         flair: &s.flair,
         country: &s.country,
         make: &s.make,
+        team_color: s.team_color.map(hex).unwrap_or_default(),
+        team_short: &s.team_short,
+        team_logo: team_logo_url(&s.team_logo),
+        team_logo_small: team_logo_url(&s.team_logo_small),
+    }
+}
+
+/// Where the overlays load a team logo from ("" for none).
+fn team_logo_url(file: &str) -> String {
+    if file.is_empty() {
+        String::new()
+    } else {
+        format!("/team-logos/{file}")
     }
 }
 

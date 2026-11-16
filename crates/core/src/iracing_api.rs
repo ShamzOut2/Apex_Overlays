@@ -205,6 +205,7 @@ pub fn build_league(league: &Value, season: Option<&Value>, sessions: &[Value], 
         season_points,
         imported_at: String::new(),
         strip_name_class: false,
+        teams: vec![],
     }
 }
 
