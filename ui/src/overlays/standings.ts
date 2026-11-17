@@ -6,7 +6,7 @@ import { columns, enabledColumns, NAME_STYLES } from '../lib/settings';
 import { type Col, columnFitter, Table } from '../lib/table';
 import type { Session, StandClass, StandRow, Standings } from '../lib/types';
 import { classBadge } from '../lib/classBadges';
-import { classLogo, COLUMN_STYLE_SETTINGS, driverCols, extraCols, STRIPE_COLOR_SETTING, stripeColor, tireCell } from './common';
+import { classLogo, COLUMN_STYLE_SETTINGS, driverCols, extraCols, markersCell, STRIPE_COLOR_SETTING, stripeColor, tireCell } from './common';
 
 const COLS = [
   { id: 'pos', label: 'Class position — POS' },
@@ -66,6 +66,18 @@ export const standings: OverlayDef = {
     { key: 'topRows', label: 'Always show top', type: 'number', default: 3, min: 0, max: 20, group: 'Layout', help: 'The rest of the rows follow the car you are watching' },
     { key: 'columns', label: 'Columns', type: 'columns', ...columns(COLS, ['pos', 'number', 'flag', 'name', 'irating', 'gap', 'interval', 'lastLap', 'bestLap']), group: 'Columns' },
     { key: 'nameStyle', label: 'Name format', type: 'select', default: 'full', options: NAME_STYLES, group: 'Columns' },
+    {
+      key: 'markersAt',
+      label: 'Flags & penalties',
+      type: 'select',
+      default: 'name',
+      options: [
+        ['name', 'Next to the driver’s name'],
+        ['end', 'At the end of the row'],
+      ],
+      group: 'Columns',
+      help: 'Yellow, black, meatball and blue flags, SLOW, and penalties like DT or S&G',
+    },
     { key: 'gapDecimals', label: 'Gap decimals', type: 'number', default: 1, min: 0, max: 3, group: 'Columns' },
     ...COLUMN_STYLE_SETTINGS,
     ...headerSettings(['time', 'lap', 'cars']),
@@ -133,8 +145,10 @@ export const standings: OverlayDef = {
       { id: 'pits', label: 'Stops', width: '2.8em', align: 'center', render: (c, r) => text(c, r.pitStops ? String(r.pitStops) : '') },
       { id: 'tire', label: 'Tyre', width: '2.4em', align: 'center', render: (c, r) => tireCell(c, r.tireWet) },
       ...extraCols<StandRow>(s, () => ctx.units),
+      // Flags and penalties, when they go at the end of the row rather than by the name.
+      { id: 'markers', label: '', width: 'auto', align: 'right', render: (c, r) => markersCell(c, r, s) },
     ];
-    const order = enabledColumns(s.columns);
+    const order = [...enabledColumns(s.columns), ...(s.markersAt === 'end' ? ['markers'] : [])];
     let sections: Section[] = [];
     const fit = columnFitter();
     let key = '';

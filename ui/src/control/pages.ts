@@ -276,6 +276,19 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
 
   const common = commonFor(def.commonDefaults, def.fitsWidth, def.fill);
   const values = merge([...common, ...def.settings], o.settings);
+  // App-wide settings shown in this overlay's settings: their value lives in the config.
+  const sharedPath = (k: string) => def.settings.find((s) => s.key === k)?.shared;
+  const sharedAt = (path: string): [Record<string, unknown>, string] => {
+    const keys = path.split('.');
+    let obj = state.config as unknown as Record<string, unknown>;
+    for (const k of keys.slice(0, -1)) obj = obj[k] as Record<string, unknown>;
+    return [obj, keys[keys.length - 1]];
+  };
+  for (const s of def.settings) {
+    if (!s.shared) continue;
+    const [obj, k] = sharedAt(s.shared);
+    if (obj?.[k] !== undefined) values[s.key] = obj[k];
+  }
   const entries = [...def.settings.map((s) => ({ s, tab: tabOf(s, false) })), ...common.map((s) => ({ s, tab: tabOf(s, true) }))];
   const tabs = [...new Set(entries.map((e) => e.tab))].sort((a, b) => tabRank(a) - tabRank(b));
   let tab = ui.tab.get(o.id) ?? tabs[0];
@@ -286,7 +299,11 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
   let relevant = () => {};
   const onChange = (k: string, v: unknown) => {
     values[k] = v;
-    o.settings = { ...o.settings, [k]: v };
+    const path = sharedPath(k);
+    if (path) {
+      const [obj, key] = sharedAt(path);
+      obj[key] = v;
+    } else o.settings = { ...o.settings, [k]: v };
     save();
     drawTabs();
     relevant();

@@ -4,6 +4,16 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### New features
+- Fuel calculator: the number of laps in the average can be set in the calculator's own settings (the same setting as Strategy → Fuel), and the average is labelled AVG / LAP
+- Fuel calculator: the compact layout can show details under the bar too (Details under the bar): the average, laps to go and the extra details you pick
+- Standings: flags and penalties (meatball, black flag, SLOW, DT, S&G…) can go at the end of each driver's row instead of next to the name (Columns → Flags & penalties)
+
+### Fixes
+- Le Mans Ultimate no longer flickers between "connected" and "waiting" when it is not running but another program (SimHub, CrewChief…) keeps its shared memory open: the app checks the game is really running before connecting, and waits a few seconds before looking again
+
 ## 1.3.0
 
 ### New features

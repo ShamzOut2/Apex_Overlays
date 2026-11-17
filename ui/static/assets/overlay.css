@@ -425,8 +425,9 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .databox .db-label { overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 100%; }
 
 /* Flags and penalty box next to driver names */
-.c-name .marks { display: inline-flex; gap: 0.2em; flex: none; }
-.c-name .marks:empty { display: none; }
+.c-name .marks, .c-markers .marks { display: inline-flex; gap: 0.2em; flex: none; }
+.c-name .marks:empty, .c-markers .marks:empty { display: none; }
+.c-markers { display: flex; align-items: center; justify-content: flex-end; gap: 0.3em; }
 .mk { width: 1.05em; height: 0.75em; border-radius: 1px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); flex: none; }
 .mk-yellow { background: #ffd400; }
 .mk-black { background: #000; box-shadow: 0 0 0 1px #fff; }
@@ -434,9 +435,9 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .mk-repair { background: radial-gradient(circle, #ff7a00 0 34%, #000 36%); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6); }
 .mk-furled { background: linear-gradient(135deg, #fff 50%, #000 50%); }
 .mk-blue { background: linear-gradient(135deg, #0057d9 38%, #ffd400 38% 55%, #0057d9 55%); }
-.c-name .pen { flex: none; padding: 0 0.3em; border-radius: 2px; background: #000; color: #fff; border: 1px solid #fff; font-size: 0.72em; font-weight: 800; letter-spacing: 0.03em; line-height: 1.35; text-shadow: none; }
-.c-name .pen.served { background: transparent; color: var(--dim); border-color: var(--dim); }
-.c-name .pen[hidden] { display: none; }
+.c-name .pen, .c-markers .pen { flex: none; padding: 0 0.3em; border-radius: 2px; background: #000; color: #fff; border: 1px solid #fff; font-size: 0.72em; font-weight: 800; letter-spacing: 0.03em; line-height: 1.35; text-shadow: none; }
+.c-name .pen.served, .c-markers .pen.served { background: transparent; color: var(--dim); border-color: var(--dim); }
+.c-name .pen[hidden], .c-markers .pen[hidden] { display: none; }
 .c-name .pit-tag { flex: none; padding: 0 0.3em; border-radius: 2px; border: 1px solid currentColor; color: var(--dim); font-size: 0.68em; font-weight: 800; letter-spacing: 0.04em; line-height: 1.35; }
 .c-name .pit-tag[hidden] { display: none; }
 
@@ -603,7 +604,8 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .fuel .fl-hbar { flex: 1; max-width: 1.1em; min-height: 2px; border-radius: 0.15em 0.15em 0 0; background: var(--dim); opacity: 0.4; }
 .fuel .fl-hbar:last-child { background: var(--tone); opacity: 0.9; }
 /* Compact: laps, bar, fuel at the finish in one row */
-.panel.fuel.fl-compact { flex-direction: row; align-items: center; gap: 1em; padding: 0.7em 1.1em; }
+.panel.fuel.fl-compact { padding: 0.7em 1.1em; gap: 0.6em; }
+.fuel.fl-compact .fl-c-line { display: flex; align-items: center; gap: 1em; }
 .fuel.fl-compact .fl-c-left { display: flex; flex-direction: column; gap: 0.25em; }
 .fuel.fl-compact .fl-hero { font-size: 2.9em; line-height: 0.85; }
 .fuel.fl-compact .fl-bar { flex: 1; height: 0.95em; }

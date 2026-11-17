@@ -678,6 +678,10 @@ pub struct Lmu {
     /// When we last checked that the game is still running (while its data stands still).
     #[cfg(windows)]
     alive_checked: Option<std::time::Instant>,
+    /// The game was found closed (its shared memory kept open by another program): not looked
+    /// for again until then, so its last data is not taken for a running game.
+    #[cfg(windows)]
+    gone_until: Option<std::time::Instant>,
     #[cfg_attr(not(windows), allow(dead_code))]
     state: State,
     /// The track outline, built from the cars' positions.
@@ -705,6 +709,8 @@ impl Lmu {
             next_frame: std::time::Instant::now(),
             #[cfg(windows)]
             alive_checked: None,
+            #[cfg(windows)]
+            gone_until: None,
             state: State::default(),
             outline: map::MapBuilder::default(),
         }
@@ -802,6 +808,12 @@ impl super::Source for Lmu {
     #[cfg(windows)]
     fn poll(&mut self, tel: &mut Telemetry) -> super::Poll {
         use std::time::{Duration, Instant};
+        // How long to leave a closed game before looking for it again.
+        const GONE: Duration = Duration::from_secs(3);
+        if self.gone_until.is_some_and(|t| Instant::now() < t) {
+            std::thread::sleep(Duration::from_millis(250));
+            return super::Poll::Disconnected;
+        }
         if self.map.is_none() {
             // Try the mapping at most once a second.
             if self.last_open.is_some_and(|t| t.elapsed() < Duration::from_secs(1)) {
@@ -816,6 +828,16 @@ impl super::Source for Lmu {
                 std::thread::sleep(Duration::from_millis(250));
                 return super::Poll::Disconnected;
             }
+            // The shared memory is there, but another program (SimHub, CrewChief...) may be
+            // keeping it open after the game closed: only a running game counts.
+            if !Self::game_alive(self.map.as_ref().unwrap()) {
+                self.map = None;
+                self.state = State::default();
+                self.gone_until = Some(Instant::now() + GONE);
+                std::thread::sleep(Duration::from_millis(250));
+                return super::Poll::Disconnected;
+            }
+            self.gone_until = None;
             self.changed_at = Instant::now();
         }
         // 60 rows a second, like iRacing's.
@@ -844,9 +866,9 @@ impl super::Source for Lmu {
                 self.alive_checked = Some(Instant::now());
                 if !Self::game_alive(self.map.as_ref().unwrap()) {
                     self.map = None;
-                    self.last_open = None;
                     self.last_et = -1.0;
                     self.state = State::default();
+                    self.gone_until = Some(Instant::now() + GONE);
                     return super::Poll::Disconnected;
                 }
             }

@@ -24,6 +24,9 @@ interface Base {
   when?: (v: Values) => boolean;
   /** Only for Le Mans Ultimate: shown with an LMU badge. */
   lmu?: boolean;
+  /** An app-wide setting shown here too (a path in the config, e.g. "fuel.avgLaps"): edited
+   *  in one place for every overlay, not per overlay. */
+  shared?: string;
 }
 
 /** Column `id` is switched on in a columns setting (or there is no such setting). */

@@ -258,6 +258,8 @@ export interface Fuel {
   perLapLast: number | null;
   perLapMax: number | null;
   lapsSampled: number;
+  /** How many of the last clean laps the average is over. */
+  avgLaps: number;
   lapsInTank: number | null;
   usePerHour: number;
   lapsRemaining: number | null;

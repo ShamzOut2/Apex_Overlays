@@ -120,7 +120,7 @@ type NameRow = Partial<Extras> & { onPitRoad?: boolean; inWorld?: boolean };
  * black, meatball, blue, ...), a penalty box (DT / S&G 40s / +5s) and, right of the name,
  * PIT while on pit road (OUT when the car has left the world, e.g. in the garage).
  */
-function nameCell(c: HTMLElement, name: string, r: NameRow, s: Values) {
+export function nameCell(c: HTMLElement, name: string, r: NameRow, s: Values) {
   let fin = c.querySelector(':scope > .fin') as HTMLElement | null;
   let marks = c.querySelector(':scope > .marks') as HTMLElement | null;
   let pen = c.querySelector(':scope > .pen') as HTMLElement | null;
@@ -140,7 +140,14 @@ function nameCell(c: HTMLElement, name: string, r: NameRow, s: Values) {
   if (pit.hidden !== !pitText) pit.hidden = !pitText;
   const finished = s.finishFlag !== false && !!r.finished;
   if (fin.hidden !== !finished) fin.hidden = !finished;
-  const flags = s.driverFlags !== false ? (r.flags ?? []) : [];
+  // Flags and penalties at the end of the row instead (standings): none by the name.
+  markers(marks, pen, r, s, s.markersAt === 'end');
+  text(label, name);
+}
+
+/** The flags (yellow, black, meatball, blue, SLOW…) and the penalty box of a driver. */
+function markers(marks: HTMLElement, pen: HTMLElement, r: NameRow, s: Values, off = false) {
+  const flags = !off && s.driverFlags !== false ? (r.flags ?? []) : [];
   const key = flags.join();
   if (marks.dataset.k !== key) {
     marks.dataset.k = key;
@@ -155,11 +162,22 @@ function nameCell(c: HTMLElement, name: string, r: NameRow, s: Values) {
   }
   const slow = marks.querySelector(':scope > .slow-tag') as HTMLElement | null;
   if (slow && r.slowdown) slow.title = `${FLAG_TITLES.slow} · ${Math.round(r.slowdown.seconds)}s so far, about ${r.slowdown.lost.toFixed(1)}s given up`;
-  const penalty = s.penaltyBox !== false ? (r.penalty ?? '') : '';
+  const penalty = !off && s.penaltyBox !== false ? (r.penalty ?? '') : '';
   text(pen, penalty);
   if (pen.hidden !== !penalty) pen.hidden = !penalty;
   toggle(pen, 'served', !!r.penaltyServed);
-  text(label, name);
+}
+
+/** A last column with each driver's flags and penalty box (standings: "at the end of the row"). */
+export function markersCell(c: HTMLElement, r: NameRow, s: Values) {
+  let marks = c.querySelector(':scope > .marks') as HTMLElement | null;
+  let pen = c.querySelector(':scope > .pen') as HTMLElement | null;
+  if (!marks || !pen) {
+    marks = h('span', 'marks');
+    pen = h('span', 'pen');
+    c.replaceChildren(marks, pen);
+  }
+  markers(marks, pen, r, s);
 }
 
 export function driverCols<R extends Driver & Partial<Extras>>(s: Values): Col<R>[] {

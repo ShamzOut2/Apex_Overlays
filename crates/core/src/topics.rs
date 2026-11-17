@@ -1037,6 +1037,8 @@ pub struct FuelOut<'a> {
     pub per_lap_last: Option<f32>,
     pub per_lap_max: Option<f32>,
     pub laps_sampled: usize,
+    /// How many of the last clean laps the average is over (Strategy → Fuel).
+    pub avg_laps: usize,
     pub laps_in_tank: Option<f32>,
     pub use_per_hour: f32,
     pub laps_remaining: Option<f32>,
@@ -1099,6 +1101,7 @@ pub fn fuel_out(e: &Engine) -> FuelOut<'_> {
         per_lap_last: e.fuel.laps.back().map(|l| r3(l.used)),
         per_lap_max: e.fuel.max(n).map(r3),
         laps_sampled: e.fuel.laps.iter().filter(|l| l.valid).count(),
+        avg_laps: n,
         laps_in_tank: avg.filter(|a| *a > 0.0).map(|a| round(t.fuel_level / a, 2)),
         use_per_hour: round(t.fuel_use_per_hour, 2),
         laps_remaining: laps_left.map(|v| round(v, 2)),
