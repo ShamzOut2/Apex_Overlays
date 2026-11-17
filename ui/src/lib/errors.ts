@@ -24,6 +24,8 @@ export function reportErrors(client: Client, source: () => string) {
   let budget = 30;
   setInterval(() => (budget = 30), 60_000);
   const send = (level: 'error' | 'warn', message: string) => {
+    // The browser's note that a resize was handled a frame later: harmless, not an error.
+    if (message.includes('ResizeObserver loop')) return;
     const n = (seen.get(message) ?? 0) + 1;
     seen.set(message, n);
     if (n > 3 || budget <= 0) return;

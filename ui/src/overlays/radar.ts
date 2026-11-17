@@ -46,7 +46,7 @@ export const radar: OverlayDef = {
 
     const rect = (x: number, y: number, w: number, l: number, r: number) => {
       g.beginPath();
-      g.roundRect(x - w / 2, y - l / 2, w, l, r);
+      g.roundRect(x - w / 2, y - l / 2, Math.max(0, w), Math.max(0, l), Math.max(0, r));
     };
 
     let last: Radar | null = null;
@@ -61,7 +61,9 @@ export const radar: OverlayDef = {
       const d = last;
       if (!d) return;
       const range = s.range as number;
+      // A window too small to draw in (hidden, or being resized): nothing to draw.
       const scale = (H / 2 - 6 * dpr()) / range;
+      if (W < 20 || H < 20 || scale <= 0) return;
       const cx = W / 2;
       const cy = H / 2;
       const carW = 2.0 * scale;

@@ -14,6 +14,8 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - Tyre data: show one temperature per tyre instead of three: the core (carcass) temperature in Le Mans Ultimate, or the average across the tyre
 
 ### Fixes
+- Radar: no longer stops drawing with an error ("radius is negative") when its window is very small or hidden for a moment
+- The log no longer records the browser's harmless "ResizeObserver loop" note from the track map as an error
 - Closing Le Mans Ultimate now hides the overlays, even when another program (SimHub, CrewChief...) keeps its shared memory open; the app checks the game is still running when its data stops
 - Switching games: closing one and starting the other (LMU to iRacing or back) now switches to it, instead of staying with the game that was closed. iRacing closing without saying so (a crash) is noticed too
 - Le Mans Ultimate’s private qualifying: cars driving in their own qualifying sessions no longer show on the relative and radar as if they were around you. A setting under General turns this off for open qualifying, where everyone is on track together
