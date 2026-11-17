@@ -8,7 +8,7 @@ import { marketPage } from './control/market';
 import { renderUpdatePrompt } from './control/updatePrompt';
 import { renderClosePrompt } from './control/closePrompt';
 import { gameName, PAGES, type Page } from './control/pages';
-import { listen, pageTopics, state } from './control/state';
+import { listen, pageTopics, save, state } from './control/state';
 import { applyUiTheme } from './lib/theme';
 import { labsLogo } from './control/brand';
 
@@ -48,7 +48,38 @@ for (const p of pages) {
   nav.append(a);
   links.set(p.id, a);
 }
-nav.append(labsLogo('nav-labs'), conn);
+// Bottom of the sidebar: the Apex Labs logo with the game switch beside it, then the status.
+const gameSwitch = h('div', 'game-switch');
+gameSwitch.title = 'Which game to read. Auto: whichever is running';
+const GAMES: [string, string, string][] = [
+  ['auto', 'Auto', 'Whichever game is running'],
+  ['iracing', 'iRacing', 'iRacing only'],
+  ['lmu', 'LMU', 'Le Mans Ultimate only'],
+];
+const gameButtons = GAMES.map(([id, label, tip]) => {
+  const b = h('button', '', label);
+  b.title = tip;
+  b.onclick = () => {
+    if (!state.config) return;
+    state.config.game = id as 'auto' | 'iracing' | 'lmu';
+    save(true);
+    drawGameSwitch();
+  };
+  return { id, b };
+});
+gameSwitch.append(...gameButtons.map((g) => g.b));
+function drawGameSwitch() {
+  const chosen = state.config?.game ?? 'auto';
+  const running = state.status?.connected ? state.status.source : '';
+  for (const { id, b } of gameButtons) {
+    b.classList.toggle('sel', id === chosen);
+    // In Auto, the game found running is marked.
+    b.classList.toggle('live', chosen === 'auto' && id === running);
+  }
+}
+const navFoot = h('div', 'nav-foot');
+navFoot.append(labsLogo('nav-labs'), gameSwitch);
+nav.append(navFoot, conn);
 document.body.append(nav, main);
 // The desktop app opens this page as a small "update available" or "close?" window.
 const promptKind = new URLSearchParams(location.search).get('prompt');
@@ -119,6 +150,7 @@ let leagueKey = '';
 let wasInVr = false;
 let lastGame = '';
 listen((t) => {
+  if (t === 'config' || t === 'status') drawGameSwitch();
   if (t === 'config') render();
   if (t === 'status') {
     renderStatus();

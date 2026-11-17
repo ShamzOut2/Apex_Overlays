@@ -24,6 +24,11 @@ pub struct Config {
     pub units: String,
     pub theme: serde_json::Value,
     pub overlays: Vec<OverlayInstance>,
+    /// Overlay types already offered: one added in a later version joins the list (switched
+    /// off) once, and one the user deleted is not brought back. Empty in configs from before
+    /// this was kept (not the default, which lists everything for a fresh install).
+    #[serde(default)]
+    pub known_kinds: Vec<String>,
     /// Saved layouts, and the one in use ("" = none).
     pub layouts: Vec<Layout>,
     pub active_layout: String,
@@ -107,51 +112,59 @@ impl Penalty {
     }
 }
 
+/// Every overlay kind with its default place and size: where a newly added overlay starts,
+/// and what overlay types added in later versions are offered from (see `add_new_kinds`).
+pub fn catalogue() -> Vec<OverlayInstance> {
+    let o = |id: &str, kind: &str, x, y, w, h| OverlayInstance {
+        id: id.into(),
+        kind: kind.into(),
+        name: String::new(),
+        enabled: true,
+        x,
+        y,
+        width: w,
+        height: h,
+        settings: serde_json::json!({}),
+        vr_rect: None,
+    };
+    vec![
+        o("relative", "relative", 40, 380, 460, 300),
+        o("standings", "standings", 40, 40, 560, 320),
+        o("trackmap", "trackmap", 1500, 40, 340, 340),
+        o("inputs", "inputs", 760, 860, 420, 120),
+        OverlayInstance { enabled: false, ..o("inputGraph", "inputGraph", 760, 740, 360, 110) },
+        o("fuel", "fuel", 1540, 420, 300, 230),
+        o("battle", "battle", 1200, 860, 360, 150),
+        o("session", "session", 510, 10, 900, 52),
+        o("tyres", "tyres", 1540, 680, 300, 150),
+        o("flags", "flags", 860, 70, 220, 110),
+        o("startLights", "startLights", 760, 190, 400, 110),
+        OverlayInstance { enabled: false, ..o("forecast", "forecast", 1240, 520, 460, 150) },
+        OverlayInstance { enabled: false, ..o("laptimes", "laptimes", 40, 700, 420, 260) },
+        OverlayInstance { enabled: false, ..o("energy", "energy", 1540, 420, 330, 230) },
+        OverlayInstance { enabled: false, ..o("radar", "radar", 1220, 420, 220, 260) },
+        OverlayInstance { enabled: false, ..o("carsettings", "carsettings", 760, 770, 420, 72) },
+        OverlayInstance { enabled: false, ..o("tyredata", "tyredata", 1200, 600, 470, 280) },
+        o("spotter", "spotter", 850, 520, 220, 200),
+        o("pit", "pit", 845, 300, 230, 200),
+        o("safety", "safety", 760, 160, 400, 230),
+        o("delta", "delta", 760, 400, 420, 96),
+        OverlayInstance { enabled: false, ..o("incidents", "incidents", 40, 700, 340, 230) },
+        OverlayInstance { enabled: false, ..o("weather", "weather", 1240, 680, 300, 170) },
+        OverlayInstance { enabled: false, ..o("garage61", "garage61", 1540, 850, 300, 170) },
+    ]
+}
+
 impl Default for Config {
     fn default() -> Self {
-        let o = |id: &str, kind: &str, x, y, w, h| OverlayInstance {
-            id: id.into(),
-            kind: kind.into(),
-            name: String::new(),
-            enabled: true,
-            x,
-            y,
-            width: w,
-            height: h,
-            settings: serde_json::json!({}),
-            vr_rect: None,
-        };
         Self {
             version: CONFIG_VERSION,
             server: ServerConfig::default(),
             units: "auto".into(),
             theme: serde_json::json!({}),
-            overlays: vec![
-                o("relative", "relative", 40, 380, 460, 300),
-                o("standings", "standings", 40, 40, 560, 320),
-                o("trackmap", "trackmap", 1500, 40, 340, 340),
-                o("inputs", "inputs", 760, 860, 420, 120),
-                OverlayInstance { enabled: false, ..o("inputGraph", "inputGraph", 760, 740, 360, 110) },
-                o("fuel", "fuel", 1540, 420, 300, 230),
-                o("battle", "battle", 1200, 860, 360, 150),
-                o("session", "session", 510, 10, 900, 52),
-                o("tyres", "tyres", 1540, 680, 300, 150),
-                o("flags", "flags", 860, 70, 220, 110),
-                o("startLights", "startLights", 760, 190, 400, 110),
-                OverlayInstance { enabled: false, ..o("forecast", "forecast", 1240, 520, 460, 150) },
-                OverlayInstance { enabled: false, ..o("laptimes", "laptimes", 40, 700, 420, 260) },
-                OverlayInstance { enabled: false, ..o("energy", "energy", 1540, 420, 330, 230) },
-                OverlayInstance { enabled: false, ..o("radar", "radar", 1220, 420, 220, 260) },
-                OverlayInstance { enabled: false, ..o("carsettings", "carsettings", 760, 770, 420, 72) },
-                OverlayInstance { enabled: false, ..o("tyredata", "tyredata", 1200, 600, 470, 280) },
-                o("spotter", "spotter", 850, 520, 220, 200),
-                o("pit", "pit", 845, 300, 230, 200),
-                o("safety", "safety", 760, 160, 400, 230),
-                o("delta", "delta", 760, 400, 420, 96),
-                OverlayInstance { enabled: false, ..o("incidents", "incidents", 40, 700, 340, 230) },
-                OverlayInstance { enabled: false, ..o("weather", "weather", 1240, 680, 300, 170) },
-                OverlayInstance { enabled: false, ..o("garage61", "garage61", 1540, 850, 300, 170) },
-            ],
+            // A fresh install starts with no overlays: the user adds the ones they want.
+            overlays: vec![],
+            known_kinds: catalogue().into_iter().map(|o| o.kind).collect(),
             layouts: vec![],
             active_layout: String::new(),
             layout_game: String::new(),
@@ -692,8 +705,12 @@ impl Config {
     /// Overlay kinds added in later versions, set up (switched off) in existing configs so
     /// they appear in the overlay list and the hotkeys straight away.
     pub fn add_new_kinds(&mut self) {
-        let defaults = Config::default().overlays;
+        let defaults = catalogue();
         for kind in ["safety", "delta", "inputGraph", "startLights", "forecast", "laptimes", "energy", "radar", "carsettings", "tyredata"] {
+            if self.known_kinds.iter().any(|k| k == kind) {
+                continue;
+            }
+            self.known_kinds.push(kind.to_string());
             if self.overlays.iter().any(|o| o.kind == kind) {
                 continue;
             }
@@ -830,7 +847,7 @@ mod tests {
 
     #[test]
     fn each_game_keeps_its_own_overlays_and_layouts() {
-        let mut c = Config::default();
+        let mut c = Config { overlays: catalogue(), ..Config::default() };
         let n = c.overlays.len();
         // First game read: the current set becomes iRacing's.
         assert!(c.switch_game("iracing"));
@@ -853,8 +870,8 @@ mod tests {
         assert!(c.switch_game("lmu"));
         assert_eq!((c.overlays[0].x, c.layouts.len()), (222, 0), "and LMU's");
         assert_eq!(c.vr.distance, 1.5);
-        // Overlays added in a newer version join a set brought back in (switched off).
-        assert!(c.overlays.len() >= 3 && c.overlays.iter().any(|o| o.kind == "startLights" && !o.enabled));
+        // Overlays deleted from a set stay deleted when it is brought back.
+        assert_eq!(c.overlays.len(), 3);
         // Saved and loaded with the config.
         let back: Config = serde_json::from_str(&serde_json::to_string(&c).unwrap()).unwrap();
         assert_eq!(back.layout_game, "lmu");
@@ -920,8 +937,35 @@ mod tests {
     }
 
     #[test]
+    fn a_fresh_install_starts_with_no_overlays() {
+        let mut c = Config::default();
+        c.migrate();
+        assert!(c.overlays.is_empty(), "the user picks their own");
+        // Every type in the catalogue is already known: none is added behind their back.
+        c.add_new_kinds();
+        assert!(c.overlays.is_empty());
+        // A config saved by an older version (no known kinds yet) gets the newer types once,
+        // and one the user then deletes is not brought back.
+        let old = r#"{"overlays":[{"id":"relative","kind":"relative","x":0,"y":0,"width":400,"height":300}]}"#;
+        let mut c: Config = serde_json::from_str(old).unwrap();
+        assert!(c.known_kinds.is_empty());
+        c.migrate();
+        assert!(c.overlays.iter().any(|o| o.kind == "tyredata" && !o.enabled), "offered, switched off");
+        c.overlays.retain(|o| o.kind != "tyredata");
+        c.migrate();
+        assert!(!c.overlays.iter().any(|o| o.kind == "tyredata"), "deleted stays deleted");
+        let back: Config = serde_json::from_str(&serde_json::to_string(&c).unwrap()).unwrap();
+        assert!(back.known_kinds.iter().any(|k| k == "tyredata"));
+    }
+
+    #[test]
     fn new_overlay_kinds_are_added_switched_off() {
-        let mut c = Config { overlays: vec![OverlayInstance { id: "safety".into(), kind: "relative".into(), ..Default::default() }], ..Default::default() };
+        // A config from an older version: nothing offered yet.
+        let mut c = Config {
+            overlays: vec![OverlayInstance { id: "safety".into(), kind: "relative".into(), ..Default::default() }],
+            known_kinds: vec![],
+            ..Default::default()
+        };
         c.add_new_kinds();
         let added: Vec<_> = c.overlays.iter().skip(1).map(|o| (o.id.as_str(), o.kind.as_str(), o.enabled)).collect();
         assert_eq!(

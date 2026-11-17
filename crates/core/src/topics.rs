@@ -1313,7 +1313,8 @@ mod tests {
             let s = t.build(&e);
             assert!(s.starts_with('{'), "{}: {s}", t.name());
         }
-        // The default relative shows 4 cars either side: 5 of these 6 (the focus car is first).
+        // A relative overlay with its default 4 cars either side: 5 of these 6 (the focus car is first).
+        e.cfg.overlays = crate::config::catalogue();
         assert_eq!(relative(&e).rows.len(), 5);
         // With no relative overlay to size it, every car (as before).
         e.cfg.overlays.clear();

@@ -406,6 +406,28 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
   return wrap;
 }
 
+/** Where each kind of overlay goes by default on a 1920×1080 screen (as the app's catalogue). */
+const PLACES: Record<string, [number, number]> = {
+  relative: [40, 380], standings: [40, 40], trackmap: [1500, 40], inputs: [760, 860], inputGraph: [760, 740], fuel: [1540, 420],
+  battle: [1200, 860], session: [510, 10], tyres: [1540, 680], flags: [860, 70], startLights: [760, 190], forecast: [1240, 520],
+  laptimes: [40, 700], energy: [1540, 420], radar: [1220, 420], carsettings: [760, 770], tyredata: [1200, 600], spotter: [850, 520],
+  pit: [845, 300], safety: [760, 160], delta: [760, 400], incidents: [40, 700], weather: [1240, 680], databox: [1240, 300], monitor: [1680, 40],
+};
+
+/** A new overlay's place: its usual spot (fitted to this screen), moved along a little if another overlay is already there. */
+function placeFor(kind: string, existing: OverlayInstance[]): [number, number] {
+  const [px, py] = PLACES[kind] ?? [200, 200];
+  const sx = window.screen.width / 1920;
+  const sy = window.screen.height / 1080;
+  let x = Math.round(px * sx);
+  let y = Math.round(py * sy);
+  for (let i = 0; i < 10 && existing.some((o) => Math.abs(o.x - x) < 24 && Math.abs(o.y - y) < 24); i++) {
+    x += 32;
+    y += 32;
+  }
+  return [x, y];
+}
+
 /** Pick an overlay to add, with what each one does. */
 function addOverlayDialog(onAdd: (kind: string) => void) {
   const back = h('div', 'modal-back');
@@ -641,7 +663,8 @@ const overlaysPage: Page = {
 
     const addOverlay = (kind: string) => {
       const d = byKind(kind)!;
-      const o: OverlayInstance = { id: uid(d.kind), kind: d.kind, name: '', enabled: true, x: 200, y: 200, width: d.size[0], height: d.size[1], settings: {} };
+      const [x, y] = placeFor(kind, cfg.overlays);
+      const o: OverlayInstance = { id: uid(d.kind), kind: d.kind, name: '', enabled: true, x, y, width: d.size[0], height: d.size[1], settings: {} };
       cfg.overlays.push(o);
       selected = o.id;
       ui.tab.delete(o.id);
@@ -687,7 +710,19 @@ const overlaysPage: Page = {
     }
     const sel = cfg.overlays.find((o) => o.id === selected);
     const main = h('div', 'ov-main');
-    main.append(sel ? overlayEditor(sel, rerender) : h('p', 'dim', 'No overlays yet — press “Add overlay”.'));
+    if (sel) main.append(overlayEditor(sel, rerender));
+    else {
+      // A fresh start: nothing yet, and two ways in.
+      const empty = h('section', 'card ov-empty');
+      const actions = h('div', 'toolbar');
+      actions.append(button('＋ Add overlay', () => addOverlayDialog(addOverlay), 'primary'), button('Browse the Layout Market', () => (location.hash = '#market')));
+      empty.append(
+        h('h2', '', 'No overlays yet'),
+        h('p', 'dim', 'Add the overlays you want, one at a time, or start from a whole layout someone has shared. You can move and resize them in Edit mode.'),
+        actions,
+      );
+      main.append(empty);
+    }
     const wrap = h('div', 'ov-layout');
     wrap.append(list, main);
     el.replaceChildren(bar, ...gameStrip(rerender), wrap);
