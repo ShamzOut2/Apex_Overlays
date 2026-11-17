@@ -73,7 +73,7 @@ export const standings: OverlayDef = {
       default: 'name',
       options: [
         ['name', 'Next to the driver’s name'],
-        ['end', 'At the end of the row'],
+        ['end', 'Outside the table, on the right'],
       ],
       group: 'Columns',
       help: 'Yellow, black, meatball and blue flags, SLOW, and penalties like DT or S&G',
@@ -107,7 +107,15 @@ export const standings: OverlayDef = {
     const overall = s.mode === 'overall';
     const header = sessionHeader(s, 'Standings', () => ctx.units);
     const body = h('div', 'sections');
-    root.append(header.el, body);
+    // Flags and penalties outside the table: the table on a card of its own, the markers
+    // just past its right edge, on the overlay's clear background.
+    const outside = s.markersAt === 'end';
+    if (outside) {
+      root.classList.add('mk-outside');
+      const card = h('div', 'st-card');
+      card.append(header.el, body);
+      root.append(card);
+    } else root.append(header.el, body);
 
     const cols: Col<StandRow>[] = [
       { id: 'pos', label: 'Pos', width: '2.4em', align: 'center', render: (c, r) => text(c, String(r.classPosition)) },
@@ -145,8 +153,8 @@ export const standings: OverlayDef = {
       { id: 'pits', label: 'Stops', width: '2.8em', align: 'center', render: (c, r) => text(c, r.pitStops ? String(r.pitStops) : '') },
       { id: 'tire', label: 'Tyre', width: '2.4em', align: 'center', render: (c, r) => tireCell(c, r.tireWet) },
       ...extraCols<StandRow>(s, () => ctx.units),
-      // Flags and penalties, when they go at the end of the row rather than by the name.
-      { id: 'markers', label: '', width: 'auto', align: 'right', render: (c, r) => markersCell(c, r, s) },
+      // Flags and penalties outside the table: placed past the row's end (see .mk-outside).
+      { id: 'markers', label: '', width: '0px', render: (c, r) => markersCell(c, r, s) },
     ];
     const order = [...enabledColumns(s.columns), ...(s.markersAt === 'end' ? ['markers'] : [])];
     let sections: Section[] = [];

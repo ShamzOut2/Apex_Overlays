@@ -804,3 +804,10 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .td-compact .td-info { display: none; }
 .td-compact .td-card { padding: 0.5em; background: none; }
 .td-note { font-size: 0.85em; padding: 0.2em 0; }
+
+/* Standings: flags and penalties outside the table, level with each driver's row. */
+.panel.mk-outside { background: transparent; border: none; box-shadow: none; overflow: visible; }
+.mk-outside > .st-card { display: flex; flex-direction: column; flex: 1; min-height: 0; margin-right: 7.5em; background: var(--bg); border: var(--border); border-radius: var(--radius); }
+.panel.auto-height.mk-outside > .st-card { flex: none; }
+.mk-outside .sections, .mk-outside .table, .mk-outside .body { overflow: visible; }
+.mk-outside .cell.c-markers { position: absolute; left: calc(100% + 0.5em); top: 0; bottom: 0; display: flex; align-items: center; gap: 0.3em; overflow: visible; }
