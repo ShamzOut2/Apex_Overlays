@@ -12,7 +12,8 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - Standings: flags and penalties (meatball, black flag, SLOW, DT, S&G…) can sit outside the table, just past the right edge of each driver's row, instead of next to the name (Columns → Flags & penalties)
 
 ### Fixes
-- The SLOW badge (standings, relative, safety alert) has its word centred
+- Text badges next to drivers have their words centred: SLOW, penalties (DT, S&G 40s, +5s…) and PIT
+- The flag markers without text (meatball, black, blue, yellow, chequered) are a little bigger
 - Le Mans Ultimate no longer flickers between "connected" and "waiting" when it is not running but another program (SimHub, CrewChief…) keeps its shared memory open: the app checks the game is really running before connecting, and waits a few seconds before looking again
 
 ## 1.3.0

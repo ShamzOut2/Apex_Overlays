@@ -338,7 +338,7 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .session-badge[data-type='practice'], .session-badge[data-type='warmup'] { background: var(--good); color: var(--on-good, #0b0e13); }
 .c-name { display: flex; align-items: center; gap: 0.35em; }
 .c-name .nm { overflow: hidden; text-overflow: ellipsis; }
-.fin { flex: none; width: 1.05em; height: 0.75em; border-radius: 1px; background: repeating-conic-gradient(#111 0 25%, #fff 0 50%) 0 0 / 0.35em 0.35em; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
+.fin { flex: none; width: 1.25em; height: 0.9em; border-radius: 1px; background: repeating-conic-gradient(#111 0 25%, #fff 0 50%) 0 0 / 0.42em 0.42em; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
 .fin[hidden] { display: none; }
 .pb { color: var(--good) !important; }
 .c-name .nm { min-width: 0; white-space: nowrap; }
@@ -428,17 +428,17 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .c-name .marks, .c-markers .marks { display: inline-flex; gap: 0.2em; flex: none; }
 .c-name .marks:empty, .c-markers .marks:empty { display: none; }
 .c-markers { display: flex; align-items: center; justify-content: flex-end; gap: 0.3em; }
-.mk { width: 1.05em; height: 0.75em; border-radius: 1px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); flex: none; }
+.mk { width: 1.25em; height: 0.9em; border-radius: 1px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); flex: none; }
 .mk-yellow { background: #ffd400; }
 .mk-black { background: #000; box-shadow: 0 0 0 1px #fff; }
 .mk-disqualify { background: linear-gradient(45deg, transparent 42%, #fff 42% 58%, transparent 58%), linear-gradient(-45deg, #000 42%, #fff 42% 58%, #000 58%); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7); }
 .mk-repair { background: radial-gradient(circle, #ff7a00 0 34%, #000 36%); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6); }
 .mk-furled { background: linear-gradient(135deg, #fff 50%, #000 50%); }
 .mk-blue { background: linear-gradient(135deg, #0057d9 38%, #ffd400 38% 55%, #0057d9 55%); }
-.c-name .pen, .c-markers .pen { flex: none; padding: 0 0.3em; border-radius: 2px; background: #000; color: #fff; border: 1px solid #fff; font-size: 0.72em; font-weight: 800; letter-spacing: 0.03em; line-height: 1.35; text-shadow: none; }
+.c-name .pen, .c-markers .pen { flex: none; display: inline-flex; align-items: center; justify-content: center; padding: 0.3em 0.32em 0.3em 0.35em; border-radius: 2px; background: #000; color: #fff; border: 1px solid #fff; font-size: 0.72em; font-weight: 800; letter-spacing: 0.03em; line-height: 1; text-box: trim-both cap alphabetic; text-shadow: none; }
 .c-name .pen.served, .c-markers .pen.served { background: transparent; color: var(--dim); border-color: var(--dim); }
 .c-name .pen[hidden], .c-markers .pen[hidden] { display: none; }
-.c-name .pit-tag { flex: none; padding: 0 0.3em; border-radius: 2px; border: 1px solid currentColor; color: var(--dim); font-size: 0.68em; font-weight: 800; letter-spacing: 0.04em; line-height: 1.35; }
+.c-name .pit-tag { flex: none; display: inline-flex; align-items: center; justify-content: center; padding: 0.3em 0.32em 0.3em 0.36em; border-radius: 2px; border: 1px solid currentColor; color: var(--dim); font-size: 0.68em; font-weight: 800; letter-spacing: 0.04em; line-height: 1; text-box: trim-both cap alphabetic; }
 .c-name .pit-tag[hidden] { display: none; }
 
 /* Spotter */
