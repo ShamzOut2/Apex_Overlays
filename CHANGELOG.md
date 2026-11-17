@@ -13,7 +13,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 
 ### Fixes
 - Text badges next to drivers have their words centred: SLOW, penalties (DT, S&G 40s, +5s…) and PIT
-- The flag markers without text (meatball, black, blue, yellow, chequered) are a little bigger
+- The flag markers without text (meatball, black, blue, yellow, chequered, disqualified) are bigger and redrawn as sharp vector flags with a light sheen, crisp at any size or screen scaling
 - Flags next to a driver's name no longer have the left edge of their outline cut off
 - Le Mans Ultimate no longer flickers between "connected" and "waiting" when it is not running but another program (SimHub, CrewChief…) keeps its shared memory open: the app checks the game is really running before connecting, and waits a few seconds before looking again
 
