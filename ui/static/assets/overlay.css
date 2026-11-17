@@ -567,7 +567,7 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .dl-ref { font-size: 0.8em; color: var(--dim); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* SLOW: a car serving a slow-down penalty (iRacing's furled black flag). */
-.slow-tag { display: inline-block; padding: 0 0.3em; border-radius: 3px; background: #ff9f1a; color: #111; font-size: 0.72em; font-weight: 800; letter-spacing: 0.04em; line-height: 1.35; text-shadow: none; flex: none; }
+.slow-tag { display: inline-flex; align-items: center; justify-content: center; padding: 0.3em 0.32em 0.3em 0.36em; border-radius: 3px; background: #ff9f1a; color: #111; font-size: 0.72em; font-weight: 800; letter-spacing: 0.04em; line-height: 1; text-box: trim-both cap alphabetic; text-shadow: none; flex: none; }
 .sa-card.sa-overtake { --edge: #ff9f1a; }
 .sa-icon .sa-slow { font-size: 1.15em; padding: 0.15em 0.35em; animation: sa-blink 1s ease-in-out infinite; }
 .safety.still .sa-slow { animation: none; }
