@@ -1575,6 +1575,7 @@ const generalPage: Page = {
       shortClassNames: cfg.shortClassNames,
       updateRate: cfg.updateRate ?? 'balanced',
       closeAction: cfg.closeAction ?? 'ask',
+      lmuPrivateQualifying: cfg.lmuPrivateQualifying ?? true,
     };
     el.replaceChildren(
       card(
@@ -1596,6 +1597,15 @@ const generalPage: Page = {
               type: 'bool',
               default: true,
               help: 'From the community Lovely Car Classes and Car Data lists; leagues use their own class names',
+              group: 'Display',
+            },
+            {
+              key: 'lmuPrivateQualifying',
+              label: 'Qualifying is private: leave other cars off the relative and radar',
+              type: 'bool',
+              default: true,
+              lmu: true,
+              help: 'In private qualifying (the default in Le Mans Ultimate’s online races) each driver is alone on track, so cars shown near you are not really there. Turn off for open qualifying, where everyone is on track together',
               group: 'Display',
             },
             {
@@ -1635,6 +1645,7 @@ const generalPage: Page = {
             if (k === 'shortClassNames') cfg.shortClassNames = v as boolean;
             if (k === 'updateRate') cfg.updateRate = v as 'fast' | 'balanced' | 'full';
             if (k === 'closeAction') cfg.closeAction = v as 'ask' | 'quit' | 'keep';
+            if (k === 'lmuPrivateQualifying') cfg.lmuPrivateQualifying = v as boolean;
             save();
           },
         ),

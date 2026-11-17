@@ -193,6 +193,8 @@ export interface Extras {
   /** Fuel put in at stops (LMU: every car; iRacing: only the player): at the last stop (or so
    *  far at this one) and over the session, in litres ("L") or % of a full tank ("%"). */
   fuelAdded: { last: number; total: number; unit: 'L' | '%'; filling: boolean } | null;
+  /** Fuel or virtual energy left (LMU: every car; iRacing: you). */
+  fuelLeft: { value: number; unit: 'L' | '%'; energy: boolean } | null;
 }
 
 export interface RelRow extends Driver, Extras {
@@ -597,6 +599,8 @@ export interface Config {
   updateRate: 'fast' | 'balanced' | 'full';
   /** Which game to read: whichever is running, or one chosen by hand. */
   game?: 'auto' | 'iracing' | 'lmu';
+  /** Le Mans Ultimate's qualifying is private: other cars left off the relative and radar. */
+  lmuPrivateQualifying?: boolean;
   /** Closing the settings window: ask, close everything, or keep the overlays running. */
   closeAction: 'ask' | 'quit' | 'keep';
 }

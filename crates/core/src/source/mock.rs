@@ -560,6 +560,10 @@ impl Mock {
             ct.est_time = (self.track.est_time(pct) * CLASSES[c.class].3) as f32;
             ct.position = pos as i32 + 1;
             ct.class_position = class_counts[c.class];
+            // Every car's fuel, as Le Mans Ultimate gives it; the top class on virtual energy.
+            let tank = (c.fuel / CLASSES[c.class].4).clamp(0.0, 1.0) as f32;
+            ct.fuel = Some(tank);
+            ct.energy = (c.class == 0).then_some(tank * 94.0);
             ct.on_pit_road = matches!(c.pit, Pit::Lane { .. } | Pit::Stopped(_)) && !(PIT_EXIT..PIT_ENTRY).contains(&pct);
             let heading_in = matches!(c.pit, Pit::Requested) && (PIT_ENTRY - 0.02..PIT_ENTRY).contains(&pct);
             ct.surface = if matches!(c.pit, Pit::Stopped(_)) {

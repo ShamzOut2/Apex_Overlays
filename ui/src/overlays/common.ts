@@ -370,6 +370,20 @@ export function extraCols<R extends Driver & Extras>(s: Values, units: () => Uni
         toggle(c, 'filling', !!a?.filling);
       },
     },
+    {
+      id: 'fuelLeft',
+      label: 'Fuel',
+      width: '3.4em',
+      align: 'center',
+      render: (c, r) => {
+        const l = r.fuelLeft;
+        text(c, l ? fuelText(l.value, l.unit, units()) : '');
+        // Virtual energy in its own colour; running low (under 10% of a tank) in red.
+        toggle(c, 'fuel-ve', !!l?.energy);
+        toggle(c, 'fuel-low', !!l && l.unit === '%' && l.value < 10);
+        c.title = l ? (l.energy ? 'Virtual energy left' : 'Fuel left') : '';
+      },
+    },
     { id: 'fuelTotal', label: 'Fuel Σ', width: '3.4em', align: 'center', render: (c, r) => text(c, r.fuelAdded ? fuelText(r.fuelAdded.total, r.fuelAdded.unit, units()) : '') },
     { id: 'seasonPoints', label: 'Champ', width: '3.2em', align: 'center', render: (c, r) => text(c, r.seasonPoints == null ? '' : String(+r.seasonPoints.toFixed(1))) },
   ];

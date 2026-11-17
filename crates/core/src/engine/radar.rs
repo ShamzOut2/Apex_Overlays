@@ -49,8 +49,11 @@ pub fn build(e: &Engine) -> RadarOut {
     if !mine.in_world() || mine.surface == surface::IN_PIT_STALL {
         return out;
     }
-    // Positions come only from Le Mans Ultimate.
+    // Positions come only from Le Mans Ultimate; in its private qualifying nobody is around.
     let Some([px, pz]) = mine.pos else { return out };
+    if e.alone_on_track() {
+        return out;
+    }
     out.active = true;
     let car = |idx: usize, x: f32, y: f32| {
         let s = e.static_of(idx);

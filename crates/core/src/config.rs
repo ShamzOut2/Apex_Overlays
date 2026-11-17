@@ -65,6 +65,9 @@ pub struct Config {
     pub update_rate: String,
     /// Which game to read: "auto" (whichever is running), "iracing" or "lmu" (Le Mans Ultimate).
     pub game: String,
+    /// Le Mans Ultimate's qualifying is private (each driver alone on track, the default in
+    /// its online races): other cars are left off the relative and the radar then.
+    pub lmu_private_qualifying: bool,
     /// Closing the settings window: "ask", "quit" (overlays close too) or "keep" (overlays
     /// keep running, the app stays in the tray).
     pub close_action: String,
@@ -175,6 +178,7 @@ impl Default for Config {
             update_rate: "balanced".into(),
             game: "auto".into(),
             close_action: "ask".into(),
+            lmu_private_qualifying: true,
         }
     }
 }
