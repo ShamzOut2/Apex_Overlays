@@ -73,6 +73,16 @@ async fn market_layout(Path(id): Path<String>) -> axum::response::Response {
     }
 }
 
+async fn market_preview(Path(file): Path<String>) -> axum::response::Response {
+    use axum::response::IntoResponse;
+    match tokio::task::spawn_blocking(move || crate::market::preview(&file)).await {
+        Ok(Ok(Some(body))) => ([(axum::http::header::CONTENT_TYPE, "image/jpeg"), (axum::http::header::CACHE_CONTROL, "max-age=86400")], body).into_response(),
+        Ok(Ok(None)) => axum::http::StatusCode::NOT_FOUND.into_response(),
+        Ok(Err(e)) => (axum::http::StatusCode::BAD_GATEWAY, e).into_response(),
+        Err(_) => axum::http::StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+}
+
 pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/", get(|s: State<AppState>| async move { asset(&s, "control.html") }))
@@ -86,6 +96,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/lmu-track-maps", get(lmu_track_maps))
         .route("/api/market", get(market_index))
         .route("/api/market/{id}", get(market_layout))
+        .route("/api/market/preview/{file}", get(market_preview))
         .route("/api/log", get(log_file))
         .route("/api/team-logo", axum::routing::post(upload_team_logo).layer(axum::extract::DefaultBodyLimit::max(TEAM_LOGO_MAX)))
         .route("/team-logos/{file}", get(team_logo))

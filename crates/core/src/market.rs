@@ -18,6 +18,7 @@ fn raw() -> String {
 const CACHE: Duration = Duration::from_secs(120);
 /// A layout bigger than this is not one the Action would have published.
 const MAX_BYTES: u64 = 512 * 1024;
+const MAX_IMAGE: u64 = 4 * 1024 * 1024;
 
 static INDEX: Mutex<Option<(Instant, String)>> = Mutex::new(None);
 
@@ -62,6 +63,23 @@ pub fn layout(id: &str) -> Result<Option<String>, String> {
     get(&format!("{}/layouts/{id}.json", raw()))
 }
 
+/// A preview image (`previews/<id>-<n>.jpg`, as the index names it), rendered by the Action.
+pub fn preview(file: &str) -> Result<Option<Vec<u8>>, String> {
+    let ok = file.strip_suffix(".jpg").is_some_and(valid_id);
+    if !ok {
+        return Ok(None);
+    }
+    match crate::net::agent().get(&format!("{}/previews/{file}", raw())).call() {
+        Ok(r) => {
+            let mut body = Vec::new();
+            r.into_reader().take(MAX_IMAGE).read_to_end(&mut body).map_err(|e| e.to_string())?;
+            Ok(Some(body))
+        }
+        Err(ureq::Error::Status(404, _)) => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 /// Web pages the settings window may open: the app's own repository (the share form, a
 /// layout's page).
 pub fn may_open(url: &str) -> bool {
@@ -76,6 +94,8 @@ mod tests {
     fn ids_and_links() {
         assert!(valid_id("42") && valid_id("abc-1"));
         assert!(!valid_id("") && !valid_id("../x") && !valid_id("a/b"));
+        assert_eq!(preview("../index.json").unwrap(), None, "only preview images");
+        assert_eq!(preview("7-x/y.jpg").unwrap(), None);
         assert!(may_open("https://github.com/ShamzOut2/Apex_Overlays/issues/new?template=share-layout.yml&title=Layout"));
         assert!(!may_open("https://github.com/ShamzOut2/Apex_Overlays"), "the repository's own pages only");
         assert!(!may_open("https://example.com/ShamzOut2/Apex_Overlays/"));

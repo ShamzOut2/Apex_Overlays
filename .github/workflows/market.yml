@@ -1,8 +1,9 @@
 name: Layout Market
 
 # Publishes layouts shared through the "Share a layout" issue form to the `market` branch,
-# which the app reads (index.json and layouts/<id>.json). An edit updates the layout; the
-# `remove` label takes it off the market.
+# which the app reads (index.json, layouts/<id>.json, previews/<id>-*.jpg). An edit updates
+# the layout; the `remove` label takes it off the market. After publishing, the app is built
+# and a preview image of the layout is rendered with simulated race data.
 on:
   issues:
     types: [opened, edited, labeled]
@@ -22,12 +23,44 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: .github/market
           path: app
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Check and publish
+        id: publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node app/.github/market/publish.mjs
+
+      # The preview image: only for a layout just published or updated.
+      - name: Build the UI
+        if: steps.publish.outputs.id != ''
+        working-directory: app/ui
+        run: |
+          npm ci
+          npm run build
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.publish.outputs.id != ''
+      - uses: Swatinem/rust-cache@v2
+        if: steps.publish.outputs.id != ''
+        with:
+          workspaces: app
+          shared-key: market-preview
+      - name: Build the app's server
+        if: steps.publish.outputs.id != ''
+        working-directory: app
+        run: cargo build --release -p apex-overlays-server
+      - name: Install a browser
+        if: steps.publish.outputs.id != ''
+        run: |
+          npm install --prefix render --no-save playwright@1.49.1
+          render/node_modules/.bin/playwright install --with-deps chromium
+      - name: Render the preview
+        if: steps.publish.outputs.id != ''
+        continue-on-error: true
+        env:
+          MARKET_ID: ${{ steps.publish.outputs.id }}
+          APP_DIR: app
+          PLAYWRIGHT_DIR: render
+        run: node app/.github/market/render.mjs

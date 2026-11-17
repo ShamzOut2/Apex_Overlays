@@ -4,7 +4,7 @@
 // ever parsed as data here, never passed to a shell.
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 
@@ -148,10 +148,19 @@ function decode(code) {
   }
   const version = /^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(String(data.version)) ? String(data.version) : '';
   if (!version) return { error: 'The share code has no app version: make it again with the app.' };
+  // The game it is for and the screen it fits are required (the app asks for both).
   const game = data.game === 'iracing' || data.game === 'lmu' ? data.game : '';
+  if (!game) return { error: 'The share code does not say which game the layout is for: make it again with the app and choose iRacing or Le Mans Ultimate.' };
   const sw = num(data.screen?.w, 320, 16000);
   const sh = num(data.screen?.h, 200, 16000);
-  return { layout: { version, game, screen: sw && sh ? { w: sw, h: sh } : null, overlays } };
+  const rw = num(data.resolution?.w, 640, 16000);
+  const rh = num(data.resolution?.h, 360, 16000);
+  if (!sw || !sh || !rw || !rh) return { error: 'The share code does not say which screen resolution the layout is for: make it again with the app.' };
+  // Session types a saved layout is set for (none: every session), and who made it.
+  const SESSIONS = ['practice', 'qualifying', 'warmup', 'race'];
+  const sessions = Array.isArray(data.sessions) ? SESSIONS.filter((s) => data.sessions.includes(s)) : [];
+  const creator = plain(data.creator, 40);
+  return { layout: { version, game, screen: { w: sw, h: sh }, resolution: { w: rw, h: rh }, sessions, creator, overlays } };
 }
 
 async function main() {
@@ -163,6 +172,8 @@ async function main() {
   if (event.action === 'labeled') {
     if (event.label?.name !== 'remove') return;
     rmSync(join(DIR, 'layouts', `${id}.json`), { force: true });
+    const gone = index.layouts.find((l) => l.id === id);
+    if (gone?.preview) rmSync(join(DIR, gone.preview), { force: true });
     if (others.length !== index.layouts.length) {
       writeFileSync(join(DIR, 'index.json'), JSON.stringify({ layouts: others }, null, 1));
       commit(`Remove layout ${id}`);
@@ -195,14 +206,27 @@ async function main() {
   const description = plain(f['what it is for'], 400);
   const now = new Date().toISOString();
   const prev = index.layouts.find((l) => l.id === id);
+  // Where each overlay sits, for an outline of the layout until its preview image is ready
+  // (x, y, width, height in thousandths of the screen).
+  const per = (v, of) => Math.max(0, Math.min(1000, Math.round((v / of) * 1000)));
+  const boxes = r.layout.overlays
+    .filter((o) => o.enabled)
+    .map((o) => [per(o.x, r.layout.screen.w), per(o.y, r.layout.screen.h), per(o.width, r.layout.screen.w), per(o.height, r.layout.screen.h), o.kind]);
   const entry = {
     id,
     name,
     description,
+    // The name the sharer gave (shown), and their GitHub account (who posted it).
+    creator: r.layout.creator || author,
     author,
+    sessions: r.layout.sessions,
+    boxes,
     game: r.layout.game,
     version: r.layout.version,
     screen: r.layout.screen,
+    resolution: r.layout.resolution,
+    // Rendered by the next step (render.mjs); the old one stays until then.
+    preview: prev?.preview ?? null,
     kinds: [...new Set(r.layout.overlays.filter((o) => o.enabled).map((o) => o.kind))],
     count: r.layout.overlays.length,
     issue: issue.html_url,
@@ -215,10 +239,14 @@ async function main() {
   commit(`${prev ? 'Update' : 'Publish'} layout ${id}: ${name}`);
   await api('DELETE', `/issues/${id}/labels/invalid`);
   await label('layout', 'published');
+  const gameName = r.layout.game === 'lmu' ? 'Le Mans Ultimate' : 'iRacing';
   await comment(
-    `${prev ? 'Updated' : 'Published'} on the Layout Market: **${name}** (${r.layout.overlays.length} overlays, made with Apex Overlays ${r.layout.version}). ` +
-      'It shows in the app under Layout Market within a few minutes. Edit this issue to update it.',
+    `${prev ? 'Updated' : 'Published'} on the Layout Market: **${name}**, for ${gameName} at ${r.layout.resolution.w}×${r.layout.resolution.h} ` +
+      `(${r.layout.overlays.length} overlays, made with Apex Overlays ${r.layout.version}). ` +
+      'It shows in the app under Layout Market within a few minutes, and its preview image a few minutes later. Edit this issue to update it.',
   );
+  // Tell the workflow to render the preview image (render.mjs).
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `id=${id}\n`);
   if (issue.state === 'open') await api('PATCH', `/issues/${id}`, { state: 'closed', state_reason: 'completed' });
 }
 
