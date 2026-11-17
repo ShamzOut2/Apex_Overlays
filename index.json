@@ -1,0 +1,121 @@
+{
+ "layouts": [
+  {
+   "id": "35",
+   "name": "No such thing as too much data",
+   "description": "",
+   "creator": "Shamz",
+   "author": "ShamzOut2",
+   "sessions": [
+    "race"
+   ],
+   "boxes": [
+    [
+     662,
+     1000,
+     185,
+     252,
+     "relative"
+    ],
+    [
+     0,
+     1000,
+     218,
+     584,
+     "standings"
+    ],
+    [
+     63,
+     1000,
+     206,
+     449,
+     "trackmap"
+    ],
+    [
+     290,
+     1000,
+     122,
+     83,
+     "inputs"
+    ],
+    [
+     219,
+     1000,
+     262,
+     36,
+     "session"
+    ],
+    [
+     622,
+     1000,
+     116,
+     160,
+     "safety"
+    ],
+    [
+     645,
+     553,
+     64,
+     139,
+     "spotter"
+    ],
+    [
+     0,
+     1000,
+     96,
+     160,
+     "energy"
+    ],
+    [
+     337,
+     1000,
+     64,
+     181,
+     "radar"
+    ],
+    [
+     278,
+     1000,
+     176,
+     50,
+     "carsettings"
+    ],
+    [
+     522,
+     1000,
+     137,
+     194,
+     "tyredata"
+    ]
+   ],
+   "game": "lmu",
+   "version": "1.3.0",
+   "screen": {
+    "w": 3440,
+    "h": 1440
+   },
+   "resolution": {
+    "w": 3440,
+    "h": 1440
+   },
+   "preview": null,
+   "kinds": [
+    "relative",
+    "standings",
+    "trackmap",
+    "inputs",
+    "session",
+    "safety",
+    "spotter",
+    "energy",
+    "radar",
+    "carsettings",
+    "tyredata"
+   ],
+   "count": 11,
+   "issue": "https://github.com/ShamzOut2/Apex_Overlays/issues/35",
+   "published": "2026-11-17T03:47:59.393Z",
+   "updated": "2026-11-17T03:47:59.393Z"
+  }
+ ]
+}

@@ -1,0 +1,563 @@
+{
+ "apexOverlays": "market",
+ "id": "35",
+ "name": "No such thing as too much data",
+ "description": "",
+ "author": "ShamzOut2",
+ "version": "1.3.0",
+ "game": "lmu",
+ "screen": {
+  "w": 3440,
+  "h": 1440
+ },
+ "resolution": {
+  "w": 3440,
+  "h": 1440
+ },
+ "sessions": [
+  "race"
+ ],
+ "creator": "Shamz",
+ "overlays": [
+  {
+   "kind": "relative",
+   "name": "",
+   "enabled": true,
+   "x": 2276,
+   "y": 2518,
+   "width": 637,
+   "height": 363,
+   "settings": {
+    "carsAhead": 5,
+    "carsBehind": 5,
+    "columns": [
+     {
+      "id": "pos",
+      "on": true
+     },
+     {
+      "id": "overall",
+      "on": false
+     },
+     {
+      "id": "number",
+      "on": true
+     },
+     {
+      "id": "flag",
+      "on": false
+     },
+     {
+      "id": "name",
+      "on": true
+     },
+     {
+      "id": "team",
+      "on": false
+     },
+     {
+      "id": "make",
+      "on": false
+     },
+     {
+      "id": "class",
+      "on": false
+     },
+     {
+      "id": "car",
+      "on": false
+     },
+     {
+      "id": "license",
+      "on": true
+     },
+     {
+      "id": "irating",
+      "on": true
+     },
+     {
+      "id": "irDelta",
+      "on": false
+     },
+     {
+      "id": "srDelta",
+      "on": false
+     },
+     {
+      "id": "incidents",
+      "on": false
+     },
+     {
+      "id": "lap",
+      "on": false
+     },
+     {
+      "id": "stint",
+      "on": false
+     },
+     {
+      "id": "lastLap",
+      "on": true
+     },
+     {
+      "id": "bestLap",
+      "on": true
+     },
+     {
+      "id": "tire",
+      "on": false
+     },
+     {
+      "id": "points",
+      "on": false
+     },
+     {
+      "id": "seasonPoints",
+      "on": false
+     },
+     {
+      "id": "gap",
+      "on": true
+     }
+    ],
+    "headerFields": [
+     {
+      "id": "sessionType",
+      "on": false
+     },
+     {
+      "id": "session",
+      "on": false
+     },
+     {
+      "id": "track",
+      "on": false
+     },
+     {
+      "id": "time",
+      "on": true
+     },
+     {
+      "id": "lap",
+      "on": false
+     },
+     {
+      "id": "clock",
+      "on": false
+     },
+     {
+      "id": "trackTemp",
+      "on": true
+     },
+     {
+      "id": "airTemp",
+      "on": true
+     },
+     {
+      "id": "wetness",
+      "on": false
+     },
+     {
+      "id": "rain",
+      "on": false
+     },
+     {
+      "id": "declared",
+      "on": false
+     },
+     {
+      "id": "skies",
+      "on": false
+     },
+     {
+      "id": "wind",
+      "on": false
+     },
+     {
+      "id": "humidity",
+      "on": false
+     },
+     {
+      "id": "sof",
+      "on": true
+     },
+     {
+      "id": "cars",
+      "on": false
+     },
+     {
+      "id": "incidents",
+      "on": true
+     },
+     {
+      "id": "flags",
+      "on": false
+     },
+     {
+      "id": "league",
+      "on": false
+     }
+    ],
+    "headerSeparator": "  |  ",
+    "keepEmptyRows": true,
+    "nameStyle": "initialLast",
+    "scale": 115,
+    "timedLaps": "count",
+    "vrAnchor": "world",
+    "vrShow": true,
+    "vrYaw": -38
+   }
+  },
+  {
+   "kind": "standings",
+   "name": "",
+   "enabled": true,
+   "x": -523,
+   "y": 1576,
+   "width": 750,
+   "height": 841,
+   "settings": {
+    "columns": [
+     {
+      "id": "pos",
+      "on": true
+     },
+     {
+      "id": "overall",
+      "on": false
+     },
+     {
+      "id": "number",
+      "on": true
+     },
+     {
+      "id": "flag",
+      "on": false
+     },
+     {
+      "id": "team",
+      "on": false
+     },
+     {
+      "id": "class",
+      "on": false
+     },
+     {
+      "id": "license",
+      "on": false
+     },
+     {
+      "id": "name",
+      "on": true
+     },
+     {
+      "id": "irating",
+      "on": false
+     },
+     {
+      "id": "incidents",
+      "on": false
+     },
+     {
+      "id": "gained",
+      "on": false
+     },
+     {
+      "id": "interval",
+      "on": false
+     },
+     {
+      "id": "gap",
+      "on": true
+     },
+     {
+      "id": "fuelTotal",
+      "on": true
+     },
+     {
+      "id": "lastLap",
+      "on": true
+     },
+     {
+      "id": "laps",
+      "on": false
+     },
+     {
+      "id": "bestLap",
+      "on": true
+     },
+     {
+      "id": "lap",
+      "on": true
+     },
+     {
+      "id": "pits",
+      "on": false
+     },
+     {
+      "id": "stint",
+      "on": false
+     },
+     {
+      "id": "tire",
+      "on": true
+     },
+     {
+      "id": "make",
+      "on": true
+     },
+     {
+      "id": "srDelta",
+      "on": false
+     },
+     {
+      "id": "car",
+      "on": false
+     },
+     {
+      "id": "points",
+      "on": false
+     },
+     {
+      "id": "seasonPoints",
+      "on": false
+     },
+     {
+      "id": "teamLogo",
+      "on": false
+     },
+     {
+      "id": "class2",
+      "on": false
+     },
+     {
+      "id": "fuelAdded",
+      "on": false
+     }
+    ],
+    "headerSeparator": "  |  ",
+    "makePlate": false,
+    "maxRows": 35,
+    "mode": "overall",
+    "nameStyle": "initialLast",
+    "otherClassRows": 5,
+    "pointsPlus": false,
+    "scale": 110,
+    "showClassHeader": true,
+    "showHeader": true,
+    "timedLaps": "count",
+    "topRows": 5,
+    "vrShow": true,
+    "vrYaw": 59
+   }
+  },
+  {
+   "kind": "trackmap",
+   "name": "",
+   "enabled": true,
+   "x": 217,
+   "y": 2226,
+   "width": 707,
+   "height": 647,
+   "settings": {
+    "autoHeight": false,
+    "autoWidth": false,
+    "cornerLabels": "number",
+    "cornerOffset": 16,
+    "dotSize": 10,
+    "fallback": "flat",
+    "flipX": true,
+    "flipY": true,
+    "outlineWidth": 2,
+    "playerScale": 1.85,
+    "rotate": 116,
+    "scale": 165,
+    "showPanel": false,
+    "showPitLane": true,
+    "showPitRoad": true,
+    "straightLabels": false,
+    "style": "full",
+    "trackWidth": 10,
+    "vrYaw": 44
+   }
+  },
+  {
+   "kind": "inputs",
+   "name": "",
+   "enabled": true,
+   "x": 999,
+   "y": 2268,
+   "width": 420,
+   "height": 120,
+   "settings": {
+    "scale": 120,
+    "showTrace": true,
+    "showValues": true,
+    "traceSteering": true,
+    "traceWidth": 2
+   }
+  },
+  {
+   "kind": "session",
+   "name": "",
+   "enabled": true,
+   "x": 754,
+   "y": 1440,
+   "width": 900,
+   "height": 52,
+   "settings": {
+    "fields": [
+     {
+      "id": "sessionType",
+      "on": false
+     },
+     {
+      "id": "session",
+      "on": true
+     },
+     {
+      "id": "track",
+      "on": false
+     },
+     {
+      "id": "time",
+      "on": true
+     },
+     {
+      "id": "lap",
+      "on": false
+     },
+     {
+      "id": "clock",
+      "on": true
+     },
+     {
+      "id": "trackState",
+      "on": true
+     },
+     {
+      "id": "trackTemp",
+      "on": true
+     },
+     {
+      "id": "airTemp",
+      "on": true
+     },
+     {
+      "id": "wetness",
+      "on": true
+     },
+     {
+      "id": "rain",
+      "on": true
+     },
+     {
+      "id": "declared",
+      "on": false
+     },
+     {
+      "id": "skies",
+      "on": false
+     },
+     {
+      "id": "wind",
+      "on": true
+     },
+     {
+      "id": "humidity",
+      "on": false
+     },
+     {
+      "id": "sof",
+      "on": true
+     },
+     {
+      "id": "cars",
+      "on": false
+     },
+     {
+      "id": "incidents",
+      "on": true
+     },
+     {
+      "id": "flags",
+      "on": false
+     },
+     {
+      "id": "league",
+      "on": false
+     }
+    ]
+   }
+  },
+  {
+   "kind": "safety",
+   "name": "",
+   "enabled": true,
+   "x": 2139,
+   "y": 1573,
+   "width": 400,
+   "height": 230,
+   "settings": {}
+  },
+  {
+   "kind": "spotter",
+   "name": "",
+   "enabled": true,
+   "x": 2220,
+   "y": 797,
+   "width": 220,
+   "height": 200,
+   "settings": {}
+  },
+  {
+   "kind": "energy",
+   "name": "",
+   "enabled": true,
+   "x": -507,
+   "y": 2544,
+   "width": 330,
+   "height": 230,
+   "settings": {}
+  },
+  {
+   "kind": "radar",
+   "name": "",
+   "enabled": true,
+   "x": 1160,
+   "y": 1739,
+   "width": 220,
+   "height": 260,
+   "settings": {}
+  },
+  {
+   "kind": "carsettings",
+   "name": "",
+   "enabled": true,
+   "x": 958,
+   "y": 2690,
+   "width": 607,
+   "height": 72,
+   "settings": {
+    "autoHeight": true,
+    "scale": 155
+   }
+  },
+  {
+   "kind": "tyredata",
+   "name": "",
+   "enabled": true,
+   "x": 1797,
+   "y": 2538,
+   "width": 470,
+   "height": 280,
+   "settings": {
+    "condensed": false,
+    "pressureUnit": "bar",
+    "showCarcass": true,
+    "wearBad": 40,
+    "wearWarn": 75
+   }
+  }
+ ]
+}
