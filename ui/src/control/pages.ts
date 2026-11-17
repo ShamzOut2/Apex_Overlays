@@ -13,13 +13,13 @@ import { client, download, listen, save, state, uid, upload } from './state';
 
 export type Page = { id: string; title: string; render(el: HTMLElement): void };
 
-const card = (title: string, ...children: (Node | string)[]) => {
+export const card = (title: string, ...children: (Node | string)[]) => {
   const c = h('section', 'card');
   c.append(h('h2', '', title), ...children);
   return c;
 };
 
-const button = (label: string, onClick: () => void, cls = '') => {
+export const button = (label: string, onClick: () => void, cls = '') => {
   const b = h('button', cls, label);
   b.onclick = (e) => {
     e.preventDefault();
@@ -35,7 +35,7 @@ let selected = '';
 const listed = (o: OverlayInstance) => !hiddenKind(o.kind) && !otherGameOnly(byKind(o.kind), state.config?.layoutGame);
 
 /** Shared files: one overlay, or a whole layout (overlays + theme). No personal data. */
-type SharedOverlay = Pick<OverlayInstance, 'kind' | 'name' | 'enabled' | 'x' | 'y' | 'width' | 'height' | 'settings'>;
+export type SharedOverlay = Pick<OverlayInstance, 'kind' | 'name' | 'enabled' | 'x' | 'y' | 'width' | 'height' | 'settings'>;
 interface ShareFile {
   apexOverlays: 'overlay' | 'layout';
   version: string;
@@ -57,7 +57,7 @@ const SESSION_TYPES: [string, string, string][] = [
 /** A menu to show open again after the page redraws. */
 let openMenu = '';
 
-const shareable = (o: OverlayInstance): SharedOverlay => ({ kind: o.kind, name: o.name, enabled: o.enabled, x: o.x, y: o.y, width: o.width, height: o.height, settings: structuredClone(o.settings) });
+export const shareable = (o: OverlayInstance): SharedOverlay => ({ kind: o.kind, name: o.name, enabled: o.enabled, x: o.x, y: o.y, width: o.width, height: o.height, settings: structuredClone(o.settings) });
 const fileName = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'overlay';
 
 function exportOverlay(o: OverlayInstance) {
@@ -100,7 +100,7 @@ async function readShare(): Promise<ShareFile | null> {
   };
 }
 
-const instanceFrom = (o: SharedOverlay): OverlayInstance => {
+export const instanceFrom = (o: SharedOverlay): OverlayInstance => {
   const d = byKind(o.kind)!;
   return {
     id: uid(o.kind),

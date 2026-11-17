@@ -75,6 +75,7 @@ function deliver(t: TopicName, d: unknown) {
   } catch (err) {
     console.error(err);
   }
+  measureSoon();
 }
 
 function applyConfig(c: Config) {
@@ -96,9 +97,9 @@ function applyConfig(c: Config) {
 function rebuild() {
   if (!config || !inst || !def) return;
   key = `${JSON.stringify([settings, config.theme])}|${units()}`;
-  const theme = applyTheme(config.theme, document.documentElement, { scale: settings.scale as number, bgOpacity: settings.bgOpacity as number, opacity: settings.opacity as number });
+  const theme = applyTheme(config.theme, document.documentElement, { scale: settings.scale as number, bgOpacity: settings.bgOpacity as number, opacity: settings.opacity as number, fontSize: settings.textSize as number });
   custom.textContent = settings.customCss as string;
-  panel.className = `panel kind-${def.kind}${settings.autoHeight ? ' auto-height' : ''}${settings.autoWidth && !preview ? ' auto-width' : ''}`;
+  panel.className = `panel kind-${def.kind}${settings.autoHeight && !def.fill ? ' auto-height' : ''}${settings.autoWidth && def.fitsWidth && !def.fill && !preview ? ' auto-width' : ''}`;
   setupAutoSize();
   panel.replaceChildren();
   const ctx: Ctx = {
@@ -140,8 +141,12 @@ function resendAutoSize() {
 function setupAutoSize() {
   sizer?.disconnect();
   sizer = null;
-  const autoH = !!settings.autoHeight && !preview;
-  const autoW = !!settings.autoWidth && !preview;
+  const autoH = !!settings.autoHeight && !preview && !def?.fill;
+  const autoW = !!settings.autoWidth && !preview && !!def?.fitsWidth && !def?.fill;
+  // Fitting the content, without fitting the width to columns: widen the window when
+  // something would not fit, and back to the width set once it does.
+  const growW = autoH && !autoW;
+  let grown = false;
   const send = (width: number, height: number) => {
     if (Math.abs(width - lastSize.width) <= 1 && Math.abs(height - lastSize.height) <= 1) return;
     // Only remember a size the app has actually been told.
@@ -154,12 +159,46 @@ function setupAutoSize() {
     if (lastSize.width > 0 || lastSize.height > 0) send(0, 0);
     return;
   }
+  /** The width the content needs, at least `set`: measured at the width set. */
+  const neededWidth = (set: number) => {
+    const before = panel.style.cssText;
+    panel.style.right = 'auto';
+    panel.style.width = `${set}px`;
+    const need = Math.max(set, Math.ceil(panel.scrollWidth));
+    panel.style.cssText = before;
+    return need;
+  };
   measure = () => {
     const r = panel.getBoundingClientRect();
-    if (r.width > 0 && r.height > 0) send(autoW ? Math.ceil(r.width) : 0, autoH ? Math.ceil(r.height) : 0);
+    if (r.width <= 0 || r.height <= 0) return;
+    let width = 0;
+    if (autoW) width = Math.ceil(r.width);
+    else if (growW && inst) {
+      const need = neededWidth(inst.width);
+      if (need > inst.width + 1) {
+        width = need;
+        grown = true;
+      } else if (grown) {
+        // Fits again: back to the width set (then the width is the user's again).
+        width = inst.width;
+        grown = false;
+      }
+    }
+    send(width, autoH ? Math.ceil(panel.getBoundingClientRect().height) : 0);
   };
   sizer = new ResizeObserver(() => measure?.());
   sizer.observe(panel);
+}
+
+/** Content can get wider without the panel changing size (a longer name, a new column):
+ *  check now and then while the window is fitted to the content. */
+let measureTimer = 0;
+function measureSoon() {
+  if (!measure || measureTimer) return;
+  measureTimer = window.setTimeout(() => {
+    measureTimer = 0;
+    measure?.();
+  }, 800);
 }
 
 function updateVisibility() {

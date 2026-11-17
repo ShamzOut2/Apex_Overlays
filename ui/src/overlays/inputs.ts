@@ -8,6 +8,7 @@ const WHEEL_SVG = `<svg viewBox="-50 -50 100 100"><circle r="42" fill="none" str
 
 export const inputs: OverlayDef = {
   kind: 'inputs',
+  fill: true,
   name: 'Driver inputs',
   description: 'Throttle, brake and clutch bars with a scrolling input trace, steering wheel, gear, speed and RPM. Updates every telemetry tick.',
   topics: ['player', 'session', 'car'],

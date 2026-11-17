@@ -4,6 +4,7 @@ import { h, text } from './lib/dom';
 import { leaguesPage } from './control/leagues';
 import { teamsPage } from './control/teams';
 import { raceControlPage } from './control/racecontrol';
+import { marketPage } from './control/market';
 import { renderUpdatePrompt } from './control/updatePrompt';
 import { renderClosePrompt } from './control/closePrompt';
 import { gameName, PAGES, type Page } from './control/pages';
@@ -13,7 +14,7 @@ import { labsLogo } from './control/brand';
 
 // General first, then the overlays and everything else.
 const byId = (id: string) => PAGES.find((p) => p.id === id)!;
-const pages: Page[] = [byId('general'), byId('overlays'), byId('theme'), byId('strategy'), leaguesPage, raceControlPage, byId('streaming')];
+const pages: Page[] = [byId('general'), byId('overlays'), marketPage, byId('theme'), byId('strategy'), leaguesPage, raceControlPage, byId('streaming')];
 
 const nav = h('nav');
 const brand = h('div', 'brand');
@@ -36,6 +37,7 @@ const ICONS: Record<string, string> = {
   leagues: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
   racecontrol: '<path d="M4 22V4"/><path d="M4 4h14l-2 4 2 4H4"/>',
   garage61: '<path d="M3 21V9l9-6 9 6v12"/><path d="M7 21v-8h10v8M7 17h10"/>',
+  market: '<path d="M4 7h16l-1.5 11a2 2 0 0 1-2 1.7h-9a2 2 0 0 1-2-1.7L4 7Z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/><path d="M12 11v5m-2.5-2.5L12 16l2.5-2.5"/>',
   streaming: '<rect x="2" y="5" width="15" height="14" rx="2"/><path d="m17 10 5-3v10l-5-3"/>',
 };
 for (const p of pages) {

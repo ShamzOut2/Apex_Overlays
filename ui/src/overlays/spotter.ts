@@ -7,6 +7,7 @@ const SAMPLE: Spotter = { state: 'left', left: [2.2], right: [] };
 
 export const spotter: OverlayDef = {
   kind: 'spotter',
+  fill: true,
   name: 'Spotter',
   game: 'iracing',
   description:

@@ -1,0 +1,33 @@
+name: Layout Market
+
+# Publishes layouts shared through the "Share a layout" issue form to the `market` branch,
+# which the app reads (index.json and layouts/<id>.json). An edit updates the layout; the
+# `remove` label takes it off the market.
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: layout-market
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: startsWith(github.event.issue.title, 'Layout:') || github.event.label.name == 'remove'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/market
+          path: app
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check and publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node app/.github/market/publish.mjs

@@ -1,0 +1,30 @@
+name: Share a layout
+description: Share your overlay layout in the Apex Overlays Layout Market
+title: "Layout: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share your overlays with everyone in **Apex Overlays → Layout Market**. Make the share code in the app
+        (Layout Market → Share my layout); it holds your overlays and their settings, never your theme, logins
+        or tokens. Once you submit, it is checked and listed in a minute or two. Edit this issue to update it.
+  - type: input
+    id: name
+    attributes:
+      label: Layout name
+      placeholder: e.g. Clean race HUD
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What it is for
+      placeholder: e.g. Endurance racing in LMU, relative and fuel on the left, tyres bottom right
+  - type: textarea
+    id: code
+    attributes:
+      label: Share code
+      description: Paste the code the app copied for you (it starts with AOL1:).
+      render: text
+    validations:
+      required: true

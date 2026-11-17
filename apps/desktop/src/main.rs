@@ -282,6 +282,16 @@ fn handle_host_event(app: &AppHandle, ev: HostEvent) {
                 log::warn!("could not open {}: {e}", path.display());
             }
         }
+        HostEvent::OpenUrl { url } => {
+            // The default browser. (The core only passes the app's own repository pages.)
+            #[cfg(windows)]
+            let r = std::process::Command::new("rundll32").arg("url.dll,FileProtocolHandler").arg(&url).spawn();
+            #[cfg(not(windows))]
+            let r = std::process::Command::new("xdg-open").arg(&url).spawn();
+            if let Err(e) = r {
+                log::warn!("could not open {url}: {e}");
+            }
+        }
         HostEvent::AutoSize { id, width, height } => {
             let label = label_for(&id);
             let core = app.state::<Core>();

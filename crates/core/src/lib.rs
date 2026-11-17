@@ -14,6 +14,7 @@ pub mod iracing_api;
 pub mod league;
 pub mod logging;
 pub mod lookup;
+pub mod market;
 pub mod model;
 pub mod monitor;
 pub mod net;

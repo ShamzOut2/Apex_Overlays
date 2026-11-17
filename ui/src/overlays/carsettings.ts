@@ -105,6 +105,7 @@ export const carsettings: OverlayDef = {
     'The settings you change from the wheel: brake bias, ABS, traction control, engine map and whatever else your car has, each on a card with a meter of where it sits. A big pop-up shows the new value (and the old one) whenever you change one, or use it as pop-ups only. Shows the settings each car actually has.',
   topics: ['carsettings', 'status'],
   size: [420, 72],
+  fitsWidth: true,
   commonDefaults: { autoWidth: true, autoHeight: true, hideWhenNotDriving: true },
   settings: [
     {

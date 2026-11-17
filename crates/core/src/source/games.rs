@@ -5,6 +5,12 @@ use super::iracing::IRacing;
 use super::lmu::Lmu;
 use super::{Poll, Source};
 use crate::model::Telemetry;
+use std::time::{Duration, Instant};
+
+/// Automatic mode: how long the game being read may send nothing before the other game is
+/// looked for, and how often it is looked for then.
+const IDLE_BEFORE_PROBE: Duration = Duration::from_secs(4);
+const PROBE_EVERY: Duration = Duration::from_secs(2);
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum Game {
@@ -30,6 +36,10 @@ pub struct Games {
     active: Option<Game>,
     /// Automatic mode looks for the games in turn, starting here.
     next: Game,
+    /// Automatic mode: since when the game being read has sent nothing new, and when the
+    /// other game was last looked for meanwhile (it may have been started instead).
+    idle_since: Option<Instant>,
+    probed_at: Option<Instant>,
 }
 
 impl Default for Games {
@@ -40,7 +50,7 @@ impl Default for Games {
 
 impl Games {
     pub fn new() -> Self {
-        Self { iracing: IRacing::new(), lmu: Lmu::new(), chosen: None, active: None, next: Game::IRacing }
+        Self { iracing: IRacing::new(), lmu: Lmu::new(), chosen: None, active: None, next: Game::IRacing, idle_since: None, probed_at: None }
     }
 
     fn poll_game(&mut self, g: Game, tel: &mut Telemetry) -> Poll {
@@ -48,6 +58,13 @@ impl Games {
             Game::IRacing => self.iracing.poll(tel),
             Game::Lmu => self.lmu.poll(tel),
         }
+    }
+}
+
+fn other(g: Game) -> Game {
+    match g {
+        Game::IRacing => Game::Lmu,
+        Game::Lmu => Game::IRacing,
     }
 }
 
@@ -81,18 +98,34 @@ impl Source for Games {
         // Automatic: keep reading the game found running until it stops.
         if let Some(g) = self.active {
             let r = self.poll_game(g, tel);
-            if matches!(r, Poll::Disconnected) {
-                self.active = None;
-                self.next = g;
+            match r {
+                Poll::Disconnected => {
+                    self.active = None;
+                    self.idle_since = None;
+                    // Look for the other game first: it is the one likely started next.
+                    self.next = other(g);
+                }
+                Poll::Data { .. } => self.idle_since = None,
+                Poll::Idle => {
+                    // Nothing new for a while (paused, or closed without saying so): look for
+                    // the other game now and then, and switch to it if it is running.
+                    let since = *self.idle_since.get_or_insert_with(Instant::now);
+                    if since.elapsed() > IDLE_BEFORE_PROBE && self.probed_at.is_none_or(|t| t.elapsed() > PROBE_EVERY) {
+                        self.probed_at = Some(Instant::now());
+                        let o = other(g);
+                        if let r @ Poll::Data { .. } = self.poll_game(o, tel) {
+                            self.active = Some(o);
+                            self.idle_since = None;
+                            return r;
+                        }
+                    }
+                }
             }
             return r;
         }
         // Look for a running game, one per call (each waits a little when its game is not running).
         let g = self.next;
-        self.next = match g {
-            Game::IRacing => Game::Lmu,
-            Game::Lmu => Game::IRacing,
-        };
+        self.next = other(g);
         match self.poll_game(g, tel) {
             r @ Poll::Data { .. } => {
                 self.active = Some(g);

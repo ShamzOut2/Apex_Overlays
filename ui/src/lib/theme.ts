@@ -272,7 +272,7 @@ export function isLight(hex: string): boolean {
   return !!c && 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2] > 150;
 }
 
-export function applyTheme(stored: Values | undefined, el: HTMLElement, overrides: { scale?: number; bgOpacity?: number; opacity?: number } = {}) {
+export function applyTheme(stored: Values | undefined, el: HTMLElement, overrides: { scale?: number; bgOpacity?: number; opacity?: number; fontSize?: number } = {}) {
   const t = themeValues(stored);
   const s = el.style;
   const bgOpacity = overrides.bgOpacity != null && overrides.bgOpacity >= 0 ? overrides.bgOpacity : (t.backgroundOpacity as number);
@@ -289,7 +289,9 @@ export function applyTheme(stored: Values | undefined, el: HTMLElement, override
     s.removeProperty('--fsa');
     s.removeProperty('--lh');
   }
-  s.setProperty('--font-size', `${((t.fontSize as number) * (overrides.scale ?? 100)) / 100}px`);
+  // This overlay's own text size (0: the theme's), times its scale.
+  const size = overrides.fontSize && overrides.fontSize > 0 ? overrides.fontSize : (t.fontSize as number);
+  s.setProperty('--font-size', `${(size * (overrides.scale ?? 100)) / 100}px`);
   s.setProperty('--weight', t.fontWeight as string);
   s.setProperty('--text', text);
   s.setProperty('--dim', t.dimColor as string);

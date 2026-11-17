@@ -7,10 +7,15 @@ Each version groups its changes under `### New features`, `### Improvements` and
 ## Unreleased
 
 ### New features
+- Layout Market (new page): browse overlay layouts other drivers have shared, filter by game and search, and add one to your layouts in a click; its positions are fitted to your screen and your theme stays as it is. Share your own with Share my layout: the app makes a share code and opens the share form on GitHub (a free GitHub account), where it is checked and listed automatically within a few minutes. Layouts made with a newer version of the app are shown but wait for you to update
+- Overlays fit their windows to their content by default, so nothing is cut off: the height follows what is shown, and the window widens when something would not fit (back to your width when it does). Not for the overlays drawn to fill their window (track map, radar, inputs, input graph, flags, spotter)
+- Text size for each overlay (its General tab): 0 keeps the theme's size
 - Fuel / energy left column for the relative and standings (FUEL): each car’s fuel, or virtual energy for the cars that race on it (shown in blue), as a % in Le Mans Ultimate; your own fuel in iRacing. Red when under 10%
 - Tyre data: show one temperature per tyre instead of three: the core (carcass) temperature in Le Mans Ultimate, or the average across the tyre
 
 ### Fixes
+- Closing Le Mans Ultimate now hides the overlays, even when another program (SimHub, CrewChief...) keeps its shared memory open; the app checks the game is still running when its data stops
+- Switching games: closing one and starting the other (LMU to iRacing or back) now switches to it, instead of staying with the game that was closed. iRacing closing without saying so (a crash) is noticed too
 - Le Mans Ultimate’s private qualifying: cars driving in their own qualifying sessions no longer show on the relative and radar as if they were around you. A setting under General turns this off for open qualifying, where everyone is on track together
 - Tyre data: temperatures and tread % no longer spill out of their boxes on narrower overlays or with wider fonts; the numbers shrink to fit
 

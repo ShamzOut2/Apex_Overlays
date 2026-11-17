@@ -7,6 +7,7 @@ type Pt = [number, number];
 
 export const trackmap: OverlayDef = {
   kind: 'trackmap',
+  fill: true,
   name: 'Track map',
   description: 'Every car on track. Three styles: the real circuit outline (recorded automatically from your first clean lap), a flat line and a round map.',
   topics: ['cars', 'trackmap'],

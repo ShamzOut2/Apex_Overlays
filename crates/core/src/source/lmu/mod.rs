@@ -675,6 +675,9 @@ pub struct Lmu {
     last_et: f64,
     #[cfg(windows)]
     next_frame: std::time::Instant,
+    /// When we last checked that the game is still running (while its data stands still).
+    #[cfg(windows)]
+    alive_checked: Option<std::time::Instant>,
     #[cfg_attr(not(windows), allow(dead_code))]
     state: State,
     /// The track outline, built from the cars' positions.
@@ -700,6 +703,8 @@ impl Lmu {
             last_et: -1.0,
             #[cfg(windows)]
             next_frame: std::time::Instant::now(),
+            #[cfg(windows)]
+            alive_checked: None,
             state: State::default(),
             outline: map::MapBuilder::default(),
         }
@@ -716,6 +721,25 @@ impl Lmu {
         {
             false
         }
+    }
+
+    /// The game is still running: its window (which it names in the shared memory) still
+    /// exists, or, when it has not named one, its process is there. Other programs (SimHub,
+    /// CrewChief...) holding the shared memory keep its last data alive after the game closes,
+    /// so data standing still does not say whether the game is paused or gone.
+    #[cfg(windows)]
+    fn game_alive(map: &apex_irsdk::NamedMapping) -> bool {
+        use self::data::{ApplicationState, Generic, Layout};
+        use std::mem::offset_of;
+        let at = offset_of!(Layout, generic) + offset_of!(Generic, appInfo) + offset_of!(ApplicationState, mAppWindow);
+        // SAFETY: a u64 read from inside the checked view.
+        let hwnd: u64 = unsafe { map.read(at) }.unwrap_or(0);
+        if hwnd != 0 {
+            return apex_irsdk::window_alive(hwnd);
+        }
+        let mut sys = sysinfo::System::new();
+        sys.refresh_processes_specifics(sysinfo::ProcessesToUpdate::All, true, sysinfo::ProcessRefreshKind::nothing());
+        sys.processes().values().any(|p| p.name().to_string_lossy().to_lowercase().starts_with("le mans ultimate"))
     }
 
     /// One consistent copy of the scoring and telemetry, or `None` while the game is
@@ -811,12 +835,20 @@ impl super::Source for Lmu {
         if et != self.last_et {
             self.last_et = et;
             self.changed_at = Instant::now();
+            self.alive_checked = None;
         } else {
-            // Nothing new for a while: the game is paused, or closed. Our own handle keeps the
-            // mapping alive, so let go of it and see whether the game still has it.
-            if self.changed_at.elapsed() > Duration::from_secs(3) {
-                self.map = None;
-                self.last_open = None;
+            // Nothing new for a while: the game is paused, or closed. Check once a second that
+            // it is still running; when it has gone, disconnect (the overlays hide and, in
+            // automatic mode, the other game is looked for).
+            if self.changed_at.elapsed() > Duration::from_secs(2) && self.alive_checked.is_none_or(|t| t.elapsed() > Duration::from_secs(1)) {
+                self.alive_checked = Some(Instant::now());
+                if !Self::game_alive(self.map.as_ref().unwrap()) {
+                    self.map = None;
+                    self.last_open = None;
+                    self.last_et = -1.0;
+                    self.state = State::default();
+                    return super::Poll::Disconnected;
+                }
             }
             return super::Poll::Idle;
         }

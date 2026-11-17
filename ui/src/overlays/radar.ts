@@ -19,6 +19,7 @@ const SAMPLE: Radar = {
 
 export const radar: OverlayDef = {
   kind: 'radar',
+  fill: true,
   name: 'Radar',
   game: 'lmu',
   description:
