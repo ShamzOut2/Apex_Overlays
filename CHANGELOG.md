@@ -4,6 +4,35 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 1.3.0
+
+### New features
+- Game switch at the bottom of the sidebar, beside the Apex Labs logo: Auto (whichever game is running), iRacing or LMU, one click from any page. In Auto, the game being read is marked in green
+- A fresh install starts with no overlays: add the ones you want (Add overlay) or start from a shared layout (Layout Market). Each new overlay goes to its usual spot on your screen rather than all in one place. Updating keeps your overlays as they are
+- Layout Market (new page): browse overlay layouts other drivers have shared, each with a preview image of how it looks in the game (rendered with sample data once it is shared), the game it is for (iRacing or Le Mans Ultimate), the screen resolution it was made at, the sessions it is used in (all, or e.g. only qualifying) and who made it. Filter by game and resolution, search, and add one to your layouts in a click: its positions are fitted to your screen, its sessions are kept where your own layouts do not already have them, and your theme stays as it is. Share your own with Share my layout: choose the game, give your name, and the app makes a share code and opens the share form on GitHub (a free GitHub account), where it is checked and listed automatically within a few minutes. Layouts made with a newer version of the app are shown but wait for you to update
+- Overlays fit their windows to their content by default, so nothing is cut off: the height follows what is shown, and the window widens when something would not fit (back to your width when it does). Not for the overlays drawn to fill their window (track map, radar, inputs, input graph, flags, spotter)
+- Text size for each overlay (its General tab): 0 keeps the theme's size
+- Fuel / energy left column for the relative and standings (FUEL): each car’s fuel, or virtual energy for the cars that race on it (shown in blue), as a % in Le Mans Ultimate; your own fuel in iRacing. Red when under 10%
+- Tyre data: show one temperature per tyre instead of three: the core (carcass) temperature in Le Mans Ultimate, or the average across the tyre
+
+### Improvements
+- An overlay you delete stays deleted: updates no longer bring back overlay types you removed (each new type is offered once, switched off)
+- A tidier, simpler settings window: overlay descriptions, settings and help texts are shorter and plainer (long explanations cut down, e.g. on General, VR, Race control and the League builder); every page and every overlay's settings checked at three window sizes so no text overlaps or is cut off
+- Smaller settings windows: the sidebar and overlay list take less room, long overlay names wrap instead of being cut, the column picker shows each column's short code as a tag, and drop-down menus open towards the side with room
+- The live preview in each overlay's settings fits the editor and shows the whole overlay (it was cut off on the right in narrower windows)
+- Escape closes dialogs (Add overlay, Share a layout, previews)
+- Sliders line up, with or without a unit next to them
+- The overlay's name at the top of its settings no longer looks greyed out
+- "Fit the window to the content" is no longer offered on overlays drawn to fill their window (track map, radar, inputs…), where it did nothing
+
+### Fixes
+- Radar: no longer stops drawing with an error ("radius is negative") when its window is very small or hidden for a moment
+- The log no longer records the browser's harmless "ResizeObserver loop" note from the track map as an error
+- Closing Le Mans Ultimate now hides the overlays, even when another program (SimHub, CrewChief...) keeps its shared memory open; the app checks the game is still running when its data stops
+- Switching games: closing one and starting the other (LMU to iRacing or back) now switches to it, instead of staying with the game that was closed. iRacing closing without saying so (a crash) is noticed too
+- Le Mans Ultimate’s private qualifying: cars driving in their own qualifying sessions no longer show on the relative and radar as if they were around you. A setting under General turns this off for open qualifying, where everyone is on track together
+- Tyre data: temperatures and tread % no longer spill out of their boxes on narrower overlays or with wider fonts; the numbers shrink to fit
+
 ## 1.2.0
 
 ### New features

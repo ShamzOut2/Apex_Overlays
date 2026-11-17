@@ -156,6 +156,8 @@ pub struct CarTel {
     pub session_flags: u32,
     /// Share of a full tank left (0..1), where the game tells it for this car (LMU: every car).
     pub fuel: Option<f32>,
+    /// Virtual energy left, %, for cars that race on it, where the game tells it (LMU).
+    pub energy: Option<f32>,
     /// Position in the world (east, north) in metres, where the game tells it (LMU: every car).
     pub pos: Option<[f32; 2]>,
 }

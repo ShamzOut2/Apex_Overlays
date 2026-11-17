@@ -208,6 +208,9 @@ pub struct IRacing {
     last_session_update: i32,
     #[cfg(windows)]
     layout: (i32, i32),
+    /// When the telemetry last moved on (iRacing ticks 60 times a second even when paused).
+    #[cfg(windows)]
+    ticked_at: std::time::Instant,
 }
 
 impl Default for IRacing {
@@ -233,6 +236,8 @@ impl IRacing {
             last_session_update: -1,
             #[cfg(windows)]
             layout: (-1, -1),
+            #[cfg(windows)]
+            ticked_at: std::time::Instant::now(),
         }
     }
 }
@@ -266,6 +271,7 @@ impl Source for IRacing {
             self.last_session_update = -1;
             self.last_tick = -1;
             self.layout = (-1, -1);
+            self.ticked_at = std::time::Instant::now();
             if self.shm.is_none() {
                 std::thread::sleep(std::time::Duration::from_millis(500));
                 return Poll::Disconnected;
@@ -288,9 +294,16 @@ impl Source for IRacing {
         }
         let Some(tick) = shm.read_row(&mut self.row) else { return Poll::Idle };
         if tick == self.last_tick {
+            // Still marked connected but nothing new for 10 s: the sim closed without saying
+            // so (a crash); treat it as gone, so the overlays hide and the other game is looked for.
+            if self.ticked_at.elapsed() > std::time::Duration::from_secs(10) {
+                std::thread::sleep(std::time::Duration::from_millis(200));
+                return Poll::Disconnected;
+            }
             return Poll::Idle;
         }
         self.last_tick = tick;
+        self.ticked_at = std::time::Instant::now();
         tel.tick = tick;
         fill(&self.vars, Row(&self.row), tel);
         fill_wheels(&self.wheels, Row(&self.row), tel);

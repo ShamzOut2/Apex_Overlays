@@ -310,6 +310,9 @@ pub fn apply(st: &mut State, snap: &Snapshot, tel: &mut Telemetry) -> Option<Str
             rpm: t.map_or(0.0, |t| t.mEngineRPM as f32),
             session_flags: car_flags,
             fuel: Some(v.mFuelFraction as f32 / 255.0),
+            // 0..1 (taken as % when larger); none for cars on fuel, or when the game leaves
+            // other cars' energy out.
+            energy: t.map(|t| t.mVirtualEnergy).filter(|&v| v > 0.0).map(|v| if v > 1.0 { v.min(100.0) } else { v * 100.0 }),
             pos: t.map(|t| [t.mPos.x as f32, t.mPos.z as f32]),
         };
     }
@@ -672,6 +675,9 @@ pub struct Lmu {
     last_et: f64,
     #[cfg(windows)]
     next_frame: std::time::Instant,
+    /// When we last checked that the game is still running (while its data stands still).
+    #[cfg(windows)]
+    alive_checked: Option<std::time::Instant>,
     #[cfg_attr(not(windows), allow(dead_code))]
     state: State,
     /// The track outline, built from the cars' positions.
@@ -697,6 +703,8 @@ impl Lmu {
             last_et: -1.0,
             #[cfg(windows)]
             next_frame: std::time::Instant::now(),
+            #[cfg(windows)]
+            alive_checked: None,
             state: State::default(),
             outline: map::MapBuilder::default(),
         }
@@ -713,6 +721,25 @@ impl Lmu {
         {
             false
         }
+    }
+
+    /// The game is still running: its window (which it names in the shared memory) still
+    /// exists, or, when it has not named one, its process is there. Other programs (SimHub,
+    /// CrewChief...) holding the shared memory keep its last data alive after the game closes,
+    /// so data standing still does not say whether the game is paused or gone.
+    #[cfg(windows)]
+    fn game_alive(map: &apex_irsdk::NamedMapping) -> bool {
+        use self::data::{ApplicationState, Generic, Layout};
+        use std::mem::offset_of;
+        let at = offset_of!(Layout, generic) + offset_of!(Generic, appInfo) + offset_of!(ApplicationState, mAppWindow);
+        // SAFETY: a u64 read from inside the checked view.
+        let hwnd: u64 = unsafe { map.read(at) }.unwrap_or(0);
+        if hwnd != 0 {
+            return apex_irsdk::window_alive(hwnd);
+        }
+        let mut sys = sysinfo::System::new();
+        sys.refresh_processes_specifics(sysinfo::ProcessesToUpdate::All, true, sysinfo::ProcessRefreshKind::nothing());
+        sys.processes().values().any(|p| p.name().to_string_lossy().to_lowercase().starts_with("le mans ultimate"))
     }
 
     /// One consistent copy of the scoring and telemetry, or `None` while the game is
@@ -808,12 +835,20 @@ impl super::Source for Lmu {
         if et != self.last_et {
             self.last_et = et;
             self.changed_at = Instant::now();
+            self.alive_checked = None;
         } else {
-            // Nothing new for a while: the game is paused, or closed. Our own handle keeps the
-            // mapping alive, so let go of it and see whether the game still has it.
-            if self.changed_at.elapsed() > Duration::from_secs(3) {
-                self.map = None;
-                self.last_open = None;
+            // Nothing new for a while: the game is paused, or closed. Check once a second that
+            // it is still running; when it has gone, disconnect (the overlays hide and, in
+            // automatic mode, the other game is looked for).
+            if self.changed_at.elapsed() > Duration::from_secs(2) && self.alive_checked.is_none_or(|t| t.elapsed() > Duration::from_secs(1)) {
+                self.alive_checked = Some(Instant::now());
+                if !Self::game_alive(self.map.as_ref().unwrap()) {
+                    self.map = None;
+                    self.last_open = None;
+                    self.last_et = -1.0;
+                    self.state = State::default();
+                    return super::Poll::Disconnected;
+                }
             }
             return super::Poll::Idle;
         }
@@ -1005,6 +1040,27 @@ pub mod tests {
     }
 
     #[test]
+    fn private_qualifying_leaves_other_cars_off_the_relative_and_radar() {
+        let mut e = crate::engine::Engine::new(crate::config::Config::default(), None);
+        e.source = "lmu";
+        let (mut st, mut snap) = (State::default(), snapshot());
+        snap.info.mSession = 5; // qualifying
+        run(&mut e, &mut st, &mut snap, 3, |_| {});
+        let rel = crate::topics::relative(&e);
+        assert_eq!(rel.rows.len(), 1, "only you");
+        assert!(crate::engine::radar::build(&e).cars.is_empty());
+        // Open qualifying: everyone is on track together.
+        e.cfg.lmu_private_qualifying = false;
+        assert!(crate::topics::relative(&e).rows.len() > 1);
+        assert!(!crate::engine::radar::build(&e).cars.is_empty(), "the Ferrari alongside");
+        // Races are never private.
+        e.cfg.lmu_private_qualifying = true;
+        snap.info.mSession = 10;
+        run(&mut e, &mut st, &mut snap, 3, |_| {});
+        assert!(crate::topics::relative(&e).rows.len() > 1);
+    }
+
+    #[test]
     fn car_settings_and_live_tyres() {
         let mut e = crate::engine::Engine::new(crate::config::Config::default(), None);
         e.source = "lmu";
@@ -1116,6 +1172,20 @@ pub mod tests {
         let me = &tel.cars[st.slots[&11]];
         assert_eq!(me.lap, 5, "on the next lap");
         assert!(me.pct < 0.01 && me.progress() > 5.0, "{}", me.progress());
+    }
+
+    #[test]
+    fn fuel_or_energy_left_for_every_car() {
+        let mut e = crate::engine::Engine::new(crate::config::Config::default(), None);
+        e.source = "lmu";
+        let (mut st, mut snap) = (State::default(), snapshot());
+        snap.vehicles[0].mFuelFraction = 140; // the Ferrari: fuel too, but it races on energy
+        snap.telemetry[0].mVirtualEnergy = 0.62;
+        snap.vehicles[2].mFuelFraction = 51; // the LMP2: 20% of a tank
+        run(&mut e, &mut st, &mut snap, 2, |_| {});
+        let left = |id: i32| crate::topics::extras(&e, st.slots[&id]).fuel_left.map(|f| (f.value, f.unit, f.energy));
+        assert_eq!(left(4), Some((62.0, "%", true)));
+        assert_eq!(left(20), Some((20.0, "%", false)));
     }
 
     #[test]

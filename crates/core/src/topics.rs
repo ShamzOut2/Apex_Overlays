@@ -762,6 +762,19 @@ pub struct Extras {
     /// Fuel put in at pit stops, where the game tells it for this car (LMU: every car;
     /// iRacing: only the player).
     pub fuel_added: Option<FuelAddedOut>,
+    /// Fuel or virtual energy left, where the game tells it for this car (LMU: every car;
+    /// iRacing: only the player).
+    pub fuel_left: Option<FuelLeftOut>,
+}
+
+#[derive(Serialize, Clone, Copy)]
+#[serde(rename_all = "camelCase")]
+pub struct FuelLeftOut {
+    pub value: f32,
+    /// "L" (litres) or "%" (of a full tank, or of the virtual energy allowance).
+    pub unit: &'static str,
+    /// Virtual energy (LMU's Hypercar, LMGT3...) rather than fuel.
+    pub energy: bool,
 }
 
 #[derive(Serialize, Clone, Copy)]
@@ -825,7 +838,22 @@ pub fn extras(e: &Engine, idx: usize) -> Extras {
             unit: if e.hist[idx].fuel_litres { "L" } else { "%" },
             filling: e.hist[idx].fuel_filling,
         }),
+        fuel_left: fuel_left(e, idx),
     }
+}
+
+fn fuel_left(e: &Engine, idx: usize) -> Option<FuelLeftOut> {
+    let c = &e.tel.cars[idx];
+    let player = usize::try_from(e.tel.player_idx).ok() == Some(idx);
+    // The player's own energy from telemetry when the per-car figure is missing.
+    let energy = c.energy.or(if player { e.tel.virtual_energy } else { None });
+    if let Some(v) = energy {
+        return Some(FuelLeftOut { value: round(v, 0), unit: "%", energy: true });
+    }
+    if let Some(f) = c.fuel {
+        return Some(FuelLeftOut { value: round(f * 100.0, 0), unit: "%", energy: false });
+    }
+    (player && e.tel.fuel_level > 0.0).then(|| FuelLeftOut { value: round(e.tel.fuel_level, 1), unit: "L", energy: false })
 }
 
 #[derive(Serialize)]
@@ -869,10 +897,11 @@ pub fn relative(e: &Engine) -> RelativeOut {
     let Some(focus) = t.focus_idx() else { return RelativeOut { rows: vec![] } };
     let race = e.is_race();
     let fprog = e.progress(focus);
+    let alone = e.alone_on_track();
     let mut rows: Vec<RelRow> = e
         .order
         .iter()
-        .filter(|r| t.cars[r.idx].in_world())
+        .filter(|r| t.cars[r.idx].in_world() && (!alone || r.idx == focus))
         .filter_map(|r: &Row| {
             let s = e.static_of(r.idx)?;
             let c = &t.cars[r.idx];
@@ -1284,7 +1313,8 @@ mod tests {
             let s = t.build(&e);
             assert!(s.starts_with('{'), "{}: {s}", t.name());
         }
-        // The default relative shows 4 cars either side: 5 of these 6 (the focus car is first).
+        // A relative overlay with its default 4 cars either side: 5 of these 6 (the focus car is first).
+        e.cfg.overlays = crate::config::catalogue();
         assert_eq!(relative(&e).rows.len(), 5);
         // With no relative overlay to size it, every car (as before).
         e.cfg.overlays.clear();

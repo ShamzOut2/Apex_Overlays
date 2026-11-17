@@ -7,6 +7,7 @@ type Pt = [number, number];
 
 export const trackmap: OverlayDef = {
   kind: 'trackmap',
+  fill: true,
   name: 'Track map',
   description: 'Every car on track. Three styles: the real circuit outline (recorded automatically from your first clean lap), a flat line and a round map.',
   topics: ['cars', 'trackmap'],
@@ -22,7 +23,7 @@ export const trackmap: OverlayDef = {
     { key: 'trackColor', label: 'Track colour', type: 'color', default: '#e6e9ef', group: 'Track' },
     { key: 'outlineWidth', label: 'Outline width', type: 'number', default: 3, min: 0, max: 20, unit: 'px', group: 'Track' },
     { key: 'outlineColor', when: (v) => (v.outlineWidth as number) > 0, label: 'Outline colour', type: 'color', default: '#000000', group: 'Track' },
-    { key: 'showSectors', label: 'Sector lines (across the track where each sector ends)', type: 'bool', default: true, group: 'Sectors' },
+    { key: 'showSectors', label: 'Sector lines', type: 'bool', default: true, group: 'Sectors' },
     { key: 'sectorColor', when: (v) => v.showSectors !== false, label: 'Sector line colour', type: 'color', default: '#ffb020', group: 'Sectors' },
     { key: 'sectorLineWidth', when: (v) => v.showSectors !== false, label: 'Sector line width', type: 'number', default: 2.5, min: 1, max: 10, step: 0.5, unit: 'px', group: 'Sectors' },
     { key: 'sectorLineLength', when: (v) => v.showSectors !== false, label: 'Sector line length', type: 'number', default: 1, min: 0.5, max: 4, step: 0.1, unit: '×', group: 'Sectors', help: 'Relative to the track width' },
@@ -32,7 +33,7 @@ export const trackmap: OverlayDef = {
       type: 'bool',
       default: true,
       group: 'Sectors',
-      help: 'Paints each sector of your lap: purple = faster than your best, green = within the margin below, yellow = slower',
+      help: 'Purple: faster than your best. Green: close to it. Yellow: slower',
     },
     { key: 'sectorMargin', when: (v) => v.sectorPerformance !== false, label: 'Green within', type: 'number', default: 0.25, min: 0, max: 2, step: 0.05, unit: 's', group: 'Sectors', help: 'Slower than your best by up to this much is still green' },
     { key: 'sectorHold', when: (v) => v.sectorPerformance !== false, label: 'Keep colours after the lap', type: 'number', default: 5, min: 0, max: 60, unit: 's', group: 'Sectors' },

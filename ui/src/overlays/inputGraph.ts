@@ -6,6 +6,7 @@ import { inputTrace, TRACE_SETTINGS } from './inputTrace';
 /** The input trace on its own, to place apart from the pedal bars and wheel. */
 export const inputGraph: OverlayDef = {
   kind: 'inputGraph',
+  fill: true,
   name: 'Input graph',
   description:
     'The scrolling throttle, brake and clutch trace on its own, so it can sit anywhere on screen. Switch the graph off in Driver inputs if you use this instead.',

@@ -32,8 +32,9 @@ const START = ['startReady', 'startSet', 'startGo'];
 
 export const flags: OverlayDef = {
   kind: 'flags',
+  fill: true,
   name: 'Flags',
-  description: 'A digital flag panel showing the flags being waved right now: green, yellow (waving), caution, blue, white, chequered, red, black, meatball, debris and more, plus the start lights.',
+  description: 'The flags being shown to you right now: green, yellow, blue, white, chequered, red, black, meatball and more, plus the start lights.',
   topics: ['session'],
   size: [260, 150],
   settings: [

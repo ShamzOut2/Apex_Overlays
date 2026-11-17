@@ -692,6 +692,12 @@ impl Engine {
         self.session_def().is_some_and(|s| s.is_race())
     }
 
+    /// Driving alone in Le Mans Ultimate's private qualifying: the other cars are on track in
+    /// sessions of their own, so they are not around you (relative, radar).
+    pub fn alone_on_track(&self) -> bool {
+        self.source == "lmu" && self.cfg.lmu_private_qualifying && self.session_def().is_some_and(|s| crate::config::session_category(&s.kind) == "qualifying")
+    }
+
     pub fn under_caution(&self) -> bool {
         self.tel.session_flags & (flags::CAUTION | flags::CAUTION_WAVING) != 0
     }

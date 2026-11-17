@@ -9,7 +9,7 @@ const STANDARD_FONT = "'Segoe UI', 'Inter', system-ui, sans-serif";
  *  variable font, e.g. Bahnschrift's condensed cut. */
 export const FONTS: { id: string; label: string; family: string; stretch?: string }[] = [
   { id: 'standard', label: 'Standard (Segoe UI)', family: STANDARD_FONT },
-  { id: 'bahnschrift', label: 'Bahnschrift Condensed (as the fuel calculator)', family: "'Bahnschrift', 'Segoe UI', system-ui, sans-serif", stretch: 'condensed' },
+  { id: 'bahnschrift', label: 'Bahnschrift Condensed', family: "'Bahnschrift', 'Segoe UI', system-ui, sans-serif", stretch: 'condensed' },
   // Bundled with the app (ui/static/assets/fonts/overlay, SIL Open Font License).
   { id: 'barlow-condensed', label: 'Barlow Condensed (condensed, sporty)', family: "'Barlow Condensed', 'Segoe UI', system-ui, sans-serif" },
   { id: 'rajdhani', label: 'Rajdhani (square, technical)', family: "'Rajdhani', 'Segoe UI', system-ui, sans-serif" },
@@ -27,7 +27,7 @@ export const FONTS: { id: string; label: string; family: string; stretch?: strin
   { id: 'sora', label: 'Sora (soft geometric)', family: "'Sora', 'Segoe UI', system-ui, sans-serif" },
   { id: 'space-grotesk', label: 'Space Grotesk (grotesk with character)', family: "'Space Grotesk', 'Segoe UI', system-ui, sans-serif" },
   { id: 'archivo-narrow', label: 'Archivo Narrow (narrow, neutral)', family: "'Archivo Narrow', 'Segoe UI', system-ui, sans-serif" },
-  { id: 'big-shoulders-display', label: 'Big Shoulders Display (condensed industrial)', family: "'Big Shoulders Display', 'Segoe UI', system-ui, sans-serif" },
+  { id: 'big-shoulders-display', label: 'Big Shoulders Display', family: "'Big Shoulders Display', 'Segoe UI', system-ui, sans-serif" },
   { id: 'ibm-plex-sans-condensed', label: 'IBM Plex Sans Condensed (engineering feel)', family: "'IBM Plex Sans Condensed', 'Segoe UI', system-ui, sans-serif" },
   { id: 'fira-sans-condensed', label: 'Fira Sans Condensed (humanist, compact)', family: "'Fira Sans Condensed', 'Segoe UI', system-ui, sans-serif" },
   { id: 'antonio', label: 'Antonio (tall scoreboard style)', family: "'Antonio', 'Segoe UI', system-ui, sans-serif" },
@@ -48,7 +48,7 @@ export const THEME: SettingDef[] = [
     label: 'Keep overlay sizes when changing font',
     type: 'bool',
     default: true,
-    help: 'Each font’s text is sized to take the room the standard font’s does, so overlays, rows and columns stay the same size',
+    help: 'Every font takes the same room, so overlays keep their size',
     group: 'Text',
   },
   { key: 'fontFamily', when: (v) => v.font === 'custom', label: 'Custom font', type: 'text', default: STANDARD_FONT, help: 'Any font installed on this PC, e.g. Arial Narrow; list a few, separated by commas', group: 'Text' },
@@ -272,7 +272,7 @@ export function isLight(hex: string): boolean {
   return !!c && 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2] > 150;
 }
 
-export function applyTheme(stored: Values | undefined, el: HTMLElement, overrides: { scale?: number; bgOpacity?: number; opacity?: number } = {}) {
+export function applyTheme(stored: Values | undefined, el: HTMLElement, overrides: { scale?: number; bgOpacity?: number; opacity?: number; fontSize?: number } = {}) {
   const t = themeValues(stored);
   const s = el.style;
   const bgOpacity = overrides.bgOpacity != null && overrides.bgOpacity >= 0 ? overrides.bgOpacity : (t.backgroundOpacity as number);
@@ -289,7 +289,9 @@ export function applyTheme(stored: Values | undefined, el: HTMLElement, override
     s.removeProperty('--fsa');
     s.removeProperty('--lh');
   }
-  s.setProperty('--font-size', `${((t.fontSize as number) * (overrides.scale ?? 100)) / 100}px`);
+  // This overlay's own text size (0: the theme's), times its scale.
+  const size = overrides.fontSize && overrides.fontSize > 0 ? overrides.fontSize : (t.fontSize as number);
+  s.setProperty('--font-size', `${(size * (overrides.scale ?? 100)) / 100}px`);
   s.setProperty('--weight', t.fontWeight as string);
   s.setProperty('--text', text);
   s.setProperty('--dim', t.dimColor as string);

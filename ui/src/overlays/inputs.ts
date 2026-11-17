@@ -8,6 +8,7 @@ const WHEEL_SVG = `<svg viewBox="-50 -50 100 100"><circle r="42" fill="none" str
 
 export const inputs: OverlayDef = {
   kind: 'inputs',
+  fill: true,
   name: 'Driver inputs',
   description: 'Throttle, brake and clutch bars with a scrolling input trace, steering wheel, gear, speed and RPM. Updates every telemetry tick.',
   topics: ['player', 'session', 'car'],
@@ -29,7 +30,7 @@ export const inputs: OverlayDef = {
       group: 'Shift lights',
       help: 'The order the lights come on. The shift points and colours stay those of the car',
     },
-    { key: 'shiftLightCount', when: (v) => v.showShiftLights !== false, label: 'Number of lights (cars without Lovely data)', type: 'number', default: 10, min: 3, max: 20, group: 'Shift lights' },
+    { key: 'shiftLightCount', when: (v) => v.showShiftLights !== false, label: 'Number of lights', type: 'number', default: 10, min: 3, max: 20, group: 'Shift lights' },
     { key: 'shiftLightSize', when: (v) => v.showShiftLights !== false, label: 'Light size', type: 'number', default: 0.9, min: 0.4, max: 3, step: 0.1, unit: 'em', group: 'Shift lights' },
     { key: 'shiftFlashMs', when: (v) => v.showShiftLights !== false, label: 'Flash speed at the shift point', type: 'number', default: 120, min: 40, max: 1000, step: 10, unit: 'ms', group: 'Shift lights' },
     { key: 'shiftLowColor', when: (v) => v.showShiftLights !== false, label: 'First lights', type: 'color', default: '#2fd36b', group: 'Shift lights' },

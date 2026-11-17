@@ -130,7 +130,7 @@ function classEditor(l: League, c: LeagueClass, i: number, rerender: () => void)
   down.disabled = i === l.classes.length - 1;
   // Main or secondary: switching moves the drivers picked for it to the other roster column.
   const kind = h('select') as HTMLSelectElement;
-  kind.title = 'Main: what the overlays show, found by the rules below or picked on the roster. Secondary: a class running across the main ones (a Rookie Cup, a Pro-Am trophy), picked in the roster’s 2nd class column';
+  kind.title = 'Main: the class the overlays show. Secondary: a class across the main ones (e.g. a Rookie Cup), picked in the roster.';
   for (const [v, t] of [
     ['main', 'Main class'],
     ['secondary', 'Secondary class'],
@@ -184,7 +184,7 @@ function classEditor(l: League, c: LeagueClass, i: number, rerender: () => void)
       ),
     );
   }
-  el.append(head, secondary ? h('p', 'dim small', 'Picked for each driver in the roster’s 2nd class column. The driver keeps their main class; the overlays can colour car numbers or the class stripe by this class instead (Number colour / Stripe colour → Secondary class) and show it in a 2nd class column.') : rules);
+  el.append(head, secondary ? h('p', 'dim small', 'Picked per driver in the roster. Drivers keep their main class; overlays can colour numbers or stripes by this class and show it in a 2ND column.') : rules);
   return el;
 }
 
@@ -346,7 +346,7 @@ function rosterCard(l: League, rerender: () => void) {
     h(
       'p',
       'dim',
-      'Pull every driver in the current session with one click (names, car numbers and customer IDs fill in automatically), then pick each driver’s class and optionally rename them, set a team, flag or league car number, or hide spectators/admins.',
+      'Pull in every driver in this session with one click, then pick their class and, if you like, rename them, set a team, flag or number, or hide spectators.',
     ),
   );
   const bar = h('div', 'toolbar');
@@ -393,7 +393,7 @@ function rosterCard(l: League, rerender: () => void) {
     save();
     rerender();
   };
-  strip.title = 'For leagues that put the class in front of names, e.g. “(P) Max Power” or “(PA) Max Power”: the brackets and what is in them come out, and the display name is set to the full name, so the overlays show “Max Power”. Drivers not on the roster are shown without the tag too.';
+  strip.title = 'For leagues that put the class in front of names, like “(P) Max Power”: the overlays show just “Max Power”.';
   strip.append(stripBox, ' Remove Driver Class in Name');
   bar.append(strip);
   if (l.driverOverrides.length) {
@@ -547,7 +547,7 @@ export const leaguesPage: Page = {
     const top = h('section', 'card');
     top.append(
       h('h2', '', 'League builder'),
-      h('p', 'dim', 'Create your own classes for league racing — group cars by number, driver, team or car model and give each class its name and colour, set the points system, and see live points in the relative and standings. The active league replaces iRacing’s classes in every overlay.'),
+      h('p', 'dim', 'Make your own classes for league racing: group cars by number, driver, team or car, give each class a name and colour, set the points, and see live points in the relative and standings.'),
     );
     cfg.leagueMode ??= 'auto';
     const mode = h('select');
@@ -731,7 +731,7 @@ export const leaguesPage: Page = {
       h(
         'p',
         'dim small',
-        'A driver’s (main) class comes from the roster below when picked there; otherwise the first main class (top to bottom) whose rules match. Text rules are case-insensitive; use * as a wildcard. Separate values with commas. Secondary classes (a Rookie Cup, a Pro-Am trophy) run across the main ones: each driver keeps their main class and can also have one secondary class, picked in the roster’s 2nd class column.',
+        'A driver’s class comes from the roster; otherwise the first class whose rules match. Rules ignore case; * is a wildcard; separate values with commas.',
       ),
     );
     l.classes.forEach((c, i) => ed.append(classEditor(l, c, i, rerender)));

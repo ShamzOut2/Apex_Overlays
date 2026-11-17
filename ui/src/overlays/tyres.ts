@@ -25,7 +25,7 @@ export const tyres: OverlayDef = {
     { key: 'showField', label: 'Field tyre split', type: 'bool', default: true, group: 'Elements' },
     { key: 'showPace', label: 'Wet vs dry pace', type: 'bool', default: true, group: 'Elements' },
     { key: 'flash', label: 'Flash when it is time to box', type: 'bool', default: true, group: 'Alerts' },
-    { key: 'onlyWhenRelevant', label: 'Hide while the track is fully dry and you are on slicks', type: 'bool', default: false, group: 'Alerts' },
+    { key: 'onlyWhenRelevant', label: 'Hide when dry and on slicks', type: 'bool', default: false, group: 'Alerts' },
   ],
   create(root, ctx) {
     const s = ctx.settings;

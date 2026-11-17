@@ -38,7 +38,7 @@ export const incidents: OverlayDef = {
   kind: 'incidents',
   name: 'Incident tracker',
   description:
-    'Every incident you pick up: what it most likely was (off track, loss of control, hitting a wall, contact), the points, who you made contact with, and a replay button that jumps the iRacing replay to the moment (works while watching a replay).',
+    'Every incident you pick up: what it probably was, the points, who you touched, and a button that jumps the iRacing replay to that moment.',
   topics: ['incidents', 'status'],
   size: [340, 230],
   settings: [

@@ -21,7 +21,7 @@ export const energy: OverlayDef = {
   name: 'Virtual energy',
   lmu: true,
   description:
-    'Le Mans Ultimate’s virtual energy, planned like fuel: laps of energy left against laps to go on a bar with the finish marked, energy used per lap, what you will have at the flag, how much to add at the stop and the pit window. Plus the hybrid battery. For the classes that race on virtual energy (Hypercar, LMGT3).',
+    'Virtual energy planned like fuel: laps left, use per lap, what you will have at the flag, how much to add and the pit window. Plus the hybrid battery. For Hypercar and LMGT3.',
   topics: ['energy', 'session', 'status'],
   size: [330, 230],
   commonDefaults: { autoHeight: true },
@@ -29,7 +29,7 @@ export const energy: OverlayDef = {
     { key: 'hideWithout', label: 'Hide when there is no virtual energy', type: 'bool', default: true, group: 'Layout', help: 'In iRacing, and in Le Mans Ultimate classes that race on fuel (LMP2...)', lmu: true },
     { key: 'showBar', label: 'Energy bar', type: 'bool', default: true, group: 'Layout' },
     { key: 'showBattery', label: 'Hybrid battery', type: 'bool', default: true, group: 'Layout', lmu: true },
-    { key: 'showPlan', label: 'Add at the stop, target per lap and pit window', type: 'bool', default: true, group: 'Layout' },
+    { key: 'showPlan', label: 'Add at stop, target and pit window', type: 'bool', default: true, group: 'Layout' },
     { key: 'marginalLaps', label: 'Amber when the spare is under', type: 'number', default: 0.5, min: 0, max: 5, step: 0.1, unit: 'laps', group: 'Status' },
     { key: 'okColor', label: 'Makes the finish', type: 'color', default: '#3dd6f5', group: 'Colours' },
     { key: 'marginalColor', label: 'Marginal', type: 'color', default: '#ffb020', group: 'Colours' },

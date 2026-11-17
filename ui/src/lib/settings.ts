@@ -93,13 +93,14 @@ export function enabledColumns(v: unknown): string[] {
 export const COMMON: SettingDef[] = [
   { key: 'opacity', label: 'Overlay opacity', type: 'number', default: 100, min: 10, max: 100, step: 1, unit: '%', help: 'Fades the whole overlay, text included', group: 'Transparency' },
   { key: 'bgOpacity', label: 'Background opacity', type: 'number', default: -1, min: -1, max: 100, step: 1, unit: '%', help: '-1 follows the theme; 0 = fully see-through background', group: 'Transparency' },
+  { key: 'textSize', label: 'Text size', type: 'number', default: 0, min: 0, max: 48, step: 0.5, unit: 'px', group: 'General', help: '0: the theme’s size. The whole overlay grows or shrinks with it' },
   { key: 'scale', label: 'Scale', type: 'number', default: 100, min: 40, max: 300, step: 5, unit: '%', group: 'General' },
   {
     key: 'autoHeight',
-    label: 'Grow/shrink the window to fit the content',
+    label: 'Fit the window to the content',
     type: 'bool',
-    default: false,
-    help: 'The height follows the number of rows; you only set the width',
+    default: true,
+    help: 'The window grows and shrinks with what is shown. You set the width',
     group: 'General',
   },
   {
@@ -110,7 +111,7 @@ export const COMMON: SettingDef[] = [
     help: 'Adding or removing columns resizes the overlay (relative, standings and other tables)',
     group: 'General',
   },
-  { key: 'hideWhenDisconnected', label: 'Hide when iRacing is not running', type: 'bool', default: true, group: 'Visibility' },
+  { key: 'hideWhenDisconnected', label: 'Hide when the game is not running', type: 'bool', default: true, group: 'Visibility' },
   { key: 'hideWhenNotDriving', label: 'Hide unless I am in the car', type: 'bool', default: false, group: 'Visibility' },
   { key: 'hideInPits', label: 'Hide while on pit road', type: 'bool', default: false, group: 'Visibility' },
   { key: 'raceOnly', label: 'Only show in race sessions', type: 'bool', default: false, group: 'Visibility' },
@@ -137,7 +138,7 @@ export const COMMON: SettingDef[] = [
       ['custom', 'Where I set below'],
     ],
     group: 'VR',
-    help: 'As on my screen: the layout of your monitor on an imaginary screen in front of you (its distance and size are under General → VR)',
+    help: 'As on my screen: your monitor’s layout on a virtual screen in front of you (set under General → VR)',
   },
   { key: 'vrX', when: (v) => v.vrShow !== false && v.vrPlace === 'custom', label: 'Custom position: left / right', type: 'number', default: 0, min: -2, max: 2, step: 0.01, unit: 'm', group: 'VR', help: 'Custom placement: + is to the right' },
   { key: 'vrY', when: (v) => v.vrShow !== false && v.vrPlace === 'custom', label: 'Custom position: down / up', type: 'number', default: 0, min: -2, max: 2, step: 0.01, unit: 'm', group: 'VR', help: 'Custom placement: + is up' },
@@ -151,9 +152,10 @@ export const COMMON: SettingDef[] = [
 ];
 
 /** Common options with an overlay's own defaults applied (e.g. standings auto-fits by default). */
-export function commonFor(defaults?: Values, fitsWidth = false): SettingDef[] {
-  // Fitting the width to the columns only means something for overlays with columns.
-  const common = fitsWidth ? COMMON : COMMON.filter((s) => s.key !== 'autoWidth');
+export function commonFor(defaults?: Values, fitsWidth = false, fill = false): SettingDef[] {
+  // Fitting the width to the columns only means something for overlays with columns, and
+  // fitting the window to the content nothing for those drawn to fill their window.
+  const common = COMMON.filter((s) => !(s.key === 'autoWidth' && (!fitsWidth || fill)) && !(s.key === 'autoHeight' && fill));
   if (!defaults) return common;
   return common.map((s) => (s.key in defaults ? ({ ...s, default: defaults[s.key] } as SettingDef) : s));
 }

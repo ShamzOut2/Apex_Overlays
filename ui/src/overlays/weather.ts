@@ -22,7 +22,7 @@ const CAR = `<svg viewBox="-60 -60 120 120"><path d="M0 -12 L7 9 L0 5 L-7 9 Z" f
 export const weather: OverlayDef = {
   kind: 'weather',
   name: 'Weather',
-  description: 'Live weather with a wind compass that turns with your car, so you can see head, tail and crosswind at a glance. Plus temperatures, humidity, pressure, sky, rain and track wetness.',
+  description: 'Live weather with a wind compass that turns with your car (head, tail or crosswind at a glance), plus temperatures, sky, rain and track wetness.',
   topics: ['session', 'player'],
   rates: { player: 15 },
   size: [300, 170],

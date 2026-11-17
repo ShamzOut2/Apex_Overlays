@@ -4,16 +4,17 @@ import { h, text } from './lib/dom';
 import { leaguesPage } from './control/leagues';
 import { teamsPage } from './control/teams';
 import { raceControlPage } from './control/racecontrol';
+import { marketPage } from './control/market';
 import { renderUpdatePrompt } from './control/updatePrompt';
 import { renderClosePrompt } from './control/closePrompt';
 import { gameName, PAGES, type Page } from './control/pages';
-import { listen, pageTopics, state } from './control/state';
+import { listen, pageTopics, save, state } from './control/state';
 import { applyUiTheme } from './lib/theme';
 import { labsLogo } from './control/brand';
 
 // General first, then the overlays and everything else.
 const byId = (id: string) => PAGES.find((p) => p.id === id)!;
-const pages: Page[] = [byId('general'), byId('overlays'), byId('theme'), byId('strategy'), leaguesPage, raceControlPage, byId('streaming')];
+const pages: Page[] = [byId('general'), byId('overlays'), marketPage, byId('theme'), byId('strategy'), leaguesPage, raceControlPage, byId('streaming')];
 
 const nav = h('nav');
 const brand = h('div', 'brand');
@@ -36,6 +37,7 @@ const ICONS: Record<string, string> = {
   leagues: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
   racecontrol: '<path d="M4 22V4"/><path d="M4 4h14l-2 4 2 4H4"/>',
   garage61: '<path d="M3 21V9l9-6 9 6v12"/><path d="M7 21v-8h10v8M7 17h10"/>',
+  market: '<path d="M4 7h16l-1.5 11a2 2 0 0 1-2 1.7h-9a2 2 0 0 1-2-1.7L4 7Z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/><path d="M12 11v5m-2.5-2.5L12 16l2.5-2.5"/>',
   streaming: '<rect x="2" y="5" width="15" height="14" rx="2"/><path d="m17 10 5-3v10l-5-3"/>',
 };
 for (const p of pages) {
@@ -46,7 +48,38 @@ for (const p of pages) {
   nav.append(a);
   links.set(p.id, a);
 }
-nav.append(labsLogo('nav-labs'), conn);
+// Bottom of the sidebar: the Apex Labs logo with the game switch beside it, then the status.
+const gameSwitch = h('div', 'game-switch');
+gameSwitch.title = 'Which game to read. Auto: whichever is running';
+const GAMES: [string, string, string][] = [
+  ['auto', 'Auto', 'Whichever game is running'],
+  ['iracing', 'iRacing', 'iRacing only'],
+  ['lmu', 'LMU', 'Le Mans Ultimate only'],
+];
+const gameButtons = GAMES.map(([id, label, tip]) => {
+  const b = h('button', '', label);
+  b.title = tip;
+  b.onclick = () => {
+    if (!state.config) return;
+    state.config.game = id as 'auto' | 'iracing' | 'lmu';
+    save(true);
+    drawGameSwitch();
+  };
+  return { id, b };
+});
+gameSwitch.append(...gameButtons.map((g) => g.b));
+function drawGameSwitch() {
+  const chosen = state.config?.game ?? 'auto';
+  const running = state.status?.connected ? state.status.source : '';
+  for (const { id, b } of gameButtons) {
+    b.classList.toggle('sel', id === chosen);
+    // In Auto, the game found running is marked.
+    b.classList.toggle('live', chosen === 'auto' && id === running);
+  }
+}
+const navFoot = h('div', 'nav-foot');
+navFoot.append(labsLogo('nav-labs'), gameSwitch);
+nav.append(navFoot, conn);
 document.body.append(nav, main);
 // The desktop app opens this page as a small "update available" or "close?" window.
 const promptKind = new URLSearchParams(location.search).get('prompt');
@@ -85,10 +118,39 @@ function renderStatus() {
 
 let lastLive = 0;
 window.addEventListener('hashchange', render);
+// Drop-down menus open towards the side with room (a narrow window wraps the toolbar).
+document.addEventListener(
+  'toggle',
+  (e) => {
+    const d = e.target as HTMLElement;
+    if (!(d instanceof HTMLDetailsElement) || !d.open) return;
+    const pop = d.querySelector<HTMLElement>(':scope > .menu-pop');
+    if (!pop) return;
+    pop.style.left = '';
+    pop.style.right = '';
+    const r = pop.getBoundingClientRect();
+    const mainLeft = main.getBoundingClientRect().left;
+    if (r.left < mainLeft + 8) {
+      pop.style.left = '0';
+      pop.style.right = 'auto';
+    }
+  },
+  true,
+);
+// Escape closes the dialog on top (Add overlay, Share a layout, previews…).
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const dialogs = document.querySelectorAll('.modal-back');
+  if (dialogs.length) {
+    e.preventDefault();
+    dialogs[dialogs.length - 1].remove();
+  }
+});
 let leagueKey = '';
 let wasInVr = false;
 let lastGame = '';
 listen((t) => {
+  if (t === 'config' || t === 'status') drawGameSwitch();
   if (t === 'config') render();
   if (t === 'status') {
     renderStatus();

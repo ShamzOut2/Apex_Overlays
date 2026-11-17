@@ -22,7 +22,7 @@ export const delta: OverlayDef = {
   kind: 'delta',
   name: 'Delta bar',
   description:
-    'Live delta to a reference lap: your best this session or your all-time best for the car and track. Shows the delta, a bar, your predicted lap time and whether you are gaining or losing.',
+    'Live delta to your best lap (this session or all time): the gap, a bar, your predicted lap time and whether you are gaining or losing.',
   topics: ['player', 'delta', 'status'],
   size: [420, 96],
   commonDefaults: { hideWhenNotDriving: true },

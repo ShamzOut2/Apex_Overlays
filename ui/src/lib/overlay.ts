@@ -43,10 +43,12 @@ export interface OverlayDef {
   rates?: Partial<Record<TopicName, number>>;
   /** Has table columns, so "fit the window width to the columns" applies. */
   fitsWidth?: boolean;
+  /** Drawn to fill its window (track map, radar, graphs...): the window is not fitted to it. */
+  fill?: boolean;
   create(root: HTMLElement, ctx: Ctx): View;
 }
 
 /** Full settings schema of an overlay: its own options plus the common ones. */
 export function schemaOf(def: OverlayDef): SettingDef[] {
-  return [...def.settings, ...commonFor(def.commonDefaults, def.fitsWidth)];
+  return [...def.settings, ...commonFor(def.commonDefaults, def.fitsWidth, def.fill)];
 }

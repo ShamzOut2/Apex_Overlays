@@ -29,6 +29,10 @@ pub enum HostEvent {
     OpenFolder {
         path: std::path::PathBuf,
     },
+    /// Open a web page in the browser (the app's own repository only, see market::may_open).
+    OpenUrl {
+        url: String,
+    },
     /// Fit an overlay window to its content (CSS pixels; 0 = not automatic).
     AutoSize {
         id: String,

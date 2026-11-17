@@ -29,8 +29,9 @@ const COLS = [
   { id: 'bestLap', label: 'Best lap — BEST' },
   { id: 'tire', label: 'Tyre (wet/dry) — TYRE' },
   { id: 'points', label: 'League points for position — PTS' },
-  { id: 'fuelAdded', label: 'Fuel / energy added at the last stop (every car in LMU; only you in iRacing) — FUEL+', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
-  { id: 'fuelTotal', label: 'Fuel / energy added this session (every car in LMU; only you in iRacing) — FUEL Σ', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
+  { id: 'fuelLeft', label: 'Fuel / energy left — FUEL', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
+  { id: 'fuelAdded', label: 'Fuel added at last stop — FUEL+', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
+  { id: 'fuelTotal', label: 'Fuel added this session — FUEL Σ', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
   { id: 'seasonPoints', label: 'Championship total (projected) — CHAMP' },
   { id: 'gap', label: 'Gap' },
 ];

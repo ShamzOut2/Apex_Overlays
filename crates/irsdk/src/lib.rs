@@ -11,6 +11,22 @@ pub mod yaml;
 mod shm;
 #[cfg(windows)]
 pub use shm::{NamedMapping, SharedMemory};
+/// The window `hwnd` (a handle a game publishes about itself) still exists: false once the
+/// game has closed. Always false off Windows.
+pub fn window_alive(hwnd: u64) -> bool {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::UI::WindowsAndMessaging::IsWindow;
+        // SAFETY: IsWindow only checks the handle; any value is allowed.
+        hwnd != 0 && unsafe { IsWindow(hwnd as usize as _) } != 0
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = hwnd;
+        false
+    }
+}
+
 #[cfg(windows)]
 mod broadcast;
 #[cfg(windows)]

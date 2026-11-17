@@ -99,7 +99,7 @@ export const forecast: OverlayDef = {
   kind: 'forecast',
   name: 'Weather forecast',
   description:
-    'The weather now and to come, every 15 or 30 minutes or every hour: sky, temperature and chance of rain. Le Mans Ultimate publishes a forecast for each session; iRacing shares only the conditions now.',
+    'The weather now and to come: sky, temperature and chance of rain, every 15 or 30 minutes or every hour. A full forecast in LMU; iRacing shares only the weather now.',
   topics: ['forecast', 'status'],
   size: [460, 150],
   settings: [
@@ -125,7 +125,7 @@ export const forecast: OverlayDef = {
         ['5', '5 tiles'],
       ],
       group: 'Forecast',
-      help: 'The weather now is the first tile, then one per step: 4 tiles every 15 minutes covers the next 45 minutes',
+      help: 'The weather now, then one tile per step (4 tiles every 15 minutes = the next 45 minutes)',
     },
     { key: 'showNow', label: 'Weather now as the first tile', type: 'bool', default: true, group: 'Forecast', help: 'Off: every tile is a time ahead' },
     { key: 'showHeader', label: 'Title and time left', type: 'bool', default: true, group: 'Forecast' },

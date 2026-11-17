@@ -43,20 +43,33 @@ export const tyredata: OverlayDef = {
   kind: 'tyredata',
   name: 'Tyre data',
   description:
-    'A card per wheel: the temperatures across each tyre (blue when cold, green in the window, amber when hot, red-orange when critical), the pressure, tread left and brake temperature, with a pill naming the worst problem. Live in Le Mans Ultimate; iRacing only measures tyres at pit stops, so there it shows the readings from your last stop.',
+    'Each tyre’s temperatures (blue cold, green good, amber hot, red critical), pressure, tread and brake temperature, with a pill naming the worst problem. Live in LMU; iRacing shows your last pit stop’s readings.',
   topics: ['tyredata', 'status'],
   size: [470, 280],
   commonDefaults: { autoHeight: true, hideWhenNotDriving: true },
   settings: [
+    {
+      key: 'tempShown',
+      label: 'Tyre temperatures',
+      type: 'select',
+      default: 'across',
+      options: [
+        ['across', 'Three across the tyre (outside, middle, inside)'],
+        ['core', 'One: the core (carcass) temperature'],
+        ['average', 'One: the average across the tyre'],
+      ],
+      group: 'What to show',
+      help: 'The core temperature is Le Mans Ultimate only; in iRacing the average is shown instead',
+    },
     { key: 'showPressure', label: 'Pressure', type: 'bool', default: true, group: 'What to show', help: 'iRacing: the cold pressure set at your last stop' },
     { key: 'showWear', label: 'Tread left', type: 'bool', default: true, group: 'What to show' },
     { key: 'showWearBar', label: 'Tread bar under the tyre', type: 'bool', default: true, group: 'What to show' },
     { key: 'showBrakes', label: 'Brake temperatures', type: 'bool', default: true, group: 'What to show', lmu: true, help: 'iRacing does not share brake temperatures' },
-    { key: 'showCarcass', label: 'Carcass temperature', type: 'bool', default: false, group: 'What to show', lmu: true, help: 'The tyre’s core, slower to change than the surface' },
+    { key: 'showCarcass', when: (v) => v.tempShown !== 'core', label: 'Carcass temperature', type: 'bool', default: false, group: 'What to show', lmu: true, help: 'The tyre’s core, slower to change than the surface' },
     { key: 'showAlert', label: 'Pill naming the worst problem', type: 'bool', default: true, group: 'What to show', help: 'e.g. FR INNER 103°, TYRES COLD, RL TREAD 14%' },
     { key: 'showUnits', label: 'Units in the header', type: 'bool', default: true, group: 'What to show' },
     { key: 'pressureUnit', when: (v) => v.showPressure !== false, label: 'Pressure in', type: 'select', default: 'auto', options: [['auto', 'kPa or psi (follows the units setting)'], ['kpa', 'kPa'], ['psi', 'psi'], ['bar', 'bar']], group: 'What to show' },
-    { key: 'condensed', label: 'Numbers in a condensed font (Barlow Condensed)', type: 'bool', default: true, group: 'Look', help: 'Off: the theme’s overlay font' },
+    { key: 'condensed', label: 'Condensed numbers', type: 'bool', default: true, group: 'Look', help: 'Off: the theme’s overlay font' },
     { key: 'useGameWindow', label: 'Use the game’s ideal tyre temperature', type: 'bool', default: true, group: 'Tyre window', lmu: true, help: 'Le Mans Ultimate says each tyre’s ideal temperature; green is that ± the margin below' },
     { key: 'windowMargin', when: (v) => v.useGameWindow !== false, label: 'Either side of the ideal', type: 'number', default: 12, min: 2, max: 40, unit: '°C', group: 'Tyre window', lmu: true },
     { key: 'coldBelow', label: 'Cold below', type: 'number', default: 70, min: 0, max: 150, unit: '°C', group: 'Tyre window', help: 'Used when the game gives no ideal temperature' },
@@ -76,6 +89,8 @@ export const tyredata: OverlayDef = {
     const s = ctx.settings;
     root.classList.add('tyredata');
     toggle(root, 'td-condensed', s.condensed !== false);
+    const mode = (s.tempShown as string) || 'across';
+    toggle(root, 'td-one', mode !== 'across');
     for (const t of ['cold', 'ok', 'hot', 'crit']) style(root, `--td-${t}`, s[`${t}Color`] as string);
 
     const head = h('div', 'td-head');
@@ -116,6 +131,7 @@ export const tyredata: OverlayDef = {
       info.append(top, press, tread.el, brake.el, core.el);
       card.append(...(right ? [info, tyre] : [tyre, info]));
       grid.append(card);
+      cells.slice(1).forEach((c) => show(c, mode === 'across'));
       show(press, s.showPressure !== false);
       show(tread.el, s.showWear !== false);
       show(bar, s.showWearBar !== false);
@@ -165,14 +181,18 @@ export const tyredata: OverlayDef = {
           show(v.flat, wh.flat);
           toggle(v.card, 'flat', wh.flat);
           if (wh.flat) consider(100, 'crit', `${CORNERS[i]} FLAT`);
-          let allCold = !!wh.temps;
-          v.cells.forEach((c, k) => {
-            const t = wh.temps?.[k] ?? null;
+          // Three across the tyre, or one: the core (LMU) or the average of the three.
+          const avg = wh.temps ? (wh.temps[0] + wh.temps[1] + wh.temps[2]) / 3 : null;
+          const shown: (number | null)[] = mode === 'across' ? (wh.temps ?? [null, null, null]) : [mode === 'core' ? (wh.carcass ?? avg) : (avg ?? wh.carcass)];
+          const what = (k: number) => (mode === 'across' ? edge(i, k) : mode === 'core' && wh.carcass != null ? 'CORE' : '');
+          let allCold = shown[0] != null;
+          shown.forEach((t, k) => {
+            const c = v.cells[k];
             text(c, t == null ? '–' : temp(t, u));
             const tone = t == null ? null : tyreTone(t);
             c.className = `td-cell t-${tone ?? 'none'}`;
             if (tone !== 'cold') allCold = false;
-            if (t != null && (tone === 'hot' || tone === 'crit')) consider(RANK[tone] * 10 + t / 1000, tone, `${CORNERS[i]} ${edge(i, k)} ${temp(t, u)}°`);
+            if (t != null && (tone === 'hot' || tone === 'crit')) consider(RANK[tone] * 10 + t / 1000, tone, `${CORNERS[i]} ${what(k)} ${temp(t, u)}°`.replace('  ', ' '));
           });
           if (allCold) {
             coldTyres++;
@@ -193,7 +213,7 @@ export const tyredata: OverlayDef = {
             v.brake.v.className = `td-rv b-${bt}`;
             if (s.showBrakes !== false && (bt === 'hot' || bt === 'crit')) consider(RANK[bt] * 10 - 2 + wh.brake / 10000, bt, `${CORNERS[i]} BRAKE ${temp(wh.brake, u)}°`);
           }
-          show(v.core.el, !!s.showCarcass && wh.carcass != null);
+          show(v.core.el, mode !== 'core' && !!s.showCarcass && wh.carcass != null);
           if (wh.carcass != null) {
             text(v.core.v, `${temp(wh.carcass, u)}°`);
             v.core.v.className = `td-rv b-${tyreTone(wh.carcass)}`;

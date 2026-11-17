@@ -25,7 +25,7 @@ export function headerSettings(on: string[]): SettingDef[] {
       group: 'Header',
     },
     { key: 'headerCustomTitle', when: (v) => v.showHeader !== false && v.headerTitle === 'custom', label: 'Custom title', type: 'text', default: '', placeholder: 'My League · Round 3', group: 'Header' },
-    { key: 'sessionBadge', when: (v) => v.showHeader !== false, label: 'Session type badge (Practice, Qualifying, Race…)', type: 'bool', default: true, group: 'Header' },
+    { key: 'sessionBadge', when: (v) => v.showHeader !== false, label: 'Session type badge', type: 'bool', default: true, group: 'Header' },
     { key: 'headerFields', when: (v) => v.showHeader !== false, label: 'Session details in the header', type: 'columns', ...headerFields(on), group: 'Header' },
     { key: 'headerSeparator', when: (v) => v.showHeader !== false, label: 'Separator', type: 'text', default: '  ·  ', group: 'Header' },
     {

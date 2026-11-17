@@ -11,7 +11,7 @@ export const TRACE_SETTINGS: SettingDef[] = [
   { key: 'traceWidth', when: (v) => v.showTrace !== false, label: 'Trace line width', type: 'number', default: 2, min: 0.5, max: 6, step: 0.5, unit: 'px', group: 'Trace' },
   { key: 'traceSteering', when: (v) => v.showTrace !== false, label: 'Show steering in trace', type: 'bool', default: false, group: 'Trace' },
   { key: 'traceFill', when: (v) => v.showTrace !== false, label: 'Fill under throttle/brake', type: 'bool', default: true, group: 'Trace' },
-  { key: 'absHighlight', label: 'Colour the brake trace and bar while ABS is active', type: 'bool', default: true, group: 'Trace' },
+  { key: 'absHighlight', label: 'Colour the brake while ABS is working', type: 'bool', default: true, group: 'Trace' },
 ];
 
 /** A trace drawn on `canvas`: feed it every player update, it redraws itself. */

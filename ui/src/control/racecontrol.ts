@@ -52,7 +52,7 @@ export const raceControlPage: Page = {
       h(
         'p',
         'dim',
-        'Give a driver a penalty and it appears in a box next to their name in the relative and standings (e.g. DT, S&G 40s, +5s). iRacing only tells overlays that a black flag is out, not which penalty it is — when a black-flagged car serves it in the pits, Apex Overlays shows DT or a live S&G timer automatically.',
+        'Give a driver a penalty (DT, S&G 40s, +5s) and it shows next to their name in the relative and standings. Black-flagged cars serving in the pits show DT or an S&G timer automatically.',
       ),
     );
 
@@ -84,7 +84,7 @@ export const raceControlPage: Page = {
     dl.setAttribute('href', '/api/session-info');
     dl.setAttribute('download', 'apex-session-info.yaml');
     drivers.append(
-      h('p', 'dim small', 'The Flag column shows each driver’s country. It comes from the flair iRacing sends in the session; when a session has none, Apex Overlays looks drivers up through the iRacing Data API (set up under League builder → Import from iRacing) and remembers them. You can also set a driver’s flag in the League builder. If flags are still missing, download the session info and send it with a bug report.'),
+      h('p', 'dim small', 'Flags come from iRacing, or are looked up through the iRacing Data API (League builder → Import from iRacing). You can also set them in the League builder.'),
       dl,
     );
     const rows = (state.standings?.classes.flatMap((c) => c.rows) ?? []).sort((a, b) => a.position - b.position);
