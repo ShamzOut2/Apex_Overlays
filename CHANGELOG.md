@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.3.0
 
 ### New features
 - Game switch at the bottom of the sidebar, beside the Apex Labs logo: Auto (whichever game is running), iRacing or LMU, one click from any page. In Auto, the game being read is marked in green
