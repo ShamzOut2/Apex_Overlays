@@ -93,14 +93,14 @@ export function enabledColumns(v: unknown): string[] {
 export const COMMON: SettingDef[] = [
   { key: 'opacity', label: 'Overlay opacity', type: 'number', default: 100, min: 10, max: 100, step: 1, unit: '%', help: 'Fades the whole overlay, text included', group: 'Transparency' },
   { key: 'bgOpacity', label: 'Background opacity', type: 'number', default: -1, min: -1, max: 100, step: 1, unit: '%', help: '-1 follows the theme; 0 = fully see-through background', group: 'Transparency' },
-  { key: 'textSize', label: 'Text size', type: 'number', default: 0, min: 0, max: 48, step: 0.5, unit: 'px', group: 'General', help: '0: the theme’s size (Theme → Base font size). Everything in the overlay grows or shrinks with its text' },
+  { key: 'textSize', label: 'Text size', type: 'number', default: 0, min: 0, max: 48, step: 0.5, unit: 'px', group: 'General', help: '0: the theme’s size. The whole overlay grows or shrinks with it' },
   { key: 'scale', label: 'Scale', type: 'number', default: 100, min: 40, max: 300, step: 5, unit: '%', group: 'General' },
   {
     key: 'autoHeight',
-    label: 'Fit the window to the content (nothing cut off)',
+    label: 'Fit the window to the content',
     type: 'bool',
     default: true,
-    help: 'The height follows what is shown, and the window widens when something would not fit, back to your width when it does. You only set the width',
+    help: 'The window grows and shrinks with what is shown. You set the width',
     group: 'General',
   },
   {
@@ -138,7 +138,7 @@ export const COMMON: SettingDef[] = [
       ['custom', 'Where I set below'],
     ],
     group: 'VR',
-    help: 'As on my screen: the layout of your monitor on an imaginary screen in front of you (its distance and size are under General → VR)',
+    help: 'As on my screen: your monitor’s layout on a virtual screen in front of you (set under General → VR)',
   },
   { key: 'vrX', when: (v) => v.vrShow !== false && v.vrPlace === 'custom', label: 'Custom position: left / right', type: 'number', default: 0, min: -2, max: 2, step: 0.01, unit: 'm', group: 'VR', help: 'Custom placement: + is to the right' },
   { key: 'vrY', when: (v) => v.vrShow !== false && v.vrPlace === 'custom', label: 'Custom position: down / up', type: 'number', default: 0, min: -2, max: 2, step: 0.01, unit: 'm', group: 'VR', help: 'Custom placement: + is up' },

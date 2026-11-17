@@ -258,7 +258,7 @@ export const NUMBER_COLOR_SETTING = {
     ['secondary', 'Secondary class colour (League builder)'],
     ['team', 'Team colour (League builder → Team builder)'],
   ] as [string, string][],
-  help: 'Secondary class: drivers without one show just the number, with no background. Team colour: drivers in a team with no colour (or in no team) keep their class colour',
+  help: 'Drivers without a secondary class or team colour keep the normal look',
 };
 
 type Colored = { classColor: string; class2Color?: string; teamColor?: string };
@@ -401,7 +401,7 @@ export const STRIPE_COLOR_SETTING = {
     ['team', 'Team colour (League builder → Team builder)'],
     ['number', 'As the car number'],
   ] as [string, string][],
-  help: 'Secondary class: no bar for drivers without one. Team colour: the class colour for drivers in a team with no colour, or in no team',
+  help: 'Drivers without a secondary class or team colour keep their class colour',
   group: 'Colours',
 };
 
@@ -417,10 +417,10 @@ export const COLUMN_STYLE_SETTINGS = [
     type: 'select' as const,
     default: 'logo',
     options: [['logo', 'Logo (falls back to short name)'], ['short', 'Short name'], ['full', 'Full name']] as [string, string][],
-    help: 'Logos for iRacing’s manufacturers are built in; your own images in the data folder under logos/ (e.g. porsche.png) take priority',
+    help: 'Built in for iRacing’s cars. Your own images go in the data folder under logos/ (e.g. porsche.png)',
     group: 'Column style',
   },
-  { key: 'makePlate', when: (v: Values) => columnOn(v, 'make') && v.makeStyle === 'logo', label: 'Dark background behind manufacturer logos', type: 'bool' as const, default: false, group: 'Column style', help: 'The logos are made for dark overlays; turn this on for light themes or a see-through overlay over bright scenery' },
+  { key: 'makePlate', when: (v: Values) => columnOn(v, 'make') && v.makeStyle === 'logo', label: 'Dark background behind manufacturer logos', type: 'bool' as const, default: false, group: 'Column style', help: 'For light themes or see-through overlays over bright scenery' },
   {
     key: 'classStyle', when: (v: Values) => columnOn(v, 'class'),
     label: 'Class column',
@@ -443,7 +443,7 @@ export const COLUMN_STYLE_SETTINGS = [
     label: 'iRating in the licence colour',
     type: 'bool' as const,
     default: true,
-    help: 'With the licence column hidden, each iRating pill takes the colour of the driver’s licence (A blue, B green, C yellow, D orange, R red)',
+    help: 'With the licence column hidden, the iRating pill takes the licence colour',
     group: 'Column style',
   },
   {
@@ -456,17 +456,17 @@ export const COLUMN_STYLE_SETTINGS = [
   },
   { key: 'outLapText', when: (v: Values) => columnOn(v, 'stint'), label: 'Out-lap label', type: 'text' as const, default: 'OUTLAP', group: 'Column style' },
   { key: 'pointsPlus', when: (v: Values) => columnOn(v, 'points'), label: 'Show points as gains (+25)', type: 'bool' as const, default: true, group: 'Column style' },
-  { key: 'finishFlag', when: (v: Values) => columnOn(v, 'name'), label: 'Chequered flag next to drivers who have finished', type: 'bool' as const, default: true, group: 'Column style' },
+  { key: 'finishFlag', when: (v: Values) => columnOn(v, 'name'), label: 'Chequered flag when finished', type: 'bool' as const, default: true, group: 'Column style' },
   {
     key: 'driverFlags', when: (v: Values) => columnOn(v, 'name'),
-    label: 'Flags next to drivers (caused a yellow, black, meatball, blue…)',
+    label: 'Flags next to drivers',
     type: 'bool' as const,
     default: true,
     group: 'Column style',
   },
-  { key: 'penaltyBox', when: (v: Values) => columnOn(v, 'name'), label: 'Penalty box next to drivers (DT, S&G 40s, +5s)', type: 'bool' as const, default: true, group: 'Column style' },
+  { key: 'penaltyBox', when: (v: Values) => columnOn(v, 'name'), label: 'Penalties next to drivers', type: 'bool' as const, default: true, group: 'Column style' },
   { key: 'pitTag', when: (v: Values) => columnOn(v, 'name'), label: 'PIT after the name while on pit road', type: 'bool' as const, default: true, group: 'Column style' },
-  { key: 'highlightBest', label: 'Colour lap times (purple = class best, green = personal best)', type: 'bool' as const, default: true, group: 'Colours' },
+  { key: 'highlightBest', label: 'Colour best laps (purple class, green personal)', type: 'bool' as const, default: true, group: 'Colours' },
 ];
 
 /** Tyre badge: a white circle with D for dry tyres, a blue one with W for wets. */

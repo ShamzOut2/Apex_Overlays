@@ -54,6 +54,9 @@ const SESSION_TYPES: [string, string, string][] = [
   ['race', 'R', 'Race'],
 ];
 
+/** Keeps the overlay preview fitted to the editor (one at a time). */
+let previewObserver: ResizeObserver | null = null;
+
 /** A menu to show open again after the page redraws. */
 let openMenu = '';
 
@@ -248,14 +251,30 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
   const preview = h('div', 'preview');
   const frame = h('iframe');
   frame.src = `${url}?preview`;
-  const scale = Math.min(1, 700 / o.width, 220 / o.height);
   frame.style.width = `${o.width}px`;
   frame.style.height = `${o.height}px`;
-  frame.style.transform = `scale(${scale})`;
-  preview.style.height = `${o.height * scale + 16}px`;
+  // Scaled to fit the editor, however wide the window is.
+  const fitPreview = () => {
+    // The overlay as wide and tall as its content (the real window fits itself to it).
+    const panel = frame.contentDocument?.querySelector<HTMLElement>('.panel');
+    const w = Math.max(o.width, panel?.scrollWidth ?? 0);
+    const hgt = o.height;
+    frame.style.width = `${w}px`;
+    const room = (preview.clientWidth || 700) - 16;
+    const scale = Math.min(1, room / w, 220 / hgt);
+    frame.style.transform = `scale(${scale})`;
+    preview.style.height = `${Math.ceil(hgt * scale) + 16}px`;
+  };
+  // Content grows as data comes in: check now and then while the editor is open.
+  const fitTimer = window.setInterval(() => (preview.isConnected ? fitPreview() : clearInterval(fitTimer)), 1000);
+  frame.addEventListener('load', () => setTimeout(fitPreview, 300));
+  fitPreview();
+  previewObserver?.disconnect();
+  previewObserver = new ResizeObserver(fitPreview);
+  previewObserver.observe(preview);
   preview.append(frame);
 
-  const common = commonFor(def.commonDefaults, def.fitsWidth);
+  const common = commonFor(def.commonDefaults, def.fitsWidth, def.fill);
   const values = merge([...common, ...def.settings], o.settings);
   const entries = [...def.settings.map((s) => ({ s, tab: tabOf(s, false) })), ...common.map((s) => ({ s, tab: tabOf(s, true) }))];
   const tabs = [...new Set(entries.map((e) => e.tab))].sort((a, b) => tabRank(a) - tabRank(b));
@@ -547,7 +566,7 @@ const overlaysPage: Page = {
     );
     lpop.append(
       ...(cfg.layouts.length
-        ? [layoutList, h('p', 'dim small', 'P Q W R: switch to that layout automatically when a Practice, Qualifying, Warmup or Race session starts. ⇩ exports a layout to share; hotkeys are under General → Hotkeys.')]
+        ? [layoutList, h('p', 'dim small', 'P Q W R: use this layout automatically in Practice, Qualifying, Warmup or Race. ⇩ exports it.')]
         : [h('p', 'dim small', 'Save the overlays you have now as a layout, set up another, and switch between them here, with a hotkey, or automatically by session type.')]),
       layoutActions,
     );
@@ -888,7 +907,7 @@ const garage61Page: Page = {
         h(
           'p',
           'dim',
-          'Shows a live delta to your Garage 61 personal best (or your team’s best lap), sector by sector, plus your personal best and your teams’ leaderboard for the car and track you are driving. Create a personal access token on garage61.net (Developer → My applications) with the “driving data” permission.',
+          'Live delta to your Garage 61 best (or your team’s), sector by sector, plus your team’s leaderboard. Make a personal access token on garage61.net (Developer → My applications) and paste it below.',
         ),
         form(
           [
@@ -1173,7 +1192,7 @@ function hotkeysCard(): HTMLElement {
   hk.layouts ??= {};
   hk.overlays ??= {};
   const c = card('Hotkeys');
-  c.append(h('p', 'dim', 'Click a box and press the keys you want (Ctrl, Alt or Shift plus a key, or an F-key / number-pad key on its own). Backspace clears a hotkey. Desktop app only; changes apply straight away.'));
+  c.append(h('p', 'dim', 'Click a box and press the keys (Ctrl, Alt or Shift plus a key, or an F-key). Backspace clears it.'));
   const all = (): string[] => [hk.toggleEdit, hk.toggleVisibility, hk.nextLayout, ...Object.values(hk.layouts), ...Object.values(hk.overlays)].filter((k) => k?.trim());
   const rows: { warn: HTMLElement; get: () => string }[] = [];
   const checkClashes = () => {
@@ -1355,7 +1374,7 @@ function gameCard(): HTMLElement {
     h(
       'p',
       'dim small',
-      'In Le Mans Ultimate there are no iRating, licences or incident points, so those columns stay empty. Track maps are drawn from where the cars on track are, usually within a minute, and kept; tracks in the shared map library appear straight away.',
+      'LMU has no iRating, licences or incident points, so those columns stay empty. Track maps draw themselves within about a lap.',
     ),
     withLmuBadge(button('Export my LMU track maps', async () => {
       // For the shared map library, so other drivers get these tracks without mapping them.
@@ -1385,7 +1404,7 @@ function vrCard(): HTMLElement {
     h(
       'p',
       'dim',
-      'Shows your overlays in the headset, looking and updating exactly as on your screen. Each overlay’s VR tab says whether it shows in VR, whether it is fixed in the car or follows your head, and where it goes.',
+      'Shows your overlays in the headset, as on your screen. Each overlay’s VR tab sets where it goes.',
     ),
     form(
       [
@@ -1400,7 +1419,7 @@ function vrCard(): HTMLElement {
             ['openxr', 'OpenXR only (no SteamVR needed)'],
             ['steamvr', 'SteamVR overlays only'],
           ],
-          help: 'Automatic draws inside the game when it runs in OpenXR (iRacing or Le Mans Ultimate, with Virtual Desktop, Quest Link, Pimax, Varjo, SteamVR…), otherwise uses SteamVR overlays',
+          help: 'Automatic: drawn inside the game with OpenXR (Virtual Desktop, Quest Link, Pimax…), otherwise SteamVR overlays',
         },
         { key: 'distance', label: 'Screen layout: distance in front', type: 'number', default: 0.9, min: 0.2, max: 5, step: 0.05, unit: 'm', help: 'Overlays placed “as on my screen” sit on an imaginary screen this far away' },
         { key: 'width', label: 'Screen layout: width', type: 'number', default: 1.2, min: 0.2, max: 6, step: 0.05, unit: 'm' },
@@ -1428,7 +1447,7 @@ function vrCard(): HTMLElement {
     h(
       'p',
       'dim small',
-      'While the overlays show in VR, moving or resizing them (in Edit mode) only changes their VR positions. Your screen layout stays exactly as it was and comes back when you leave VR.',
+      'In VR, moving overlays only changes their VR positions; your screen layout is kept.',
     ),
   );
   if (ownVr)
@@ -1442,27 +1461,27 @@ function vrCard(): HTMLElement {
     h(
       'p',
       'dim small',
-      'Set a “Recentre VR” hotkey under Hotkeys: with SteamVR it resets the seated position; with OpenXR it places the overlays fixed in the car from where your head is when you press it.',
+      'Set a “Recentre VR” hotkey under Hotkeys to re-centre the overlays on where your head is.',
     ),
     h(
       'p',
       'dim small',
-      'Virtual Desktop: in the Virtual Desktop Streamer, set the OpenXR runtime to VDXR, then pick OpenXR as iRacing’s VR mode. No SteamVR needed; the status above says when the overlays are showing inside the game, and which game.',
+      'Virtual Desktop: set the OpenXR runtime to VDXR in the Streamer, then pick OpenXR in iRacing. No SteamVR needed.',
     ),
     h(
       'p',
       'dim small',
-      'Le Mans Ultimate: works the same way, in OpenXR (the overlays are drawn inside the game) or through SteamVR. Each game keeps its own overlays, VR positions and screen layout distance and size, so you can set LMU up differently from iRacing; they switch with the game.',
+      'Le Mans Ultimate works the same way, and keeps its own overlays and VR positions.',
     ),
     h(
       'p',
       'dim small',
-      'OpenXR: the first time, Windows asks for permission to register Apex Overlays’ OpenXR layer, so every game can load it. Restart the game after turning VR on. It works alongside other OpenXR layers such as NextLevelXR or OpenXR Toolkit (Direct3D 11 and 12).',
+      'The first time, Windows asks to register the OpenXR layer. Restart the game after turning VR on. Works with NextLevelXR and OpenXR Toolkit.',
     ),
     h(
       'p',
       'dim small',
-      'Using another OpenXR layer (NextLevelXR, OpenXR Toolkit, OpenKneeboard)? They work together. If the overlays do not show or get cropped, change the order of the layers with the free “OpenXR API Layers GUI” tool: move “XR_APILAYER_APEX_overlays” to the other end of the list.',
+      'Overlays missing or cropped with other OpenXR layers? Use the free “OpenXR API Layers GUI” to move “XR_APILAYER_APEX_overlays” to the other end of the list.',
     ),
   );
   return c;
@@ -1542,7 +1561,7 @@ function logsCard(): HTMLElement {
   });
   const c = card(
     'Logs',
-    h('p', 'dim', 'Apex Overlays writes what it does and every error it meets (including errors inside the overlays) to apex.log. If something goes wrong, send that file, or copy the log and paste it, with your report. The run before this one is kept as apex.previous.log, so the log of a crash is still there after a restart.'),
+    h('p', 'dim', 'Everything the app does, and every error, goes in apex.log. If something goes wrong, send that file with your report.'),
     (() => {
       const p = h('p', '', 'Log folder: ');
       p.append(where);
@@ -1585,7 +1604,7 @@ const generalPage: Page = {
             { key: 'units', label: 'Units', type: 'select', default: 'auto', options: [['auto', 'Same as the game'], ['metric', 'Metric'], ['imperial', 'Imperial']], group: 'Display' },
             {
               key: 'ratingsOfficialOnly',
-              label: 'Only estimate iRating / SR in official races',
+              label: 'iRating / SR only in official races',
               type: 'bool',
               default: true,
               help: 'Leagues and hosted sessions do not change iRating or SR',
@@ -1601,11 +1620,11 @@ const generalPage: Page = {
             },
             {
               key: 'lmuPrivateQualifying',
-              label: 'Qualifying is private: leave other cars off the relative and radar',
+              label: 'Private qualifying: hide other cars',
               type: 'bool',
               default: true,
               lmu: true,
-              help: 'In private qualifying (the default in Le Mans Ultimate’s online races) each driver is alone on track, so cars shown near you are not really there. Turn off for open qualifying, where everyone is on track together',
+              help: 'In LMU’s online qualifying each driver is alone on track, so other cars are not really near you. Turn off for open qualifying.',
               group: 'Display',
             },
             {
@@ -1618,7 +1637,7 @@ const generalPage: Page = {
                 ['balanced', 'Balanced (recommended)'],
                 ['full', 'Every tick (60/s, most CPU)'],
               ],
-              help: 'Light: inputs, spotter and pit 30/s; track map 20/s; relative and safety alert 10/s; standings and battle 5/s. Balanced: inputs and spotter 60/s; track map and pit 30/s; relative and safety alert 20/s; standings and battle 10/s. Telemetry is always read 60 times a second, so nothing is missed: only shown less often.',
+              help: 'Light: least CPU and FPS impact. Balanced: smooth driving aids, timing tables a little less often. Every tick: everything 60 times a second.',
               group: 'Performance',
             },
             {
@@ -1634,7 +1653,7 @@ const generalPage: Page = {
               group: 'Display',
             },
             { key: 'port', label: 'Port', type: 'number', default: 8182, min: 1024, max: 65535, group: 'Server (restart to apply)' },
-            { key: 'lanAccess', label: 'Allow other PCs on my network (streaming PC)', type: 'bool', default: false, group: 'Server (restart to apply)' },
+            { key: 'lanAccess', label: 'Allow other PCs on my network', type: 'bool', default: false, group: 'Server (restart to apply)' },
           ],
           opts,
           (k, v) => {

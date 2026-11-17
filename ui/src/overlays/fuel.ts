@@ -28,7 +28,7 @@ export const fuel: OverlayDef = {
   kind: 'fuel',
   name: 'Fuel calculator',
   description:
-    'Laps of fuel left against laps to go, on a bar with the finish marked: cyan when you make the finish, amber when it is close, red with how much to add when you are short. Plus consumption, stops, pit window and more. Works for lap- and time-limited races; a compact mode shows just the essentials.',
+    'Laps of fuel left against laps to go: cyan when you make it, amber when close, red with how much to add. Plus use per lap, stops and the pit window.',
   topics: ['fuel', 'session'],
   size: [340, 210],
   commonDefaults: { autoHeight: true },

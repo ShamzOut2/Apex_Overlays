@@ -93,7 +93,7 @@ export const safety: OverlayDef = {
   kind: 'safety',
   name: 'Safety alert',
   description:
-    'Stays hidden until something needs your attention: a car ahead causing a yellow (stopped, slow or off track) or carrying the meatball shows a waving flag with the driver and how far ahead they are, until you have passed them. A car just ahead serving a slow-down penalty shows as a possible overtake. A car of a faster class closing from behind shows its class, car, driver, gap and distance.',
+    'Pops up only when it matters: a yellow or meatball car ahead (with how far), a car serving a slow-down you can pass, and a faster class closing from behind.',
   topics: ['safety', 'status'],
   size: [400, 230],
   settings: [
@@ -102,7 +102,7 @@ export const safety: OverlayDef = {
     { key: 'yellow', when: (v) => v.showHazards !== false, label: 'Cars causing a yellow', type: 'bool', default: true, group: 'Yellow & meatball ahead', help: 'Stopped, crawling or off track' },
     { key: 'meatball', when: (v) => v.showHazards !== false, label: 'Cars with the meatball', type: 'bool', default: true, group: 'Yellow & meatball ahead', help: 'Damaged cars told to pit for repairs' },
     { key: 'maxHazards', when: (v) => v.showHazards !== false, label: 'Cars shown at once', type: 'number', default: 2, min: 1, max: 4, group: 'Yellow & meatball ahead' },
-    { key: 'showOvertake', label: 'Tell me when a car ahead is serving a slow-down', type: 'bool', default: true, group: 'Slow-down ahead (possible overtake)' },
+    { key: 'showOvertake', label: 'Car ahead serving a slow-down', type: 'bool', default: true, group: 'Slow-down ahead (possible overtake)' },
     {
       key: 'overtakeSeconds', when: (v) => v.showOvertake !== false,
       label: 'When it is this close',
@@ -113,10 +113,10 @@ export const safety: OverlayDef = {
       step: 0.5,
       unit: 's',
       group: 'Slow-down ahead (possible overtake)',
-      help: 'iRacing does not say how long a slow-down lasts, so the alert shows how long the car has been slowing and roughly how much time it has given up',
+      help: 'Shows how long the car has been slowing and roughly the time it has given up',
     },
     { key: 'maxOvertake', when: (v) => v.showOvertake !== false, label: 'Cars shown at once', type: 'number', default: 1, min: 1, max: 4, group: 'Slow-down ahead (possible overtake)' },
-    { key: 'showSlowBadge', label: 'SLOW badge next to drivers serving a slow-down', type: 'bool', default: true, group: 'What to show' },
+    { key: 'showSlowBadge', label: 'SLOW badge on slowed drivers', type: 'bool', default: true, group: 'What to show' },
     { key: 'showApproach', label: 'Warn about faster classes behind', type: 'bool', default: true, group: 'Faster class behind' },
     { key: 'behindSeconds', when: (v) => v.showApproach !== false, label: 'Look this far behind', type: 'number', default: 5, min: 1, max: 30, step: 0.5, unit: 's', group: 'Faster class behind' },
     { key: 'maxApproach', when: (v) => v.showApproach !== false, label: 'Cars shown at once', type: 'number', default: 1, min: 1, max: 4, group: 'Faster class behind' },

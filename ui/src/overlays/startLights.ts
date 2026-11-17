@@ -17,7 +17,7 @@ export const startLights: OverlayDef = {
   kind: 'startLights',
   name: 'Start lights',
   description:
-    'Race start lights that appear only for the start: a countdown first as a warning (optional), then red lights, all red when set, green (or lights out) for the go, then it disappears. For rolling starts: amber on the pace laps, pulsing on the last one, green when the green flag drops.',
+    'Start lights that show only for the start: an optional countdown, red lights, then green. For rolling starts: amber on the pace laps, green when the flag drops.',
   topics: ['player', 'status'],
   size: [400, 110],
   // Nothing behind the lights: the window is see-through.

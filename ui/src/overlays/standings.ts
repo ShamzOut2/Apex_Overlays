@@ -35,9 +35,9 @@ const COLS = [
   { id: 'pits', label: 'Pit stops — STOPS' },
   { id: 'tire', label: 'Tyre (wet/dry) — TYRE' },
   { id: 'points', label: 'League points for position — PTS' },
-  { id: 'fuelLeft', label: 'Fuel / virtual energy left (every car in LMU; only you in iRacing) — FUEL', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
-  { id: 'fuelAdded', label: 'Fuel / energy added at the last stop (every car in LMU; only you in iRacing) — FUEL+', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
-  { id: 'fuelTotal', label: 'Fuel / energy added this session (every car in LMU; only you in iRacing) — FUEL Σ', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
+  { id: 'fuelLeft', label: 'Fuel / energy left — FUEL', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
+  { id: 'fuelAdded', label: 'Fuel added at last stop — FUEL+', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
+  { id: 'fuelTotal', label: 'Fuel added this session — FUEL Σ', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
   { id: 'seasonPoints', label: 'Championship total (projected) — CHAMP' },
 ];
 
@@ -81,7 +81,7 @@ export const standings: OverlayDef = {
         ['off', 'Class name only'],
       ],
       group: 'Header',
-      help: 'Badges are built in for iRacing’s classes (GT3, LMP2, TCR, …). Your own images in the data folder under logos/ (e.g. class-gt3.png) take priority',
+      help: 'Built in for iRacing’s classes. Your own images go in the data folder under logos/ (e.g. class-gt3.png)',
     },
     { key: 'showColumnTitles', label: 'Show column titles', type: 'bool', default: true, group: 'Header' },
     { key: 'columnTitlesEveryClass', when: (v) => v.showColumnTitles !== false && (v.mode ?? 'multiclass') === 'multiclass', label: 'Repeat column titles for every class', type: 'bool', default: false, group: 'Header' },

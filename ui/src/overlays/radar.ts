@@ -23,7 +23,7 @@ export const radar: OverlayDef = {
   name: 'Radar',
   game: 'lmu',
   description:
-    'The cars around you, seen from above, exactly where they are: your car in the middle, the others amber when close and red when alongside. Hides itself until a car is near. Le Mans Ultimate only, as it is the game that says where every car is; in iRacing, use the Spotter.',
+    'The cars around you, seen from above: amber when close, red when alongside. Shows only when a car is near. LMU only (in iRacing, use the Spotter).',
   topics: ['radar', 'status'],
   size: [220, 260],
   settings: [

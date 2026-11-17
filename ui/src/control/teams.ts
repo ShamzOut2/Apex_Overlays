@@ -328,7 +328,7 @@ function csvDialog(l: League, done: (msg: string) => void) {
       h('h2', '', 'Import a sign-up sheet'),
       h('p', 'dim', `${sheet.rows.length} row${sheet.rows.length === 1 ? '' : 's'} in the sheet, going into ${l.name || 'this league'}. Check which column is which:`),
       form,
-      h('p', 'dim small', 'Drivers already on the roster (the same iRacing ID, else the same name) get the sheet’s details; the rest are added. Teams and classes the league does not have yet are made.'),
+      h('p', 'dim small', 'Drivers already on the roster are updated; new ones are added, with any new teams and classes.'),
       bar,
     );
     document.body.append(dlg);

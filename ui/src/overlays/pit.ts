@@ -14,7 +14,7 @@ export const pit: OverlayDef = {
   kind: 'pit',
   name: 'Pit lane',
   description:
-    'Appears when you head for the pits: when to brake for the pit entry line (with the distance to it), your speed and a pit limiter light in the lane, WAIT then GO in your box, the distance to the pit exit line, and a reminder to switch the limiter off. Hides itself a few seconds after you leave.',
+    'Shows when you head for the pits: when to brake for the pit lane, your speed and limiter, WAIT then GO in your box, and a reminder to switch the limiter off.',
   topics: ['pit', 'status'],
   size: [230, 200],
   settings: [

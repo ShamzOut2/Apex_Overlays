@@ -13,6 +13,15 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - Fuel / energy left column for the relative and standings (FUEL): each car’s fuel, or virtual energy for the cars that race on it (shown in blue), as a % in Le Mans Ultimate; your own fuel in iRacing. Red when under 10%
 - Tyre data: show one temperature per tyre instead of three: the core (carcass) temperature in Le Mans Ultimate, or the average across the tyre
 
+### Improvements
+- A tidier, simpler settings window: overlay descriptions, settings and help texts are shorter and plainer (long explanations cut down, e.g. on General, VR, Race control and the League builder); every page and every overlay's settings checked at three window sizes so no text overlaps or is cut off
+- Smaller settings windows: the sidebar and overlay list take less room, long overlay names wrap instead of being cut, the column picker shows each column's short code as a tag, and drop-down menus open towards the side with room
+- The live preview in each overlay's settings fits the editor and shows the whole overlay (it was cut off on the right in narrower windows)
+- Escape closes dialogs (Add overlay, Share a layout, previews)
+- Sliders line up, with or without a unit next to them
+- The overlay's name at the top of its settings no longer looks greyed out
+- "Fit the window to the content" is no longer offered on overlays drawn to fill their window (track map, radar, inputs…), where it did nothing
+
 ### Fixes
 - Radar: no longer stops drawing with an error ("radius is negative") when its window is very small or hidden for a moment
 - The log no longer records the browser's harmless "ResizeObserver loop" note from the track map as an error

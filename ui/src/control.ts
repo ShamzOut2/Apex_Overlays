@@ -87,6 +87,34 @@ function renderStatus() {
 
 let lastLive = 0;
 window.addEventListener('hashchange', render);
+// Drop-down menus open towards the side with room (a narrow window wraps the toolbar).
+document.addEventListener(
+  'toggle',
+  (e) => {
+    const d = e.target as HTMLElement;
+    if (!(d instanceof HTMLDetailsElement) || !d.open) return;
+    const pop = d.querySelector<HTMLElement>(':scope > .menu-pop');
+    if (!pop) return;
+    pop.style.left = '';
+    pop.style.right = '';
+    const r = pop.getBoundingClientRect();
+    const mainLeft = main.getBoundingClientRect().left;
+    if (r.left < mainLeft + 8) {
+      pop.style.left = '0';
+      pop.style.right = 'auto';
+    }
+  },
+  true,
+);
+// Escape closes the dialog on top (Add overlay, Share a layout, previews…).
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const dialogs = document.querySelectorAll('.modal-back');
+  if (dialogs.length) {
+    e.preventDefault();
+    dialogs[dialogs.length - 1].remove();
+  }
+});
 let leagueKey = '';
 let wasInVr = false;
 let lastGame = '';

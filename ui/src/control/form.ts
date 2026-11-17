@@ -102,7 +102,12 @@ function columnsControl(s: Extract<SettingDef, { type: 'columns' }>, value: Colu
         c.on = false;
         commit();
       };
-      const name = badge(h('span', 'col-name', label(c.id)), c.id);
+      // "Long name — CODE": the code as a tag that is always seen, the name shortened if need be.
+      const [long, code] = label(c.id).split(' — ');
+      const name = h('span', 'col-name');
+      name.append(h('span', 'col-text', long));
+      if (code) name.append(h('span', 'col-code', code));
+      badge(name, c.id);
       name.title = `${label(c.id)} — drag to move`;
       item.append(h('span', 'col-grip', '⠿'), h('span', 'col-pos', String(i + 1)), name, up, down, remove);
       list.append(item);
@@ -175,7 +180,7 @@ function control(s: SettingDef, value: unknown, onChange: OnChange): HTMLElement
         i.addEventListener('input', () => (r.value = i.value));
         wrap.prepend(r);
       }
-      if (s.unit) wrap.append(h('span', 'unit', s.unit));
+      wrap.append(h('span', 'unit', s.unit ?? ''));
       return wrap;
     }
     case 'color': {

@@ -99,7 +99,8 @@ async function load(refresh = false) {
     listings = Array.isArray(d.layouts) ? d.layouts : [];
     loadError = '';
   } catch (e) {
-    loadError = `The market could not be reached (${e instanceof Error ? e.message : e}). Check your internet connection and try again.`;
+    console.warn('Layout Market:', e);
+    loadError = 'Couldn’t reach the Layout Market. Check your internet connection, then press Refresh.';
   } finally {
     loading = false;
   }
@@ -263,8 +264,8 @@ function shareDialog() {
           'p',
           'dim small',
           inLink
-            ? 'The share form opens on GitHub with your layout filled in: press “Submit new issue”. It is checked and listed in a minute or two, and its preview image follows a few minutes later. You need a free GitHub account.'
-            : 'The code has been copied. The share form opens on GitHub: paste it under “Share code” and press “Submit new issue”. It is checked and listed in a minute or two, and its preview image follows a few minutes later. You need a free GitHub account.',
+            ? 'The share form opens on GitHub, already filled in: press “Submit new issue”. It is listed in a minute or two, with its preview soon after. You need a free GitHub account.'
+            : 'The code is copied. On the GitHub form that opens, paste it under “Share code” and press “Submit new issue”. You need a free GitHub account.',
         ),
         box,
         actions,
@@ -418,7 +419,7 @@ export const marketPage: Page = {
 
     const intro = card(
       'Layout Market',
-      h('p', 'dim', 'Overlay layouts shared by other drivers: their overlays, positions, sizes and settings (your own theme stays). Add one to your layouts and switch to it under Overlays → Layouts.'),
+      h('p', 'dim', 'Layouts other drivers have shared. Add one and switch to it under Overlays → Layouts; your theme stays.'),
     );
     const bar = h('div', 'toolbar');
     const select = (opts: [string, string][], value: string, onChange: (v: string) => void) => {

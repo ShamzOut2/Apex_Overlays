@@ -43,7 +43,7 @@ export const tyredata: OverlayDef = {
   kind: 'tyredata',
   name: 'Tyre data',
   description:
-    'A card per wheel: the temperatures across each tyre (blue when cold, green in the window, amber when hot, red-orange when critical), the pressure, tread left and brake temperature, with a pill naming the worst problem. Live in Le Mans Ultimate; iRacing only measures tyres at pit stops, so there it shows the readings from your last stop.',
+    'Each tyre’s temperatures (blue cold, green good, amber hot, red critical), pressure, tread and brake temperature, with a pill naming the worst problem. Live in LMU; iRacing shows your last pit stop’s readings.',
   topics: ['tyredata', 'status'],
   size: [470, 280],
   commonDefaults: { autoHeight: true, hideWhenNotDriving: true },
@@ -69,7 +69,7 @@ export const tyredata: OverlayDef = {
     { key: 'showAlert', label: 'Pill naming the worst problem', type: 'bool', default: true, group: 'What to show', help: 'e.g. FR INNER 103°, TYRES COLD, RL TREAD 14%' },
     { key: 'showUnits', label: 'Units in the header', type: 'bool', default: true, group: 'What to show' },
     { key: 'pressureUnit', when: (v) => v.showPressure !== false, label: 'Pressure in', type: 'select', default: 'auto', options: [['auto', 'kPa or psi (follows the units setting)'], ['kpa', 'kPa'], ['psi', 'psi'], ['bar', 'bar']], group: 'What to show' },
-    { key: 'condensed', label: 'Numbers in a condensed font (Barlow Condensed)', type: 'bool', default: true, group: 'Look', help: 'Off: the theme’s overlay font' },
+    { key: 'condensed', label: 'Condensed numbers', type: 'bool', default: true, group: 'Look', help: 'Off: the theme’s overlay font' },
     { key: 'useGameWindow', label: 'Use the game’s ideal tyre temperature', type: 'bool', default: true, group: 'Tyre window', lmu: true, help: 'Le Mans Ultimate says each tyre’s ideal temperature; green is that ± the margin below' },
     { key: 'windowMargin', when: (v) => v.useGameWindow !== false, label: 'Either side of the ideal', type: 'number', default: 12, min: 2, max: 40, unit: '°C', group: 'Tyre window', lmu: true },
     { key: 'coldBelow', label: 'Cold below', type: 'number', default: 70, min: 0, max: 150, unit: '°C', group: 'Tyre window', help: 'Used when the game gives no ideal temperature' },

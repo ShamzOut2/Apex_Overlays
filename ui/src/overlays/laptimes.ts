@@ -26,7 +26,7 @@ export const laptimes: OverlayDef = {
   kind: 'laptimes',
   name: 'Lap times',
   description:
-    'Your last laps with their sector times: personal bests in green, the class’s fastest lap in purple, the gap to your best, and the best possible lap (your best sectors added up). The lap under way fills in sector by sector. In Le Mans Ultimate, laps taken away for track limits are struck out.',
+    'Your last laps with sector times: personal bests in green, class best in purple, the gap to your best and your best possible lap. In LMU, laps lost to track limits are struck out.',
   topics: ['laptimes', 'status'],
   size: [420, 260],
   commonDefaults: { autoHeight: true },
@@ -36,7 +36,7 @@ export const laptimes: OverlayDef = {
     { key: 'showSectors', label: 'Sector times', type: 'bool', default: true, group: 'What to show' },
     { key: 'showDelta', label: 'Gap to your best lap', type: 'bool', default: true, group: 'What to show' },
     { key: 'showFooter', label: 'Best lap and best possible lap', type: 'bool', default: true, group: 'What to show' },
-    { key: 'markInvalid', label: 'Strike out laps taken away for track limits', type: 'bool', default: true, group: 'What to show', lmu: true, help: 'Le Mans Ultimate tells when a lap no longer counts; iRacing does not' },
+    { key: 'markInvalid', label: 'Strike out invalid laps', type: 'bool', default: true, group: 'What to show', lmu: true, help: 'Le Mans Ultimate tells when a lap no longer counts; iRacing does not' },
     { key: 'slowerYellow', when: (v) => v.showSectors !== false, label: 'Slower sectors in yellow', type: 'bool', default: false, group: 'Colours', help: 'Off: only your best sectors are coloured (green)' },
   ],
   create(root, ctx) {
