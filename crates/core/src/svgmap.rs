@@ -798,14 +798,7 @@ pub fn bundled_outline(outlines: &serde_json::Value, track_id: i64, name: &str) 
     let t = outlines.get("tracks")?.get(track_id.to_string())?;
     let points = unpack_points(t.get("p")?.as_str()?).filter(|p| p.len() == BINS)?;
     let pit = t.get("pit").and_then(|p| p.as_str()).and_then(unpack_points).unwrap_or_default();
-    Some(TrackMap {
-        track_id,
-        name: name.to_string(),
-        points,
-        source: "iracing".into(),
-        version: MAP_VERSION,
-        pit: pit.as_chunks::<2>().0.to_vec(),
-    })
+    Some(TrackMap { track_id, name: name.to_string(), points, source: "iracing".into(), version: MAP_VERSION, pit: pit.as_chunks::<2>().0.to_vec() })
 }
 
 /// The map layers the outline is built from.

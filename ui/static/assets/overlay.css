@@ -602,6 +602,9 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .fuel .fl-extra { padding-top: 0.65em; border-top: 1px solid var(--track); }
 .fuel .fl-extra > :nth-child(3) .fl-val { color: var(--text); }
 .fuel .fl-extra .fl-val { font-size: 1.2em; }
+.fuel .fl-race { padding-top: 0.65em; border-top: 1px solid var(--track); }
+.fuel .fl-race .fl-val { font-size: 1.2em; }
+.fuel .fl-race > :nth-child(3) .fl-val { color: var(--text); }
 .fuel .fl-history { display: flex; align-items: flex-end; gap: 0.18em; height: 2em; }
 .fuel .fl-hbar { flex: 1; max-width: 1.1em; min-height: 2px; border-radius: 0.15em 0.15em 0 0; background: var(--dim); opacity: 0.4; }
 .fuel .fl-hbar:last-child { background: var(--tone); opacity: 0.9; }

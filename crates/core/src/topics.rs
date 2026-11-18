@@ -1072,6 +1072,44 @@ pub struct FuelOut<'a> {
     pub expected: Option<&'a fuel::ComboRecord>,
     /// "session" (laps driven now) or "history" (earlier sessions, until enough laps now).
     pub estimate_from: &'static str,
+    /// The race ahead, before it starts (practice, qualifying, the grid).
+    pub race: Option<RaceEstimateOut>,
+}
+
+/// How long the race will be and what it takes, worked out before the start.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RaceEstimateOut {
+    pub laps: f32,
+    /// Set by laps (else estimated from the race's time and your lap time).
+    pub exact: bool,
+    /// The race's time limit, minutes.
+    pub minutes: Option<f32>,
+    /// The lap time the estimate uses.
+    pub lap_time: f32,
+    /// Fuel for the whole race with your margin; the stops it takes starting full; what to
+    /// start with (no more than a full tank).
+    pub fuel: Option<f32>,
+    pub stops: Option<i32>,
+    pub start_fuel: Option<f32>,
+    /// "session" (from the game) or "settings" (the race length you set).
+    pub from: &'static str,
+}
+
+/// The race ahead and its length (laps, seconds), before it starts: the race session itself
+/// before the green, else the next race of the event, else the length set in the settings.
+fn race_ahead(e: &Engine) -> Option<(Option<i32>, Option<f64>, &'static str)> {
+    let cur = e.session_def();
+    if let Some(d) = cur.filter(|d| d.is_race()) {
+        return (e.tel.session_state < crate::engine::STATE_RACING).then_some((d.laps, d.time, "session"));
+    }
+    let num = e.tel.session_num;
+    if let Some(d) = e.info.sessions.iter().find(|s| s.is_race() && s.num > num) {
+        return Some((d.laps, d.time, "session"));
+    }
+    let c = &e.cfg.fuel;
+    (c.race_minutes > 0.0 || c.race_laps > 0)
+        .then(|| ((c.race_laps > 0).then_some(c.race_laps), (c.race_minutes > 0.0).then_some(c.race_minutes as f64 * 60.0), "settings"))
 }
 
 pub fn race_clock(e: &Engine, focus: usize) -> fuel::RaceClock {
@@ -1102,7 +1140,29 @@ pub fn fuel_out(e: &Engine) -> FuelOut<'_> {
     let avg = session_avg.or(expected.map(|x| x.per_lap));
     let capacity = e.info.fuel_capacity();
     let focus = usize::try_from(t.player_idx).ok().filter(|&i| i < t.cars.len());
-    let laps_left = focus.and_then(|f| fuel::laps_remaining(&race_clock(e, f))).map(|v| v as f32);
+    let mut laps_left = focus.and_then(|f| fuel::laps_remaining(&race_clock(e, f))).map(|v| v as f32);
+    // Before the race: its length from its laps or time and your lap time.
+    let race = race_ahead(e).and_then(|(laps, secs, from)| {
+        let lap_time = focus.map(|f| race_clock(e, f).player_lap).filter(|l| *l > 0.0)?;
+        let (n, exact) = fuel::race_laps(laps, secs, lap_time)?;
+        let need = avg.filter(|a| *a > 0.0).map(|a| (n + cfg.margin_laps) * a);
+        Some(RaceEstimateOut {
+            laps: n,
+            exact,
+            minutes: secs.map(|t| round((t / 60.0) as f32, 1)),
+            lap_time: r3(lap_time),
+            fuel: need.map(|v| round(v, 2)),
+            stops: need.filter(|_| capacity > 0.0).map(|v| ((v - capacity) / capacity).ceil().max(0.0) as i32),
+            start_fuel: need.map(|v| round(if capacity > 0.0 { v.min(capacity) } else { v }, 2)),
+            from,
+        })
+    });
+    // On the grid the calculator plans the race now, not what is left of the session.
+    if e.is_race() && t.session_state < crate::engine::STATE_RACING {
+        if let Some(r) = &race {
+            laps_left = Some(r.laps);
+        }
+    }
     let plan = match (avg, laps_left) {
         (Some(a), Some(l)) => Some(fuel::plan(t.fuel_level, capacity, a, l, cfg.margin_laps)),
         _ => None,
@@ -1150,6 +1210,7 @@ pub fn fuel_out(e: &Engine) -> FuelOut<'_> {
         } else {
             "none"
         },
+        race,
     }
 }
 
@@ -1319,6 +1380,57 @@ pub fn trackmap(e: &Engine) -> TrackMapOut<'_> {
 mod tests {
     use super::*;
     use crate::engine::tests::{engine, place};
+
+    #[test]
+    fn race_length_estimated_before_the_start() {
+        // An iRacing event: 30 minutes of practice, then a 40-minute race.
+        let yaml = crate::engine::tests::session_yaml(2, false).replace(
+            "   SessionType: Practice\n   SessionLaps: 20\n",
+            "   SessionType: Practice\n   SessionLaps: unlimited\n   SessionTime: 1800.0000 sec\n - SessionNum: 1\n   SessionType: Race\n   SessionLaps: unlimited\n   SessionTime: 2400.0000 sec\n",
+        );
+        let mut e = engine(2, false);
+        e.set_session(model::SessionInfo::parse(&yaml));
+        e.info.fuel_max_ltr = 50.0;
+        e.tel.session_num = 0;
+        e.tel.session_time_remain = 1200.0;
+        e.tel.fuel_level = 20.0;
+        place(&mut e, 0, 3, 0.5);
+        place(&mut e, 1, 3, 0.2);
+        e.tick();
+        // No lap yet: the class's estimated lap (100 s) gives the laps; no fuel use known yet.
+        let r = fuel_out(&e).race.unwrap();
+        assert_eq!((r.laps, r.exact, r.minutes, r.from), (24.0, false, Some(40.0), "session"));
+        assert!(r.fuel.is_none());
+        // Laps of 1:36 using 2.5 L: 25 laps, (25 + 1 margin) x 2.5 = 65 L, one stop from a 50 L tank.
+        for _ in 0..3 {
+            e.fuel.laps.push_back(fuel::FuelLap { used: 2.5, time: 96.0, valid: true });
+        }
+        let r = fuel_out(&e).race.unwrap();
+        assert_eq!((r.laps, r.fuel, r.stops, r.start_fuel), (25.0, Some(65.0), Some(1), Some(50.0)));
+        // On the grid the calculator plans the race itself.
+        e.tel.session_num = 1;
+        e.tel.session_state = 3;
+        e.tick();
+        let f = fuel_out(&e);
+        let laps = f.race.as_ref().map(|r| r.laps);
+        assert!(laps.is_some_and(|l| l == 24.0 || l == 25.0), "{laps:?}");
+        assert_eq!(f.laps_remaining, laps);
+        // Once racing, no estimate: the race is under way.
+        e.tel.session_state = crate::engine::STATE_RACING;
+        e.tick();
+        assert!(fuel_out(&e).race.is_none());
+        // Le Mans Ultimate in practice (no race listed): the race length from the settings.
+        let mut e = engine(2, false);
+        e.tel.session_num = 0;
+        place(&mut e, 0, 3, 0.5);
+        e.tick();
+        assert!(fuel_out(&e).race.is_none());
+        let mut cfg = e.cfg.clone();
+        cfg.fuel.race_laps = 30;
+        e.set_config(cfg);
+        let r = fuel_out(&e).race.unwrap();
+        assert_eq!((r.laps, r.exact, r.from), (30.0, true, "settings"));
+    }
 
     #[test]
     fn every_topic_serialises() {

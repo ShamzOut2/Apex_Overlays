@@ -917,6 +917,8 @@ const strategyPage: Page = {
         [
           { key: 'avgLaps', label: 'Laps averaged', type: 'number', default: 5, min: 1, max: 20 },
           { key: 'marginLaps', label: 'Safety margin', type: 'number', default: 1, min: 0, max: 5, step: 0.1, unit: 'laps' },
+          { key: 'raceMinutes', label: 'Race length (minutes)', type: 'number', default: 0, min: 0, max: 1440, unit: 'min', help: 'For the race estimate before the start, when the game does not say (Le Mans Ultimate before the race session). 0: none' },
+          { key: 'raceLaps', label: 'Race length (laps)', type: 'number', default: 0, min: 0, max: 2000, unit: 'laps', help: 'For a race set by laps. 0: none' },
           { key: 'includePitLaps', label: 'Include in/out laps', type: 'bool', default: false },
           { key: 'includeCautionLaps', label: 'Include caution laps', type: 'bool', default: false },
         ],

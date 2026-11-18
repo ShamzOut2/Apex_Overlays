@@ -280,6 +280,19 @@ export interface Fuel {
   /** What this car used at this track in earlier sessions. */
   expected: { car: string; track: string; perLap: number; max: number; lapTime: number; laps: number; updated: number } | null;
   estimateFrom: 'session' | 'history' | 'none';
+  /** The race ahead, before it starts (practice, qualifying, the grid): its laps (exact when
+   *  set by laps, else from its time and your lap time), fuel for all of it with your margin,
+   *  stops starting with a full tank, and what to start with. */
+  race: {
+    laps: number;
+    exact: boolean;
+    minutes: number | null;
+    lapTime: number;
+    fuel: number | null;
+    stops: number | null;
+    startFuel: number | null;
+    from: 'session' | 'settings';
+  } | null;
 }
 
 export interface BattleCar extends Driver {
@@ -571,7 +584,7 @@ export interface Config {
   /** The game the overlays and layouts above belong to; the other games' are in gameSets. */
   layoutGame?: string;
   gameSets?: Record<string, { overlays: OverlayInstance[]; layouts: SavedLayout[]; activeLayout: string }>;
-  fuel: { avgLaps: number; marginLaps: number; includeCautionLaps: boolean; includePitLaps: boolean };
+  fuel: { avgLaps: number; marginLaps: number; includeCautionLaps: boolean; includePitLaps: boolean; raceMinutes: number; raceLaps: number };
   tyres: { wetThreshold: number; dryThreshold: number; useField: boolean; useCrossover: boolean; crossoverMargin: number };
   battle: { maxGap: number };
   leagues: League[];
