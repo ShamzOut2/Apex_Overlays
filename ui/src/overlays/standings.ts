@@ -6,7 +6,7 @@ import { columns, enabledColumns, NAME_STYLES } from '../lib/settings';
 import { type Col, columnFitter, Table } from '../lib/table';
 import type { Session, StandClass, StandRow, Standings } from '../lib/types';
 import { classBadge } from '../lib/classBadges';
-import { classLogo, COLUMN_STYLE_SETTINGS, driverCols, extraCols, markersCell, STRIPE_COLOR_SETTING, stripeColor, tireCell } from './common';
+import { classLogo, COLUMN_STYLE_SETTINGS, driverCols, extraCols, markersCell, markerSettings, STRIPE_COLOR_SETTING, stripeColor, tireCell } from './common';
 
 const COLS = [
   { id: 'pos', label: 'Class position — POS' },
@@ -67,18 +67,7 @@ export const standings: OverlayDef = {
     { key: 'topRows', label: 'Always show top', type: 'number', default: 3, min: 0, max: 20, group: 'Layout', help: 'The rest of the rows follow the car you are watching' },
     { key: 'columns', label: 'Columns', type: 'columns', ...columns(COLS, ['pos', 'number', 'flag', 'name', 'irating', 'gap', 'interval', 'lastLap', 'bestLap']), group: 'Columns' },
     { key: 'nameStyle', label: 'Name format', type: 'select', default: 'full', options: NAME_STYLES, group: 'Columns' },
-    {
-      key: 'markersAt',
-      label: 'Flags & penalties',
-      type: 'select',
-      default: 'name',
-      options: [
-        ['name', 'Next to the driver’s name'],
-        ['end', 'Outside the table, on the right'],
-      ],
-      group: 'Columns',
-      help: 'Yellow, black, meatball and blue flags, SLOW, and penalties like DT or S&G',
-    },
+    ...markerSettings(true),
     { key: 'gapDecimals', label: 'Gap decimals', type: 'number', default: 1, min: 0, max: 3, group: 'Columns' },
     ...COLUMN_STYLE_SETTINGS,
     ...headerSettings(['time', 'lap', 'cars']),
@@ -109,10 +98,10 @@ export const standings: OverlayDef = {
     const header = sessionHeader(s, 'Standings', () => ctx.units);
     const body = h('div', 'sections');
     // Flags and penalties outside the table: the table on a card of its own, the markers
-    // just past its right edge, on the overlay's clear background.
+    // just past its left or right edge, on the overlay's clear background.
     const outside = s.markersAt === 'end';
     if (outside) {
-      root.classList.add('mk-outside');
+      root.classList.add('mk-outside', s.markersSide === 'right' ? 'mk-right' : 'mk-left');
       const card = h('div', 'st-card');
       card.append(header.el, body);
       root.append(card);
@@ -155,7 +144,7 @@ export const standings: OverlayDef = {
       { id: 'tire', label: 'Tyre', width: '2.4em', align: 'center', render: (c, r) => tireCell(c, r.tireWet) },
       ...extraCols<StandRow>(s, () => ctx.units),
       // Flags and penalties outside the table: placed past the row's end (see .mk-outside).
-      { id: 'markers', label: '', width: '0px', render: (c, r) => markersCell(c, r, s) },
+      { id: 'markers', label: '', width: '0px', render: (c, r) => markersCell(c, r) },
     ];
     const order = [...enabledColumns(s.columns), ...(s.markersAt === 'end' ? ['markers'] : [])];
     let sections: Section[] = [];

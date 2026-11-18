@@ -30,6 +30,8 @@ export const energy: OverlayDef = {
     { key: 'showBar', label: 'Energy bar', type: 'bool', default: true, group: 'Layout' },
     { key: 'showBattery', label: 'Hybrid battery', type: 'bool', default: true, group: 'Layout', lmu: true },
     { key: 'showPlan', label: 'Add at stop, target and pit window', type: 'bool', default: true, group: 'Layout' },
+    { key: 'showEstLaps', label: 'Estimated laps left (time left ÷ your lap time)', type: 'bool', default: false, group: 'Layout', help: 'Timed sessions' },
+    { key: 'estDecimals', when: (v) => !!v.showEstLaps, label: 'Estimated laps: decimals', type: 'number', default: 1, min: 0, max: 3, group: 'Layout' },
     { key: 'marginalLaps', label: 'Amber when the spare is under', type: 'number', default: 0.5, min: 0, max: 5, step: 0.1, unit: 'laps', group: 'Status' },
     { key: 'okColor', label: 'Makes the finish', type: 'color', default: '#3dd6f5', group: 'Colours' },
     { key: 'marginalColor', label: 'Marginal', type: 'color', default: '#ffb020', group: 'Colours' },
@@ -78,8 +80,10 @@ export const energy: OverlayDef = {
     const target = stat('Target / lap');
     const stops = stat('Stops');
     const pitWindow = stat('Pit window');
+    const estLaps = stat('Est. laps');
     const extra = h('div', 'fl-stats fl-extra');
-    extra.append(last.el, battery.el, toAdd.el);
+    extra.append(last.el, battery.el, toAdd.el, estLaps.el);
+    show(estLaps.el, !!s.showEstLaps);
     const plan = h('div', 'fl-stats fl-extra');
     plan.append(target.el, stops.el, pitWindow.el);
     const none = h('div', 'en-none dim');
@@ -145,6 +149,8 @@ export const energy: OverlayDef = {
         text(toAdd.val, e.toAdd == null || e.stops === 0 ? '–' : `${e.toAdd.toFixed(1)}%`);
         text(target.val, e.targetPerLap == null ? '–' : `${e.targetPerLap.toFixed(2)}%`);
         text(stops.val, e.stops == null ? '–' : String(e.stops));
+        const est = session?.estLapsLeft;
+        text(estLaps.val, est == null ? '–' : `~${est.toFixed(s.estDecimals as number)}`);
         text(pitWindow.val, e.windowOpensLap == null || e.windowClosesLap == null ? '–' : `L${e.windowOpensLap}–L${e.windowClosesLap}`);
       },
     };

@@ -336,8 +336,8 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .header-left { display: flex; align-items: center; gap: 0.5em; min-width: 0; }
 .session-badge { padding: 0.05em 0.45em; border-radius: 3px; font-size: 0.72em; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; background: var(--subtle); color: var(--dim); text-shadow: none; }
 .session-badge[data-type='race'] { background: var(--accent); color: var(--on-accent, #fff); }
-.session-badge[data-type='qualifying'] { background: var(--best); color: var(--on-best, #fff); }
-.session-badge[data-type='practice'], .session-badge[data-type='warmup'] { background: var(--good); color: var(--on-good, #0b0e13); }
+.session-badge[data-type='qualifying'] { background: var(--sess-qual, var(--accent)); color: var(--on-sess-qual, #fff); }
+.session-badge[data-type='practice'], .session-badge[data-type='warmup'] { background: var(--sess-practice, var(--accent)); color: var(--on-sess-practice, #fff); }
 .c-name { display: flex; align-items: center; gap: 0.35em; padding-left: 2px; }
 .c-name .nm { overflow: hidden; text-overflow: ellipsis; }
 .fin { flex: none; width: 1.5em; height: 1.07em; border-radius: 2px; background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 45%, rgba(0,0,0,0.18)), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 20' shape-rendering='geometricPrecision'%3E%3Crect width='28' height='20' fill='%23f5f5f5'/%3E%3Crect x='0' y='0' width='4' height='4' fill='%23111'/%3E%3Crect x='8' y='0' width='4' height='4' fill='%23111'/%3E%3Crect x='16' y='0' width='4' height='4' fill='%23111'/%3E%3Crect x='24' y='0' width='4' height='4' fill='%23111'/%3E%3Crect x='4' y='4' width='4' height='4' fill='%23111'/%3E%3Crect x='12' y='4' width='4' height='4' fill='%23111'/%3E%3Crect x='20' y='4' width='4' height='4' fill='%23111'/%3E%3Crect x='0' y='8' width='4' height='4' fill='%23111'/%3E%3Crect x='8' y='8' width='4' height='4' fill='%23111'/%3E%3Crect x='16' y='8' width='4' height='4' fill='%23111'/%3E%3Crect x='24' y='8' width='4' height='4' fill='%23111'/%3E%3Crect x='4' y='12' width='4' height='4' fill='%23111'/%3E%3Crect x='12' y='12' width='4' height='4' fill='%23111'/%3E%3Crect x='20' y='12' width='4' height='4' fill='%23111'/%3E%3Crect x='0' y='16' width='4' height='4' fill='%23111'/%3E%3Crect x='8' y='16' width='4' height='4' fill='%23111'/%3E%3Crect x='16' y='16' width='4' height='4' fill='%23111'/%3E%3Crect x='24' y='16' width='4' height='4' fill='%23111'/%3E%3C/svg%3E") center / 100% 100%; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.35); }
@@ -812,7 +812,10 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 /* Standings: flags and penalties outside the table, level with each driver's row. */
 .panel.mk-outside { background: transparent; border: none; box-shadow: none; overflow: visible; }
-.mk-outside > .st-card { display: flex; flex-direction: column; flex: 1; min-height: 0; margin-right: 7.5em; background: var(--bg); border: var(--border); border-radius: var(--radius); }
+.mk-outside > .st-card { display: flex; flex-direction: column; flex: 1; min-height: 0; background: var(--bg); border: var(--border); border-radius: var(--radius); }
+.mk-outside.mk-right > .st-card { margin-right: 7.5em; }
+.mk-outside.mk-left > .st-card { margin-left: 7.5em; }
 .panel.auto-height.mk-outside > .st-card { flex: none; }
 .mk-outside .sections, .mk-outside .table, .mk-outside .body { overflow: visible; }
 .mk-outside .cell.c-markers { position: absolute; left: calc(100% + 0.5em); top: 0; bottom: 0; display: flex; align-items: center; gap: 0.3em; overflow: visible; }
+.mk-outside.mk-left .cell.c-markers { left: auto; right: calc(100% + 0.5em); justify-content: flex-end; }

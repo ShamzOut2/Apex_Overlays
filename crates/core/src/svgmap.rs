@@ -883,6 +883,7 @@ pub fn spawn(
         let bundled: Value = serde_json::from_str(BUNDLED_INDEX).unwrap_or_default();
         let outlines: Value = serde_json::from_str(BUNDLED_OUTLINES).unwrap_or_default();
         let mut bundled_shown: Option<i64> = None;
+        let mut last_id = 0i64;
         let agent = crate::net::agent();
         let mut client: Option<crate::iracing_api::Client> = None;
         let mut done: Option<i64> = None;
@@ -924,6 +925,14 @@ pub fn spawn(
                 }
             }
             let (id, name) = track.lock().unwrap().clone();
+            // Another track (or none, between sessions): everything is sent again for the next,
+            // so rejoining a track always gets its map back.
+            if id != last_id {
+                last_id = id;
+                done = None;
+                bundled_shown = None;
+                library_done = None;
+            }
             if id == 0 {
                 continue;
             }

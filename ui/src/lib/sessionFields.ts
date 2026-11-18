@@ -2,7 +2,7 @@
 // customisable headers of the relative and standings.
 
 import * as f from './format';
-import { columns, type ColumnDef } from './settings';
+import { columnOn, columns, type ColumnDef, type SettingDef } from './settings';
 import type { Session } from './types';
 
 export const SESSION_FIELDS: ColumnDef[] = [
@@ -11,6 +11,7 @@ export const SESSION_FIELDS: ColumnDef[] = [
   { id: 'track', label: 'Track' },
   { id: 'time', label: 'Time / laps left' },
   { id: 'lap', label: 'Leader lap' },
+  { id: 'estLaps', label: 'Estimated laps left (timed sessions)' },
   { id: 'clock', label: 'Time of day (in sim)' },
   { id: 'trackTemp', label: 'Track temperature' },
   { id: 'airTemp', label: 'Air temperature' },
@@ -46,6 +47,7 @@ export const FIELD_LABELS: Record<string, string> = {
   session: 'SESSION',
   time: 'REMAINING',
   lap: 'LAP',
+  estLaps: 'EST. LAPS',
   clock: 'TIME',
   trackTemp: 'TRACK',
   airTemp: 'AIR',
@@ -66,13 +68,49 @@ export const FIELD_LABELS: Record<string, string> = {
 /** Columns-type setting for picking and ordering header fields. */
 export const headerFields = (on: string[]) => columns(SESSION_FIELDS, on);
 
+export type TimedLaps = 'infinity' | 'estimate' | 'count';
+
+/** Settings for the lap count in timed sessions and the estimated laps left (headers and the
+ *  session overlay). */
+export function lapSettings(group: string, when: (v: Record<string, unknown>) => boolean = () => true, fieldsKey = 'headerFields'): SettingDef[] {
+  return [
+    {
+      key: 'timedLaps',
+      when,
+      label: 'Lap count in timed races',
+      type: 'select',
+      default: 'infinity',
+      options: [
+        ['infinity', 'Lap 12/∞'],
+        ['estimate', 'Lap 12/~24 (estimated laps)'],
+        ['count', 'Lap 12'],
+      ],
+      group,
+    },
+    {
+      key: 'estDecimals',
+      when: (v) => when(v) && columnOn(v, 'estLaps', fieldsKey),
+      label: 'Estimated laps: decimals',
+      type: 'number',
+      default: 1,
+      min: 0,
+      max: 3,
+      group,
+      help: 'Estimated laps left: the time left over your lap time, in timed sessions',
+    },
+  ];
+}
+
 export interface FieldOpts {
   clock24?: boolean;
   tempTrend?: boolean;
   /** Short forms suit compact headers ("42:10", "SOF 2.3k"). */
   compact?: boolean;
-  /** Timed races: show the lap as "12/∞" or just "12" (iRacing may report a lap cap like 50). */
-  timedLaps?: 'infinity' | 'count';
+  /** Timed races: show the lap as "12/∞", "12/~24" (estimated) or just "12" (iRacing may
+   *  report a lap cap like 50). */
+  timedLaps?: TimedLaps;
+  /** Decimals of the estimated laps left. */
+  estDecimals?: number;
 }
 
 /** Display value of a field; '' when there is nothing to show. */
@@ -89,9 +127,21 @@ export function fieldValue(id: string, d: Session, u: f.Units, o: FieldOpts = {}
     case 'lap': {
       if (!d.leaderLap) return '';
       // In a timed race the lap count is open-ended even if iRacing reports a lap cap.
-      const total = d.timeTotal != null ? ((o.timedLaps ?? 'infinity') === 'infinity' ? '/∞' : '') : d.lapsTotal ? `/${d.lapsTotal}` : '';
+      const timed = o.timedLaps ?? 'infinity';
+      const total =
+        d.timeTotal != null
+          ? timed === 'estimate' && d.estLapsTotal != null
+            ? `/~${d.estLapsTotal}`
+            : timed === 'count'
+              ? ''
+              : '/∞'
+          : d.lapsTotal
+            ? `/${d.lapsTotal}`
+            : '';
       return `${o.compact ? 'Lap ' : ''}${d.leaderLap}${total}`;
     }
+    case 'estLaps':
+      return d.estLapsLeft == null ? '' : `~${d.estLapsLeft.toFixed(o.estDecimals ?? 1)}${o.compact ? ' laps' : ''}`;
     case 'clock':
       return f.clock(d.timeOfDay, o.clock24 ?? true);
     case 'trackTemp': {
