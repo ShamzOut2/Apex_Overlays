@@ -738,10 +738,17 @@ impl Engine {
         self.session_def().is_some_and(|s| s.is_race())
     }
 
-    /// Driving alone in Le Mans Ultimate's private qualifying: the other cars are on track in
-    /// sessions of their own, so they are not around you (relative, radar).
+    /// Driving alone in a private qualifying session, with the "hide other cars" switch on: the
+    /// other cars are on track in sessions of their own, so they are not around you (relative,
+    /// radar, track map, spotter, battle). Le Mans Ultimate: its online qualifying. iRacing:
+    /// Lone Qualify (each driver alone, as in official races), not Open Qualify, where everyone
+    /// is out together.
     pub fn alone_on_track(&self) -> bool {
-        self.source == "lmu" && self.cfg.lmu_private_qualifying && self.session_def().is_some_and(|s| crate::config::session_category(&s.kind) == "qualifying")
+        self.cfg.lmu_private_qualifying
+            && self.session_def().is_some_and(|s| {
+                let qualifying = crate::config::session_category(&s.kind) == "qualifying";
+                qualifying && (self.source == "lmu" || s.kind.to_lowercase().contains("lone"))
+            })
     }
 
     pub fn under_caution(&self) -> bool {
@@ -1255,6 +1262,29 @@ pub(crate) mod tests {
 
     pub fn place(e: &mut Engine, idx: usize, lap: i32, pct: f32) {
         e.tel.cars[idx] = CarTel { lap, pct, est_time: pct * 100.0, surface: surface::ON_TRACK, ..Default::default() };
+    }
+
+    #[test]
+    fn iracing_lone_qualify_leaves_the_other_cars_off() {
+        for (kind, alone) in [("Lone Qualify", true), ("Open Qualify", false), ("Race", false), ("Practice", false)] {
+            let mut e = Engine::new(Config::default(), None);
+            e.source = "iracing";
+            e.set_session(SessionInfo::parse(&session_yaml(4, false).replace("SessionType: Practice", &format!("SessionType: {kind}"))));
+            e.tel.player_idx = 0;
+            e.tel.session_state = STATE_RACING;
+            for (i, pct) in [0.10, 0.12, 0.08, 0.5].into_iter().enumerate() {
+                place(&mut e, i, 1, pct);
+            }
+            e.tick();
+            assert_eq!(e.alone_on_track(), alone, "{kind}");
+            let rel = crate::topics::relative(&e);
+            assert_eq!(rel.rows.len() == 1, alone, "{kind}: relative has {} rows", rel.rows.len());
+            assert_eq!(crate::topics::cars(&e).cars.len() == 1, alone, "{kind}: track map");
+            // The switch off: everyone shows, even in Lone Qualify.
+            e.cfg.lmu_private_qualifying = false;
+            assert!(!e.alone_on_track(), "{kind}, switched off");
+            assert!(crate::topics::relative(&e).rows.len() > 1, "{kind}, switched off");
+        }
     }
 
     #[test]

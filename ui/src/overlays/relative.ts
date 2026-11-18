@@ -5,7 +5,7 @@ import type { OverlayDef } from '../lib/overlay';
 import { columns, enabledColumns, NAME_STYLES } from '../lib/settings';
 import { type Col, columnFitter, Table } from '../lib/table';
 import type { RelRow, Relative, Session } from '../lib/types';
-import { applyLook, COLUMN_STYLE_SETTINGS, driverCols, lookSettings, markerSettings, extraCols, STRIPE_COLOR_SETTING, stripeColor, tireCell } from './common';
+import { applyLook, COLUMN_STYLE_SETTINGS, driverCols, lookSettings, markerSettings, extraCols, STRIPE_COLOR_SETTING, stripeColor, tireCell, privateQualifyingSetting } from './common';
 
 const COLS = [
   { id: 'pos', label: 'Class position — POS' },
@@ -45,6 +45,7 @@ export const relative: OverlayDef = {
   size: [600, 320],
   fitsWidth: true,
   settings: [
+    privateQualifyingSetting('Layout'),
     { key: 'carsAhead', label: 'Cars ahead', type: 'number', default: 4, min: 0, max: 10, group: 'Layout' },
     { key: 'carsBehind', label: 'Cars behind', type: 'number', default: 4, min: 0, max: 10, group: 'Layout' },
     { key: 'keepEmptyRows', label: 'Keep empty rows (fixed height)', type: 'bool', default: true, group: 'Layout' },

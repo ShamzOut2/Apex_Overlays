@@ -4,7 +4,7 @@ import type { OverlayDef } from '../lib/overlay';
 import { NAME_STYLES } from '../lib/settings';
 import { chip } from '../lib/table';
 import type { Battle, BattleCar } from '../lib/types';
-import { NUMBER_COLOR_SETTING, numberChip } from './common';
+import { NUMBER_COLOR_SETTING, numberChip, privateQualifyingSetting } from './common';
 
 export const battle: OverlayDef = {
   kind: 'battle',
@@ -13,6 +13,7 @@ export const battle: OverlayDef = {
   topics: ['battle'],
   size: [360, 150],
   settings: [
+    privateQualifyingSetting('Cars'),
     {
       key: 'mode',
       label: 'Battle against',

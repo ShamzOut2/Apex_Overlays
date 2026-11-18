@@ -616,3 +616,20 @@ export function applyLook(root: HTMLElement, s: Values) {
   root.style.setProperty('--close', (s.closeColor as string) || '#3dd6f5');
   root.style.setProperty('--gapbar', (s.gapBarColor as string) || '#ffffff');
 }
+
+/**
+ * Private qualifying (each driver alone on track: Le Mans Ultimate's online qualifying, iRacing's
+ * Lone Qualify): leave the other cars off.
+ * App-wide (General → Display), shown in each overlay it affects so it is found there too.
+ */
+export function privateQualifyingSetting(group: string): SettingDef {
+  return {
+    key: 'lmuPrivateQualifying',
+    shared: 'lmuPrivateQualifying',
+    label: 'Private qualifying: hide other cars',
+    type: 'bool',
+    default: true,
+    group,
+    help: 'Le Mans Ultimate’s online qualifying and iRacing’s Lone Qualify put each driver alone on track, so the other cars are left off the relative, track map, radar, spotter and battle box. Open qualifying (everyone out together) is not affected. One switch for all of them (also under General → Display)',
+  };
+}

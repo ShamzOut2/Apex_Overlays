@@ -1,6 +1,7 @@
 // Cars around you, seen from above: your car in the middle, the others where they are. Le Mans
 // Ultimate only, as it says where every car is (iRacing does not: its spotter overlay is there).
 
+import { privateQualifyingSetting } from './common';
 import { fitCanvas, h, toggle } from '../lib/dom';
 import type { OverlayDef } from '../lib/overlay';
 import type { Radar, Status } from '../lib/types';
@@ -27,6 +28,7 @@ export const radar: OverlayDef = {
   topics: ['radar', 'status'],
   size: [220, 260],
   settings: [
+    privateQualifyingSetting('View'),
     { key: 'range', label: 'Distance shown ahead and behind', type: 'number', default: 20, min: 8, max: 40, unit: 'm', group: 'View' },
     { key: 'hideWithin', label: 'Show only when a car is within', type: 'number', default: 12, min: 0, max: 40, unit: 'm', group: 'View', help: '0: always shown' },
     { key: 'showGuides', label: 'Distance lines (every 10 m)', type: 'bool', default: true, group: 'View' },

@@ -1,3 +1,4 @@
+import { privateQualifyingSetting } from './common';
 import { h, style } from '../lib/dom';
 import type { OverlayDef } from '../lib/overlay';
 import type { Spotter, Status } from '../lib/types';
@@ -15,6 +16,7 @@ export const spotter: OverlayDef = {
   topics: ['spotter', 'status'],
   size: [220, 200],
   settings: [
+    privateQualifyingSetting('Behaviour'),
     {
       key: 'style',
       label: 'Style',
