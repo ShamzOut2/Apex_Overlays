@@ -66,7 +66,19 @@ export const inputs: OverlayDef = {
       ],
       group: 'Layout',
     },
-    { key: 'wheelStyle', when: (v) => v.showWheel !== false, label: 'Wheel style', type: 'select', default: 'detailed', options: [['detailed', 'Detailed (rim, spokes, hub)'], ['simple', 'Simple outline']], group: 'Layout' },
+    {
+      key: 'wheelStyle', when: (v) => v.showWheel !== false,
+      label: 'Wheel style',
+      type: 'select',
+      default: 'photo',
+      options: [
+        ['photo', 'Formula-style wheel (photo)'],
+        ['detailed', 'Drawn round wheel (rim, spokes, hub)'],
+        ['simple', 'Simple outline'],
+      ],
+      group: 'Layout',
+      help: 'The drawn wheels take the Wheel colours',
+    },
     { key: 'showShiftLights', label: 'Shift lights', type: 'bool', default: true, group: 'Shift lights', help: 'Per-gear shift points from Lovely Car Data when the car is listed, otherwise iRacing’s own' },
     ...shiftLightSettings('Shift lights', (v) => v.showShiftLights !== false),
     {
@@ -109,8 +121,8 @@ export const inputs: OverlayDef = {
     { key: 'clutchColor', when: (v) => v.showClutch !== false, label: 'Clutch', type: 'color', default: '#4da3ff', group: 'Colours' },
     { key: 'absColor', when: (v) => v.absHighlight !== false, label: 'ABS', type: 'color', default: '#ffd84d', group: 'Colours' },
     { key: 'steeringColor', when: (v) => v.traceSteering === true && v.showTrace !== false, label: 'Steering', type: 'color', default: '#e6e9ef', group: 'Colours' },
-    { key: 'wheelColor', when: (v) => v.showWheel !== false, label: 'Wheel', type: 'color', default: '#e6e9ef', group: 'Colours' },
-    { key: 'wheelMarkColor', when: (v) => v.showWheel !== false, label: 'Wheel top marker', type: 'color', default: '#ffd400', group: 'Colours' },
+    { key: 'wheelColor', when: (v) => v.showWheel !== false && v.wheelStyle !== 'photo', label: 'Wheel', type: 'color', default: '#e6e9ef', group: 'Colours' },
+    { key: 'wheelMarkColor', when: (v) => v.showWheel !== false && v.wheelStyle !== 'photo', label: 'Wheel top marker', type: 'color', default: '#ffd400', group: 'Colours' },
     { key: 'gearColor', when: (v) => v.showGear !== false, label: 'Gear', type: 'color', default: '#ffd400', group: 'Colours' },
     { key: 'speedColor', when: (v) => v.showSpeed !== false, label: 'Speed box', type: 'color', default: '#e6e9ef', group: 'Colours' },
     { key: 'cornerMaxColor', when: (v) => !!v.showCornerSpeeds, label: 'Top speed into the corner', type: 'color', default: '#ff8a00', group: 'Colours' },
@@ -154,7 +166,17 @@ export const inputs: OverlayDef = {
     const side = h('div', `side ${s.sideLayout === 'column' ? 'col' : 'row'}`);
     const wheelBlock = h('div', 'wheel-block');
     const wheel = h('div', 'wheel');
-    wheel.innerHTML = s.wheelStyle === 'simple' ? WHEEL_SIMPLE : WHEEL_DETAILED;
+    // The photo wheel is wider than tall (its height is this share of its width).
+    const photo = (s.wheelStyle ?? 'photo') === 'photo';
+    const AR = 271 / 520;
+    if (photo) {
+      const img = h('img', 'wheel-photo');
+      img.src = '/assets/wheels/wheel.png';
+      img.alt = '';
+      img.draggable = false;
+      wheel.append(img);
+      wheel.classList.add('photo');
+    } else wheel.innerHTML = s.wheelStyle === 'simple' ? WHEEL_SIMPLE : WHEEL_DETAILED;
     wheel.style.color = s.wheelColor as string;
     root.style.setProperty('--wheel-mark', s.wheelMarkColor as string);
     const angle = h('div', 'steer-angle');
@@ -202,12 +224,15 @@ export const inputs: OverlayDef = {
         const tall = side.clientHeight - (showAngle ? angle.offsetHeight + 2 : 0);
         const others = [...side.children].filter((c) => c !== wheelBlock && (c as HTMLElement).offsetParent).reduce((w, c) => w + (c as HTMLElement).offsetWidth + gap, 0);
         const rest = [...main.children].filter((c) => c !== side && (c as HTMLElement).offsetParent && c !== canvas).reduce((w, c) => w + (c as HTMLElement).offsetWidth + 8, 0);
-        // With the trace shown it keeps at least 40% of the width.
-        const wide = main.clientWidth * (s.showTrace ? 0.6 : 1) - others - rest - 8;
-        const size = Math.max(16, Math.floor(Math.min(tall, wide)));
-        if (wheel.style.width !== `${size}px`) {
-          wheel.style.width = `${size}px`;
-          wheel.style.height = `${size}px`;
+        // With the trace shown it keeps at least 40% of the width (30% next to the wider
+        // photo wheel).
+        const wide = main.clientWidth * (s.showTrace ? (photo ? 0.7 : 0.6) : 1) - others - rest - 8;
+        // Round wheels are square; the photo wheel is as wide as its height allows.
+        const width = Math.max(16, Math.floor(Math.min(photo ? tall / AR : tall, wide)));
+        const height = photo ? Math.round(width * AR) : width;
+        if (wheel.style.width !== `${width}px` || wheel.style.height !== `${height}px`) {
+          wheel.style.width = `${width}px`;
+          wheel.style.height = `${height}px`;
         }
       };
       new ResizeObserver(fit).observe(main);

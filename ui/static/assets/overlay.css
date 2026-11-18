@@ -238,6 +238,8 @@ body.preview { background: #2a2f38 repeating-conic-gradient(#323843 0 25%, #2a2f
 .inputs .wheel-block { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1em; min-height: 0; }
 .inputs .side.row .wheel-block > .wheel { flex: none; width: 3em; height: 3em; }
 .inputs .side.col .wheel-block > .wheel { flex: 1 1 0; width: 100%; min-height: 1.4em; max-height: 3.2em; }
+.inputs .wheel-photo { width: 100%; height: 100%; display: block; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7)); }
+.inputs .side.col .wheel.photo { height: auto; max-height: none; flex: none; }
 .inputs .wheel svg { width: 100%; height: 100%; display: block; overflow: visible; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.6)); }
 .inputs .gear { min-width: 1.1em; color: var(--text); font-size: 2.6em; font-weight: 800; line-height: 1; text-align: center; font-variant-numeric: tabular-nums; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); }
 .inputs .side.col .gear { font-size: 1.7em; }
