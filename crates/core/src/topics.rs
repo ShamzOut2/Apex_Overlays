@@ -331,6 +331,10 @@ pub struct SessionOut<'a> {
     pub laps_remain: Option<i32>,
     pub laps_total: Option<i32>,
     pub leader_lap: i32,
+    /// Timed sessions: laps left at your pace (the time left over your lap time), and the
+    /// laps the session will be (the leader's in a race; yours otherwise), lap-number style.
+    pub est_laps_left: Option<f32>,
+    pub est_laps_total: Option<i32>,
     pub time_of_day: f32,
     pub track_temp: f32,
     pub track_temp_delta: f32,
@@ -361,11 +365,38 @@ pub struct SessionOut<'a> {
     pub subsession_id: i64,
 }
 
+/// Timed sessions: the laps left at your pace (time left over your lap time), and the lap the
+/// session will end on (the leader's in a race, when the clock runs out and they finish the
+/// lap they are on; the car you watch otherwise).
+fn estimated_laps(e: &Engine) -> Option<(f32, Option<i32>)> {
+    let t = &e.tel;
+    let def = e.session_def()?;
+    def.time?;
+    let remain = t.session_time_remain;
+    if !(0.0..1e6).contains(&remain) {
+        return None;
+    }
+    let focus = t.focus_idx()?;
+    let lap = race_clock(e, focus).player_lap;
+    if lap <= 0.0 {
+        return None;
+    }
+    let left = (remain / lap as f64) as f32;
+    let car = if e.is_race() { e.order.first().map(|r| r.idx).unwrap_or(focus) } else { focus };
+    let pace = if car == focus { lap } else { e.ref_lap(car) };
+    // Progress counts the lap the car is on (lap 12, halfway: 12.5), so the lap the clock runs
+    // out on is the whole part of where it will be then; reaching the line just as it does
+    // ends the session there.
+    let total = (pace > 0.0 && t.cars[car].lap > 0).then(|| (((e.progress(car) + remain / pace as f64) - 1e-3).ceil() as i32 - 1).max(t.cars[car].lap));
+    Some((left, total))
+}
+
 pub fn session(e: &Engine) -> SessionOut<'_> {
     let t = &e.tel;
     let def = e.session_def();
     let irs: Vec<i32> = e.order.iter().filter_map(|r| e.static_of(r.idx)).map(|s| s.irating).collect();
     let time_total = def.and_then(|d| d.time).map(|v| v as f32);
+    let est = estimated_laps(e);
     SessionOut {
         connected: e.connected,
         source: e.source,
@@ -385,7 +416,10 @@ pub fn session(e: &Engine) -> SessionOut<'_> {
         time_total,
         laps_remain: (def.and_then(|d| d.laps).is_some() && t.session_laps_remain >= 0 && t.session_laps_remain < 30000).then_some(t.session_laps_remain),
         laps_total: def.and_then(|d| d.laps),
-        leader_lap: e.order.first().map(|r| t.cars[r.idx].lap).unwrap_or(0),
+        // Cars in the garage are on lap -1: no lap then.
+        leader_lap: e.order.first().map(|r| t.cars[r.idx].lap.max(0)).unwrap_or(0),
+        est_laps_left: est.map(|(left, _)| round(left, 2)),
+        est_laps_total: est.and_then(|(_, total)| total),
         time_of_day: t.time_of_day.round(),
         track_temp: round(t.track_temp, 1),
         track_temp_delta: round(e.weather.track_temp_delta(), 1),
@@ -1380,6 +1414,59 @@ pub fn trackmap(e: &Engine) -> TrackMapOut<'_> {
 mod tests {
     use super::*;
     use crate::engine::tests::{engine, place};
+
+    #[test]
+    fn official_map_survives_a_disconnect_and_a_new_session() {
+        // The built-in map for track 1 arrives once (the downloader sends it once per track).
+        let mut e = engine(2, false);
+        let outline = crate::engine::trackmap::TrackMap {
+            track_id: 1,
+            name: "Test".into(),
+            points: vec![[0.5, 0.5]; crate::engine::trackmap::BINS],
+            source: "iracing".into(),
+            version: crate::engine::trackmap::MAP_VERSION,
+            pit: vec![],
+        };
+        e.map.set_official(outline);
+        assert_eq!(trackmap(&e).source, Some("iracing"));
+        // iRacing disconnects (leaving the session), then a test session at the same track.
+        e.reset();
+        assert!(trackmap(&e).points.is_none());
+        e.set_session(model::SessionInfo::parse(&crate::engine::tests::session_yaml(2, false)));
+        e.connected = true;
+        assert_eq!(trackmap(&e).source, Some("iracing"), "the map must still be there");
+        // Another track: not drawn there.
+        let other = crate::engine::tests::session_yaml(2, false).replace("TrackID: 1\n", "TrackID: 2\n");
+        e.set_session(model::SessionInfo::parse(&other));
+        assert!(trackmap(&e).points.is_none());
+    }
+
+    #[test]
+    fn estimated_laps_in_timed_sessions() {
+        // A 40-minute race, 10 minutes (600 s) left, laps of 100 s (the class estimate).
+        let yaml = crate::engine::tests::session_yaml(2, true).replace("   SessionLaps: 20\n", "   SessionLaps: unlimited\n   SessionTime: 2400.0000 sec\n");
+        let mut e = engine(2, true);
+        e.set_session(model::SessionInfo::parse(&yaml));
+        e.tel.session_time_remain = 600.0;
+        place(&mut e, 0, 12, 0.5);
+        place(&mut e, 1, 12, 0.3);
+        e.tick();
+        let s = session(&e);
+        assert_eq!(s.est_laps_left, Some(6.0));
+        // The leader (on lap 12, halfway) covers 6 more laps: the clock runs out halfway round
+        // lap 18, which they finish.
+        assert_eq!(s.est_laps_total, Some(18));
+        // A race set by laps: no estimate.
+        let mut e = engine(2, true);
+        e.tel.session_time_remain = 600.0;
+        place(&mut e, 0, 12, 0.5);
+        e.tick();
+        assert_eq!(session(&e).est_laps_left, None);
+        // In the garage (lap -1) there is no leader lap to show.
+        e.tel.cars[0].lap = -1;
+        e.tick();
+        assert!(session(&e).leader_lap >= 0);
+    }
 
     #[test]
     fn race_length_estimated_before_the_start() {

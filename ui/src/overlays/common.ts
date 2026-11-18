@@ -2,7 +2,7 @@
 
 import { h, text, toggle } from '../lib/dom';
 import * as f from '../lib/format';
-import { columnOn, type Values } from '../lib/settings';
+import { columnOn, type SettingDef, type Values } from '../lib/settings';
 import { BADGE_COLORS, classBadge } from '../lib/classBadges';
 import { chip, contrast, type Col } from '../lib/table';
 import type { Driver, Extras } from '../lib/types';
@@ -133,21 +133,23 @@ export function nameCell(c: HTMLElement, name: string, r: NameRow, s: Values) {
     pen = h('span', 'pen');
     label = h('span', 'nm');
     pit = h('span', 'pit-tag');
-    c.replaceChildren(fin, marks, pen, label, pit);
+    // Flags and penalties left or right of the name (before the PIT tag).
+    if (s.markersSide === 'right') c.replaceChildren(fin, label, marks, pen, pit);
+    else c.replaceChildren(fin, marks, pen, label, pit);
   }
   const pitText = s.pitTag === false ? '' : r.onPitRoad ? 'PIT' : r.inWorld === false ? 'OUT' : '';
   text(pit, pitText);
   if (pit.hidden !== !pitText) pit.hidden = !pitText;
   const finished = s.finishFlag !== false && !!r.finished;
   if (fin.hidden !== !finished) fin.hidden = !finished;
-  // Flags and penalties at the end of the row instead (standings): none by the name.
-  markers(marks, pen, r, s, s.markersAt === 'end');
+  // Only when shown next to the name (else outside the overlay, or not at all).
+  markers(marks, pen, r, (s.markersAt ?? 'name') !== 'name');
   text(label, name);
 }
 
 /** The flags (yellow, black, meatball, blue, SLOW…) and the penalty box of a driver. */
-function markers(marks: HTMLElement, pen: HTMLElement, r: NameRow, s: Values, off = false) {
-  const flags = !off && s.driverFlags !== false ? (r.flags ?? []) : [];
+function markers(marks: HTMLElement, pen: HTMLElement, r: NameRow, off = false) {
+  const flags = !off ? (r.flags ?? []) : [];
   const key = flags.join();
   if (marks.dataset.k !== key) {
     marks.dataset.k = key;
@@ -162,14 +164,14 @@ function markers(marks: HTMLElement, pen: HTMLElement, r: NameRow, s: Values, of
   }
   const slow = marks.querySelector(':scope > .slow-tag') as HTMLElement | null;
   if (slow && r.slowdown) slow.title = `${FLAG_TITLES.slow} · ${Math.round(r.slowdown.seconds)}s so far, about ${r.slowdown.lost.toFixed(1)}s given up`;
-  const penalty = !off && s.penaltyBox !== false ? (r.penalty ?? '') : '';
+  const penalty = !off ? (r.penalty ?? '') : '';
   text(pen, penalty);
   if (pen.hidden !== !penalty) pen.hidden = !penalty;
   toggle(pen, 'served', !!r.penaltyServed);
 }
 
 /** A last column with each driver's flags and penalty box (standings: "at the end of the row"). */
-export function markersCell(c: HTMLElement, r: NameRow, s: Values) {
+export function markersCell(c: HTMLElement, r: NameRow) {
   let marks = c.querySelector(':scope > .marks') as HTMLElement | null;
   let pen = c.querySelector(':scope > .pen') as HTMLElement | null;
   if (!marks || !pen) {
@@ -177,7 +179,7 @@ export function markersCell(c: HTMLElement, r: NameRow, s: Values) {
     pen = h('span', 'pen');
     c.replaceChildren(marks, pen);
   }
-  markers(marks, pen, r, s);
+  markers(marks, pen, r);
 }
 
 export function driverCols<R extends Driver & Partial<Extras>>(s: Values): Col<R>[] {
@@ -494,17 +496,41 @@ export const COLUMN_STYLE_SETTINGS = [
   { key: 'outLapText', when: (v: Values) => columnOn(v, 'stint'), label: 'Out-lap label', type: 'text' as const, default: 'OUTLAP', group: 'Column style' },
   { key: 'pointsPlus', when: (v: Values) => columnOn(v, 'points'), label: 'Show points as gains (+25)', type: 'bool' as const, default: true, group: 'Column style' },
   { key: 'finishFlag', when: (v: Values) => columnOn(v, 'name'), label: 'Chequered flag when finished', type: 'bool' as const, default: true, group: 'Column style' },
-  {
-    key: 'driverFlags', when: (v: Values) => columnOn(v, 'name'),
-    label: 'Flags next to drivers',
-    type: 'bool' as const,
-    default: true,
-    group: 'Column style',
-  },
-  { key: 'penaltyBox', when: (v: Values) => columnOn(v, 'name'), label: 'Penalties next to drivers', type: 'bool' as const, default: true, group: 'Column style' },
   { key: 'pitTag', when: (v: Values) => columnOn(v, 'name'), label: 'PIT after the name while on pit road', type: 'bool' as const, default: true, group: 'Column style' },
   { key: 'highlightBest', label: 'Colour best laps (purple class, green personal)', type: 'bool' as const, default: true, group: 'Colours' },
 ];
+
+/**
+ * Where each driver's flags (yellow, black, meatball, blue, SLOW) and penalties (DT, S&G…)
+ * show: next to the name, outside the overlay as an extension of it (standings), or not at
+ * all; and on which side (of the name, or of the overlay).
+ */
+export function markerSettings(outside: boolean): SettingDef[] {
+  return [
+    {
+      key: 'markersAt',
+      label: 'Flags & penalties: where to show',
+      type: 'select',
+      default: 'name',
+      options: [['name', 'Next to the driver’s name'], ...(outside ? ([['end', 'Outside the overlay (an extension of it)']] as [string, string][]) : []), ['off', 'Don’t show']],
+      group: 'Columns',
+      help: 'Yellow, black, meatball and blue flags, SLOW, and penalties like DT or S&G',
+    },
+    {
+      key: 'markersSide',
+      when: (v) => v.markersAt !== 'off',
+      label: 'Flags & penalties: side',
+      type: 'select',
+      default: 'left',
+      options: [
+        ['left', 'Left'],
+        ['right', 'Right'],
+      ],
+      group: 'Columns',
+      help: outside ? 'Left or right of the name, or on the left or right of the overlay' : 'Left or right of the name',
+    },
+  ];
+}
 
 /** Tyre badge: a white circle with D for dry tyres, a blue one with W for wets. */
 export function tireCell(c: HTMLElement, wet: boolean | null) {

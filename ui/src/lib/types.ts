@@ -29,6 +29,10 @@ export interface Session {
   lapsRemain: number | null;
   lapsTotal: number | null;
   leaderLap: number;
+  /** Timed sessions: laps left at your pace (time left over your lap time), and the lap the
+   *  session should end on (the leader's in a race). */
+  estLapsLeft: number | null;
+  estLapsTotal: number | null;
   timeOfDay: number;
   trackTemp: number;
   trackTempDelta: number;
