@@ -15,6 +15,7 @@ axum = { version = "0.8", default-features = false, features = ["http1", "json",
 rust-embed = "8"
 sha2 = "0.10"
 base64 = "0.22"
+ed25519-dalek = { version = "2", default-features = false }
 sysinfo = { version = "0.39.6", default-features = false, features = ["system"] }
 
 # Windows uses the OS TLS stack (SChannel): smaller binary, system certificates, no C toolchain.
@@ -24,3 +25,6 @@ native-tls = "0.2"
 
 [target.'cfg(not(windows))'.dependencies]
 ureq = { version = "2", features = ["json"] }
+
+[dev-dependencies]
+ed25519-dalek = { version = "2", default-features = false, features = ["fast"] }

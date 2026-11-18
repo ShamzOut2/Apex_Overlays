@@ -58,6 +58,27 @@ fn tree(sys: &System, root: Pid) -> HashSet<Pid> {
     }
 }
 
+fn cpu_and_memory() -> ProcessRefreshKind {
+    ProcessRefreshKind::nothing().with_cpu().with_memory()
+}
+
+/// Starts measuring the processes in `pids` that `sys` does not know yet, and returns them.
+///
+/// On Windows sysinfo only keeps a process's starting point for CPU on its second refresh, at
+/// least 200 ms after the first: the reading after that would be the process's whole life
+/// against the PC's time since it booted, close to 0%. So a new process is refreshed twice
+/// here, and its reading is right from the next refresh on. Until then, the returned
+/// processes' CPU is not counted.
+fn start_measuring(sys: &mut System, pids: &[Pid]) -> Vec<Pid> {
+    let new: Vec<Pid> = pids.iter().filter(|p| sys.process(**p).is_none()).copied().collect();
+    if !new.is_empty() {
+        sys.refresh_processes_specifics(ProcessesToUpdate::Some(&new), true, cpu_and_memory());
+        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL + Duration::from_millis(20));
+        sys.refresh_processes_specifics(ProcessesToUpdate::Some(&new), true, cpu_and_memory());
+    }
+    new
+}
+
 fn round(v: f32, digits: i32) -> f32 {
     let m = 10f32.powi(digits);
     (v * m).round() / m
@@ -105,16 +126,18 @@ pub fn spawn(hub: Arc<Hub>) {
                 found_at = Some(Instant::now());
                 found_clients = clients;
             }
-            sys.refresh_processes_specifics(ProcessesToUpdate::Some(&pids), true, ProcessRefreshKind::nothing().with_cpu().with_memory());
+            let new = start_measuring(&mut sys, &pids);
+            sys.refresh_processes_specifics(ProcessesToUpdate::Some(&pids), true, cpu_and_memory());
             sys.refresh_cpu_usage();
             let (mut cpu_app, mut cpu_win, mut mem_app, mut mem_win) = (0.0f32, 0.0f32, 0u64, 0u64);
             for pid in &pids {
                 let Some(p) = sys.process(*pid) else { continue };
+                let cpu = if new.contains(pid) { 0.0 } else { p.cpu_usage() };
                 if *pid == me {
-                    cpu_app += p.cpu_usage();
+                    cpu_app += cpu;
                     mem_app += p.memory();
                 } else {
-                    cpu_win += p.cpu_usage();
+                    cpu_win += cpu;
                     mem_win += p.memory();
                 }
             }
@@ -169,7 +192,8 @@ mod tests {
         let me = sysinfo::get_current_pid().unwrap();
         list.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::nothing());
         let pids: Vec<Pid> = tree(&list, me).into_iter().collect();
-        sys.refresh_processes_specifics(ProcessesToUpdate::Some(&pids), true, ProcessRefreshKind::nothing().with_cpu().with_memory());
+        assert!(start_measuring(&mut sys, &pids).contains(&me), "new processes start being measured");
+        assert!(start_measuring(&mut sys, &pids).is_empty(), "known ones are not started again");
         sys.refresh_cpu_usage();
         let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
         let busy = {
@@ -184,10 +208,12 @@ mod tests {
         std::thread::sleep(Duration::from_millis(400));
         // The process list is read again every few seconds: that must not lose the reading.
         list.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::nothing());
-        sys.refresh_processes_specifics(ProcessesToUpdate::Some(&pids), true, ProcessRefreshKind::nothing().with_cpu().with_memory());
+        sys.refresh_processes_specifics(ProcessesToUpdate::Some(&pids), true, cpu_and_memory());
         sys.refresh_cpu_usage();
         stop.store(true, Ordering::Relaxed);
         busy.join().unwrap();
+        // The first reading after the monitor starts is the busy thread's (about one core,
+        // 100%), not the process's whole life against the time since the PC booted (~0%).
         let cpu = sys.process(me).map(|p| p.cpu_usage()).unwrap_or(0.0);
         assert!(cpu > 20.0, "busy thread measured at {cpu}%");
         assert!(sys.process(me).is_some_and(|p| p.memory() > 0));

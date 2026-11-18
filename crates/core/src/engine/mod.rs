@@ -1524,9 +1524,9 @@ pub(crate) mod tests {
         e.set_session(info);
         // Parade laps; only two cars have loaded in so far.
         e.tel.session_state = 3;
-        for i in 0..4 {
-            e.tel.cars[i] = Default::default();
-            e.tel.cars[i].pct = -1.0;
+        for car in e.tel.cars.iter_mut().take(4) {
+            *car = Default::default();
+            car.pct = -1.0;
         }
         place(&mut e, 0, 0, 0.9);
         place(&mut e, 2, 0, 0.95);
