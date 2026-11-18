@@ -50,10 +50,12 @@ const RULES: [RegExp, string][] = [
   [/kart/, 'KART'],
   [/super formula lights|sf lights|\bsfl\b/, 'SFL'],
   [/super formula|\bsf23\b|\bsf\b/, 'SF'],
-  [/\bf1\b|formula 1|w1[23]\b|mp4|fw31|lotus (49|79)/, 'F1'],
-  [/\bf3\b|formula 3/, 'F3'],
-  [/\bf4\b|formula 4|tatuus/, 'F4'],
-  [/ff1600|formula ford|\bray\b/, 'FF1600'],
+  // Before F1: Lovely Car Data calls the Ray FF1600's class "F1.6", and "Formula 1600" is
+  // not Formula 1.
+  [/ff1600|\bf1600\b|\bf1\.6\b|formula 1600|formula ford|\bray\b/, 'FF1600'],
+  [/\bf1\b(?![.,]?\d)|formula (1|one)\b|w1[23]\b|mp4|fw31|lotus (49|79)/, 'F1'],
+  [/\bf3\b(?![.,]?\d)|formula 3\b/, 'F3'],
+  [/\bf4\b(?![.,]?\d)|formula 4\b|tatuus/, 'F4'],
   [/formula renault|\bfr ?(2\.0|3\.5)?\b/, 'FR'],
   [/formula vee|\bvee\b|\bfv\b/, 'FV'],
   [/usf ?2000|usf2k/, 'USF2K'],
@@ -103,7 +105,8 @@ export function badgeFor(className: string, cars: string[] = [], classId = ''): 
   const rule = (hay: string) => RULES.find(([re, id]) => re.test(hay.toLowerCase()) && ids.includes(id))?.[1] ?? null;
   const byName = rule(className);
   if (byName) return byName;
-  for (const word of className.split(/[^A-Za-z0-9-]+/)) {
+  // Whole words only: the "F1" in "F1.6" is not a word of its own.
+  for (const word of className.split(/[^A-Za-z0-9.-]+/)) {
     const w = ids.find((id) => norm(id) === norm(word));
     if (w && norm(word).length >= 2) return w;
   }

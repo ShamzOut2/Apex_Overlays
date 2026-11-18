@@ -182,6 +182,13 @@ export function markersCell(c: HTMLElement, r: NameRow) {
   markers(marks, pen, r);
 }
 
+/** The driver column's width: what the overlay leaves (or the longest name with Auto width),
+ *  or a set width (Driver column width setting). */
+function nameWidth(s: Values): string {
+  const w = Number(s.nameWidth);
+  return s.nameFixed === true && w > 0 ? `${w}em` : 'minmax(4em, 1fr)';
+}
+
 export function driverCols<R extends Driver & Partial<Extras>>(s: Values): Col<R>[] {
   const nameStyle = s.nameStyle as string;
   // No licence column: the iRating pill shows the licence by its colour instead.
@@ -189,7 +196,7 @@ export function driverCols<R extends Driver & Partial<Extras>>(s: Values): Col<R
   return [
     { id: 'number', label: '#', width: '2.9em', align: 'center', render: (c, r) => numberChip(c, r.number, r, s) },
     { id: 'flag', label: 'Nat', width: '2em', align: 'center', render: (c, r) => text(c, s.flagStyle === 'code' && r.country !== 'GLOBE' ? r.country.replace(/^GB-/, '') : flagEmoji(r.country)) },
-    { id: 'name', label: 'Driver', width: 'minmax(4em, 1fr)', render: (c, r) => nameCell(c, f.name(r.name, nameStyle), r as NameRow, s) },
+    { id: 'name', label: 'Driver', width: nameWidth(s), render: (c, r) => nameCell(c, f.name(r.name, nameStyle), r as NameRow, s) },
     { id: 'team', label: 'Team', width: 'minmax(3em, 0.8fr)', render: (c, r) => text(c, r.team === r.name ? '' : s.teamStyle === 'short' && r.teamShort ? r.teamShort : r.team) },
     { id: 'class2', label: '2nd', width: 'minmax(3em, auto)', align: 'center', render: (c, r) => (r.class2Name ? chip(c, r.class2Name, r.class2Color) : c.firstChild && c.replaceChildren()) },
     { id: 'teamLogo', label: '', width: '2.6em', align: 'center', render: (c, r) => teamLogoCell(c, r, s.teamLogoKind === 'small') },
@@ -447,6 +454,8 @@ export const STRIPE_COLOR_SETTING = {
 /** Settings shared by every column-based overlay. */
 export const COLUMN_STYLE_SETTINGS = [
   { ...NUMBER_COLOR_SETTING, when: (v: Values) => columnOn(v, 'number'), group: 'Column style' },
+  { key: 'nameFixed', when: (v: Values) => columnOn(v, 'name'), label: 'Set the driver column width', type: 'bool' as const, default: false, group: 'Column style', help: 'Off: the driver column takes the room the overlay leaves (with Auto width, the longest name)' },
+  { key: 'nameWidth', when: (v: Values) => columnOn(v, 'name') && v.nameFixed === true, label: 'Driver column width', type: 'number' as const, default: 10, min: 3, max: 40, step: 0.5, unit: 'em', group: 'Column style', help: 'Longer names are cut short with …' },
   { key: 'teamStyle', when: (v: Values) => columnOn(v, 'team'), label: 'Team name', type: 'select' as const, default: 'full', options: [['full', 'Full name'], ['short', 'Short name (Team builder), when set']] as [string, string][], group: 'Column style' },
   { key: 'teamLogoKind', when: (v: Values) => columnOn(v, 'teamLogo'), label: 'Team logo', type: 'select' as const, default: 'full', options: [['full', 'Full logo'], ['small', 'Small logo']] as [string, string][], help: 'From the Team builder. A team with only one of the two shows that one', group: 'Column style' },
   { key: 'flagStyle', when: (v: Values) => columnOn(v, 'flag'), label: 'Flag style', type: 'select' as const, default: 'emoji', options: [['emoji', 'Flag'], ['code', 'Country code']] as [string, string][], group: 'Column style' },
@@ -542,4 +551,63 @@ export function tireCell(c: HTMLElement, wet: boolean | null) {
   text(b, wet == null ? '' : wet ? 'W' : 'D');
   if (b.hidden !== (wet == null)) b.hidden = wet == null;
   toggle(b, 'wet', wet === true);
+}
+
+/**
+ * The modern look of the relative and standings (Layout → Look), and the colours of its gap
+ * bars and battle lines. `kind`: which of the two (the gap bar is the relative's, the battle
+ * line the standings').
+ */
+export function lookSettings(kind: 'relative' | 'standings'): SettingDef[] {
+  const modern = (v: Values) => (v.look ?? 'modern') === 'modern';
+  return [
+    {
+      key: 'look',
+      label: 'Look',
+      type: 'select',
+      default: 'modern',
+      options: [
+        ['modern', 'Modern (pit wall)'],
+        ['classic', 'Classic'],
+      ],
+      group: 'Layout',
+      help: 'Modern: condensed figures, slanted number chips and class headers' + (kind === 'relative' ? ', gap bars and gain/loss arrows' : ', battle lines and podium colours'),
+    },
+    {
+      key: 'figuresFont', when: modern,
+      label: 'Figures font',
+      type: 'select',
+      default: 'display',
+      options: [
+        ['display', 'Barlow Condensed'],
+        ['overlay', 'The overlay font (Theme)'],
+      ],
+      group: 'Layout',
+      help: 'For positions, numbers, gaps and lap times. Names keep the overlay font',
+    },
+    { key: 'closeGap', when: modern, label: 'Close: within', type: 'number', default: 1, min: 0.1, max: 5, step: 0.1, unit: 's', group: 'Colours', help: kind === 'relative' ? 'Cars this close turn the gap bar and the gap the “close” colour' : 'Cars this close to the car ahead are joined by a battle line' },
+    ...(kind === 'relative'
+      ? ([
+          { key: 'gapBar', when: modern, label: 'Gap bar (fills as a car gets closer)', type: 'bool', default: true, group: 'Colours' },
+          { key: 'gapBarRange', when: (v) => modern(v) && v.gapBar !== false, label: 'Gap bar starts at', type: 'number', default: 5, min: 1, max: 30, step: 0.5, unit: 's', group: 'Colours', help: 'Cars further away have no bar' },
+          { key: 'gapBarColor', when: (v) => modern(v) && v.gapBar !== false, label: 'Gap bar colour', type: 'color', default: '#ffffff', group: 'Colours' },
+          { key: 'closeColor', when: modern, label: 'Close colour (bar and gap)', type: 'color', default: '#3dd6f5', group: 'Colours' },
+          { key: 'gapTrend', when: modern, label: 'Gain/loss arrows by the gap', type: 'bool', default: true, group: 'Colours', help: 'Green when the gap is moving your way (catching a car ahead, pulling away from one behind), red when not' },
+        ] as SettingDef[])
+      : ([
+          { key: 'battleLine', when: modern, label: 'Battle lines (cars close together)', type: 'bool', default: true, group: 'Colours' },
+          { key: 'closeColor', when: (v) => modern(v) && v.battleLine !== false, label: 'Battle line colour', type: 'color', default: '#3dd6f5', group: 'Colours', help: 'Also the colour of a close interval' },
+          { key: 'podium', when: modern, label: 'Gold, silver and bronze for the top three', type: 'bool', default: true, group: 'Colours' },
+        ] as SettingDef[])),
+  ];
+}
+
+/** Applies the look (modern/classic) and its colours to an overlay's root. */
+export function applyLook(root: HTMLElement, s: Values) {
+  const modern = (s.look ?? 'modern') === 'modern';
+  root.classList.toggle('modern', modern);
+  if (!modern) return;
+  root.classList.toggle('figures-overlay', s.figuresFont === 'overlay');
+  root.style.setProperty('--close', (s.closeColor as string) || '#3dd6f5');
+  root.style.setProperty('--gapbar', (s.gapBarColor as string) || '#ffffff');
 }

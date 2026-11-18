@@ -3,10 +3,10 @@ import * as f from '../lib/format';
 import { headerSettings, sessionHeader } from '../lib/header';
 import type { OverlayDef } from '../lib/overlay';
 import { columns, enabledColumns, NAME_STYLES } from '../lib/settings';
-import { type Col, columnFitter, Table } from '../lib/table';
+import { type Col, columnFitter, contrast, Table } from '../lib/table';
 import type { Session, StandClass, StandRow, Standings } from '../lib/types';
 import { classBadge } from '../lib/classBadges';
-import { classLogo, COLUMN_STYLE_SETTINGS, driverCols, extraCols, markersCell, markerSettings, STRIPE_COLOR_SETTING, stripeColor, tireCell } from './common';
+import { applyLook, classLogo, COLUMN_STYLE_SETTINGS, lookSettings, driverCols, extraCols, markersCell, markerSettings, STRIPE_COLOR_SETTING, stripeColor, tireCell } from './common';
 
 const COLS = [
   { id: 'pos', label: 'Class position — POS' },
@@ -65,6 +65,7 @@ export const standings: OverlayDef = {
     { key: 'maxRows', label: 'Rows in my class', type: 'number', default: 10, min: 1, max: 64, group: 'Layout' },
     { key: 'otherClassRows', when: (v) => (v.mode ?? 'multiclass') === 'multiclass', label: 'Rows in other classes', type: 'number', default: 3, min: 0, max: 64, group: 'Layout' },
     { key: 'topRows', label: 'Always show top', type: 'number', default: 3, min: 0, max: 20, group: 'Layout', help: 'The rest of the rows follow the car you are watching' },
+    ...lookSettings('standings'),
     { key: 'columns', label: 'Columns', type: 'columns', ...columns(COLS, ['pos', 'number', 'flag', 'name', 'irating', 'gap', 'interval', 'lastLap', 'bestLap']), group: 'Columns' },
     { key: 'nameStyle', label: 'Name format', type: 'select', default: 'full', options: NAME_STYLES, group: 'Columns' },
     ...markerSettings(true),
@@ -95,6 +96,19 @@ export const standings: OverlayDef = {
     const s = ctx.settings;
     const dec = s.gapDecimals as number;
     const overall = s.mode === 'overall';
+    applyLook(root, s);
+    root.classList.toggle('mode-overall', overall);
+    const modern = root.classList.contains('modern');
+    const close = s.closeGap as number;
+    const battles = modern && s.battleLine !== false;
+    const podium = modern && s.podium !== false;
+    /** Within the "close" gap of the car directly ahead (in the list shown). */
+    const closeBehind = (r: StandRow, ahead: StandRow | null | undefined) => {
+      const pos = overall ? r.position : r.classPosition;
+      const int = overall ? r.intervalOverall : r.interval;
+      const laps = overall ? r.intervalOverallLaps : r.intervalLaps;
+      return !!ahead && (overall ? ahead.position : ahead.classPosition) === pos - 1 && int != null && int < close && laps === 0;
+    };
     const header = sessionHeader(s, 'Standings', () => ctx.units);
     const body = h('div', 'sections');
     // Flags and penalties outside the table: the table on a card of its own, the markers
@@ -229,17 +243,31 @@ export const standings: OverlayDef = {
           show(sec.name, !(url && s.classLogo === 'only'));
           sec.logo.alt = c.name;
           sec.head.style.setProperty('--class', c.color);
+          if (modern && /^#[0-9a-f]{6}$/i.test(c.color)) sec.head.style.setProperty('--class-fg', contrast(c.color));
+          else sec.head.style.removeProperty('--class-fg');
           text(sec.meta, [c.sof ? `SOF ${f.sof(c.sof)}` : '', `${c.count} cars`, c.bestLap ? f.lapTime(c.bestLap) : ''].filter(Boolean).join('  ·  '));
           const mine = c.id === focusClass || s.mode !== 'multiclass';
           const rows = pick(c.rows, mine ? (s.maxRows as number) : (s.otherClassRows as number));
           show(sec.el, rows.length > 0);
+          // Modern look: cars within the close gap of the car ahead, joined by a battle line.
+          const near = modern ? rows.map((r, j) => !!r && closeBehind(r, rows[j - 1])) : [];
           sec.table.render(
             rows,
-            (r) => ({
-              player: r.isFocus,
-              pit: (s.dimPitCars as boolean) && r.onPitRoad,
-              out: (s.dimDisconnected as boolean) && !r.inWorld,
-            }),
+            (r) => {
+              const j = rows.indexOf(r);
+              const pos = overall ? r.position : r.classPosition;
+              return {
+                player: r.isFocus,
+                pit: (s.dimPitCars as boolean) && r.onPitRoad,
+                out: (s.dimDisconnected as boolean) && !r.inWorld,
+                close: modern && near[j],
+                'bt-up': battles && near[j],
+                'bt-down': battles && !!near[j + 1],
+                p1: podium && pos === 1,
+                p2: podium && pos === 2,
+                p3: podium && pos === 3,
+              };
+            },
             (row, r) => row.style.setProperty('--class', stripeColor(r, s)),
           );
         });

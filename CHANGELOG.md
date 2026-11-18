@@ -7,6 +7,10 @@ Each version groups its changes under `### New features`, `### Improvements` and
 ## Unreleased
 
 ### New features
+- A modern look for the Relative and Standings (Layout → Look; Classic keeps the old one): positions, numbers, gaps and lap times in Barlow Condensed (or your overlay font), car numbers in slanted chips of their class colour, slanted session badge and PIT tags, class headers as a slanted class chip with a fading line, and your row marked down its left edge in your highlight colour. The iRating pill stays as it was
+- Relative, modern look: a gap bar fills in behind a car as it gets closer to you and turns the "close" colour within a second (or the gap you set), with the gap itself in that colour; an arrow by the gap shows whether it is moving your way (green) or not (red). The bar, its range and both colours are settings (Colours)
+- Standings, modern look: a line joins cars within a second (or the gap you set) of the car ahead, with their interval in the same colour (its colour is a setting), and the top three positions in gold, silver and bronze
+- Relative and Standings: set the driver column's width (Column style → Set the driver column width); longer names are cut short with …
 - Shift lights overlay: the car's rev lights on their own, with the RPM if you want it (under, above or beside the lights). The same lights as in Driver inputs, with all their settings: the car's own pattern and per-gear shift points where known, the light order, number, size, flash speed and colours; the RPM turns the "shift now" colour at the car's shift point
 - Choose the monitor your overlays are on: the screen map on the Overlays page lists your monitors with their resolution (and scaling, e.g. Monitor 2 · 1920 × 1080 · 125%); picking one moves every overlay there, each at the same place on the screen and kept inside it. The map shows the monitor they are on
 - Little moments in the settings window, each played once when it happens and then still (nothing loops): the lights go out as the game connects; a red-and-white kerb runs in under the page title and the page settles in when you open it; the page you are on lights three sector lights; switches sweep their colour across and light an LED in the knob; the line under the open tab glides to the one you pick; hovering an overlay draws a racing line under it and lights it on the screen map; General's readings roll to their new values like a timing board; a pit board saying SAVED slides in when a change is saved. Slanted main buttons and tags, and a cut corner and accent mark on the panels. Turn them off under General → Display → Animations in this window (Windows' "Animation effects: off" turns them off too)
@@ -23,6 +27,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - Minimising to the tray now closes the settings window rather than hiding it: hidden, it still used about 5% of a core and 180 MB of memory; closed, nothing
 
 ### Fixes
+- The Ray FF1600's class showed an F1 badge in the Standings: its class is called "F1.6" in the car data, and "F1" matched. It now shows the FF1600 badge (so does a class named "Formula 1600")
 - Le Mans Ultimate private qualifying: the other drivers (each in their own session) are now also left off the track map, the spotter and the battle box, as they already were off the relative and radar (General → Private qualifying: hide other cars)
 
 ## 1.3.6
