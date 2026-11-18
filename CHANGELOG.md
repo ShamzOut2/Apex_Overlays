@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.3.1
 
 ### New features
 - Endurance races: the incident tracker keeps your last 300 incidents instead of 100 once a race over 5 hours is detected (by its time limit, or its laps at your lap time). Only the newest 30 (the most it shows) are sent to the overlay, so its updates stay small
