@@ -855,7 +855,7 @@ mod tests {
                 e.tick();
                 let tick = e.tel.tick as u64;
                 for t in Topic::ALL {
-                    if tick % t.every() == 0 {
+                    if tick.is_multiple_of(t.every()) {
                         let s = t.build(&e);
                         bytes += s.len();
                         let b = biggest.entry(t.name()).or_default();

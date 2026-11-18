@@ -7,8 +7,13 @@ use crate::model::{surface, SessionInfo, Telemetry};
 use serde::Serialize;
 use std::collections::VecDeque;
 
-/// Incidents kept per subsession.
+/// Incidents kept per subsession, and in an endurance race (over 5 hours: a time limit that
+/// long, or enough laps at your lap time).
 const KEEP: usize = 100;
+pub const KEEP_LONG: usize = 300;
+const LONG_RACE: f64 = 5.0 * 3600.0;
+/// The newest incidents sent to the overlay (it shows up to 30).
+pub const SENT: usize = 30;
 /// A car this close (metres along the track) to a 4x is taken as the other car involved.
 const CONTACT_RANGE: f32 = 12.0;
 /// Acceleration (m/s²) above which a 2x is taken as hitting a wall or object, not a spin.
@@ -53,6 +58,17 @@ pub struct IncidentTracker {
     /// (session time, |acceleration|) over the last couple of seconds.
     accel: VecDeque<(f64, f32)>,
     off_at: f64,
+    /// An endurance race: more incidents are kept (set once, for the rest of the event).
+    pub long_race: bool,
+}
+
+/// The event has a race over 5 hours: by its time limit, or its laps at your lap time.
+fn long_race(t: &Telemetry, info: &SessionInfo) -> bool {
+    let lap = [t.lap_best_time, t.lap_last_time].into_iter().find(|&l| l > 0.0).unwrap_or(0.0) as f64;
+    info.sessions
+        .iter()
+        .filter(|s| s.is_race())
+        .any(|s| s.time.is_some_and(|x| x > LONG_RACE) || s.laps.is_some_and(|l| lap > 0.0 && l as f64 * lap > LONG_RACE))
 }
 
 /// Cars within `range` metres of the player along the track, in the same pit lane state,
@@ -96,6 +112,9 @@ impl IncidentTracker {
         // A replay shows past telemetry; the count only means something live.
         if t.is_replay_playing || t.player_idx < 0 {
             return;
+        }
+        if !self.long_race && long_race(t, info) {
+            self.long_race = true;
         }
         let now = t.session_time;
         self.accel.push_back((now, t.lat_accel.hypot(t.long_accel)));
@@ -158,7 +177,8 @@ impl IncidentTracker {
             involved,
             base,
         });
-        if self.list.len() > KEEP {
+        let keep = if self.long_race { KEEP_LONG } else { KEEP };
+        while self.list.len() > keep {
             self.list.remove(0);
         }
     }
@@ -187,6 +207,38 @@ mod tests {
         assert_eq!(parts(4), vec![4]);
         assert_eq!(parts(5), vec![4, 1]);
         assert_eq!(parts(7), vec![4, 2, 1]);
+    }
+
+    #[test]
+    fn keeps_more_in_an_endurance_race() {
+        let mut e = engine(1, true);
+        let inc = |tr: &mut IncidentTracker, e: &mut crate::engine::Engine, n: usize| {
+            for _ in 0..n {
+                e.tel.session_time += 10.0;
+                e.tel.incidents += 1;
+                tr.update(&e.tel, &e.info);
+            }
+        };
+        // A 50-minute race: 100 kept.
+        e.info.sessions = vec![crate::model::SessionDef { kind: "Race".into(), time: Some(3000.0), ..Default::default() }];
+        let mut tr = IncidentTracker::default();
+        inc(&mut tr, &mut e, 150);
+        assert_eq!((tr.list.len(), tr.long_race), (100, false));
+        // A 6-hour race: 300.
+        e.info.sessions[0].time = Some(6.0 * 3600.0);
+        let mut tr = IncidentTracker::default();
+        inc(&mut tr, &mut e, 350);
+        assert_eq!((tr.list.len(), tr.long_race), (KEEP_LONG, true));
+        // 200 laps at 1:45 (5h50) with no time limit: long once a lap is timed.
+        e.info.sessions[0] = crate::model::SessionDef { kind: "Race".into(), laps: Some(200), ..Default::default() };
+        let mut tr = IncidentTracker::default();
+        e.tel.lap_best_time = -1.0;
+        e.tel.lap_last_time = -1.0;
+        inc(&mut tr, &mut e, 1);
+        assert!(!tr.long_race, "lap time not known yet");
+        e.tel.lap_last_time = 105.0;
+        inc(&mut tr, &mut e, 1);
+        assert!(tr.long_race);
     }
 
     #[test]

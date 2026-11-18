@@ -554,7 +554,8 @@ pub fn incidents_out(e: &Engine) -> IncidentsOut<'_> {
         limit: e.info.incident_limit,
         can_replay: e.tel.is_replay_playing,
         session_num: e.tel.session_num,
-        list: &e.incidents.list,
+        // Only the newest: the overlay shows up to 30, however many are kept.
+        list: &e.incidents.list[e.incidents.list.len().saturating_sub(crate::engine::incidents::SENT)..],
     }
 }
 
