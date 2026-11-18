@@ -7,6 +7,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 ## Unreleased
 
 ### New features
+- Driver inputs: corner speeds (Corner speeds, off by default). Above your speed, in the brake colour, the top speed going into the last corner, stored when you brake; below it, in the throttle colour, the lowest speed through the corner, stored when you are back on the throttle (dimmed while you are still in the next corner). The brake and throttle levels that mark a corner can be set (10% and 20%); light touches of the brake, the pit lane and spins are not counted
 - Standings and relative: header text size (50–250%: the title, session badge and details together) and header height (0 fits the text; taller keeps the text centred), under Header
 
 ## 1.3.5
