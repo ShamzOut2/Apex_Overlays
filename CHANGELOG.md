@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.4.0
 
 ### New features
 - Driver inputs, new layout: the steering wheel on its own with its angle above it, your speed in a box between the top speed into the last corner and the lowest speed through it, and a big gear, side by side next to the pedals (as on a wheel-and-dash setup). The wheel is sized to the room it has
