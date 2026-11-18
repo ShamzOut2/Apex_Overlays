@@ -4,6 +4,11 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### Fixes
+- Monitoring: on Windows, the first CPU reading after opening the Monitoring section or the performance widget showed the app at close to 0%. It now shows the real use from the first reading
+
 ## 1.3.2
 
 ### New features

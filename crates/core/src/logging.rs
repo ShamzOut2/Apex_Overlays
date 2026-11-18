@@ -150,7 +150,8 @@ fn install_panic_hook() {
             .map(|s| s.to_string())
             .or_else(|| info.payload().downcast_ref::<String>().cloned())
             .unwrap_or_else(|| "(no message)".into());
-        let place = info.location().map(|l| format!("{}:{}", l.file(), l.line())).unwrap_or_default();
+        // The same on every system: Windows gives the file as crates\core\src\logging.rs.
+        let place = info.location().map(|l| format!("{}:{}", l.file().replace('\\', "/"), l.line())).unwrap_or_default();
         let bt = std::backtrace::Backtrace::force_capture();
         log::error!(target: "apex::crash", "thread '{thread}' crashed at {place}: {msg}\n{bt}");
         previous(info);
