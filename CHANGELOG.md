@@ -6,7 +6,11 @@ Each version groups its changes under `### New features`, `### Improvements` and
 
 ## Unreleased
 
+### Improvements
+- Licence (General page): your key is hidden once it's added, so it isn't on screen while you stream. Press Show to see it
+
 ### Fixes
+- Licence: Get your key opens the Apex Labs website's key page again (it went to an old address that no longer works)
 - Monitoring: on Windows, the first CPU reading after opening the Monitoring section or the performance widget showed the app at close to 0%. It now shows the real use from the first reading
 
 ## 1.3.2

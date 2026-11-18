@@ -1083,14 +1083,37 @@ function licenceCard(): HTMLElement {
       return false;
     }
   };
+  // Once added, the key is hidden (APEX-••••-••••-••••-••••) until Show is pressed, so it isn't on
+  // screen while streaming. A new key starts hidden again.
+  let shownKey = '';
+  let keyShown = false;
+  const mask = (key: string) => key.split('-').map((part, i) => (i === 0 && part === 'APEX' ? part : '•'.repeat(part.length))).join('-');
   const render = (st: LicenceStatus) => {
+    if (st.key !== shownKey) keyShown = false;
+    shownKey = st.key;
     text(status, st.valid ? `${st.tierName} · registered to ${st.user || 'you'}` : st.hasKey ? 'Key added, not confirmed yet.' : 'No key added.');
     status.classList.toggle('good', st.valid);
     text(error, st.error);
     const open = (url: string) => () => client.send({ op: 'openUrl', url });
     if (st.hasKey) {
+      const code = h('code', 'licence-key');
+      code.setAttribute('aria-label', 'Your key');
+      const show = button('Show', () => {
+        keyShown = !keyShown;
+        paint();
+      });
+      const paint = () => {
+        text(code, keyShown ? st.key : mask(st.key));
+        code.style.userSelect = keyShown ? 'all' : 'none';
+        code.style.opacity = keyShown ? '' : '0.7';
+        text(show, keyShown ? 'Hide' : 'Show');
+        show.title = keyShown ? 'Hide the key' : 'Show the full key';
+        show.setAttribute('aria-pressed', String(keyShown));
+      };
+      paint();
       bar.replaceChildren(
-        h('code', '', st.key),
+        code,
+        show,
         button('Check now', () => void call('POST', '/api/licence/check')),
         button('Manage key', open(st.manageUrl)),
         button('Remove from this PC', () => void call('DELETE', '/api/licence'), 'danger'),

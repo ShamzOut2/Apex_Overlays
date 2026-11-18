@@ -99,7 +99,7 @@ mod tests {
         assert_eq!(preview("7-x/y.jpg").unwrap(), None);
         assert!(may_open("https://github.com/ShamzOut2/Apex_Overlays/issues/new?template=share-layout.yml&title=Layout"));
         assert!(!may_open("https://github.com/ShamzOut2/Apex_Overlays"), "the repository's own pages only");
-        assert!(may_open("https://shamzout2.github.io/Apex-Labs/key/"), "the Get your key page");
+        assert!(may_open("https://apex-labs-3kf.pages.dev/key/"), "the Get your key page");
         assert!(may_open("https://apex-keys.shamzout.workers.dev/"), "the key page");
         assert!(!may_open("https://apex-keys.shamzout.workers.dev.evil.test/"));
         assert!(!may_open("https://example.com/ShamzOut2/Apex_Overlays/"));

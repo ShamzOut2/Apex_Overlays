@@ -1,6 +1,6 @@
 //! Apex Labs licence key: optional during early access.
 //!
-//! People get a free key at <https://shamzout2.github.io/Apex-Labs/key/> (Discord sign-in) and
+//! People get a free key at <https://apex-labs-3kf.pages.dev/key/> (Discord sign-in) and
 //! paste it under General → Licence. The app sends it to the Apex Labs key service, which answers
 //! with a licence signed with Ed25519. The licence is kept in `licence.json` in the data folder and
 //! checked here against [`PUBLIC_KEY`], so it works offline until it expires (30 days after the last
@@ -22,7 +22,7 @@ use sha2::{Digest, Sha256};
 
 pub const SERVICE: &str = "https://apex-keys.shamzout.workers.dev";
 pub const PUBLIC_KEY: &str = "0oLW-0hzSRd5aBYMf78Bgdb1yJ_xq91Qnrf-6n2P9Lk";
-pub const GET_KEY_URL: &str = "https://shamzout2.github.io/Apex-Labs/key/";
+pub const GET_KEY_URL: &str = "https://apex-labs-3kf.pages.dev/key/";
 const APP: &str = "overlays";
 const CHECK_EVERY: Duration = Duration::from_secs(24 * 3600);
 const OFFLINE: &str = "Couldn't reach the Apex Labs key service. Your licence keeps working offline; it will check again later.";
