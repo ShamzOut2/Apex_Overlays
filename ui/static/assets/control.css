@@ -51,14 +51,16 @@ nav { display: flex; flex-direction: column; gap: 2px; padding: 18px 12px 14px; 
 .nav-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; padding: 0 2px 10px 4px; }
 .nav-labs { height: 24px; opacity: 0.85; transition: opacity var(--ease); }
 .nav-labs img { height: 100%; width: auto; }
-.game-switch { display: inline-flex; padding: 2px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); }
-.game-switch button { min-height: 0; padding: 3px 4.5px; border: none; border-radius: 6px; background: transparent; color: var(--dim); font-size: 10.5px; font-weight: 700; line-height: 1.3; letter-spacing: 0.01em; }
+.game-switch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; padding: 3px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); }
+.game-switch button { min-height: 0; padding: 4px 0; border: none; border-radius: 6px; background: transparent; color: var(--dim); font-size: 12px; font-weight: 600; line-height: 1.3; }
 .game-switch button:hover { color: var(--text); background: var(--soft); }
-.game-switch button.sel { background: var(--accent); color: var(--accent-text, #fff); }
+.game-switch button.sel { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
 .game-switch button.live:not(.sel) { color: var(--good); }
-.game-switch button.sel.live { box-shadow: inset 0 -2px 0 var(--good); }
+.game-switch button.sel.live { box-shadow: inset 0 0 0 1px var(--line), inset 0 -2px 0 var(--live); }
 .nav-labs:hover { opacity: 1; }
 .prompt-labs { height: 22px; margin-top: 14px; opacity: 0.7; justify-content: flex-end; }
+.brand-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.brand-sub { font-size: 11px; color: var(--dim); line-height: 1; }
 .brand .logo { font-family: var(--display); font-size: 20px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text); line-height: 1; }
 .brand .logo b { color: var(--accent); font-weight: 700; }
 .nav-label { padding: 14px 10px 5px; color: var(--dim); font-family: var(--display); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em; }
@@ -68,19 +70,33 @@ nav a:hover { background: var(--panel-2); color: var(--text); }
 nav a.sel { background: var(--panel-2); color: var(--text); font-weight: 600; }
 nav a.sel svg { color: var(--accent); opacity: 1; }
 nav a:focus-visible { outline: none; box-shadow: var(--ring); }
-/* Connection card at the top of the sidebar. The live dot is still (no endless animation:
-   one repainted the window 60 times a second while a game was connected). */
-.conn { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; margin: 0 2px 4px; font-size: 12px; line-height: 1.4; color: var(--dim); border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); }
-.conn::before { content: ''; flex: none; width: 8px; height: 8px; margin-top: 4px; border-radius: 50%; background: var(--dim); }
-.conn.up { color: var(--text); }
-.conn.up::before { background: var(--live); box-shadow: 0 0 0 3px color-mix(in srgb, var(--live) 22%, transparent); }
-.conn.down::before { background: var(--bad); }
+/* Connection card at the top of the sidebar: the game, the session and the game switch. The
+   live dot is still (no endless animation: one repainted the window 60 times a second while a
+   game was connected). */
+.conn { display: flex; flex-direction: column; gap: 9px; padding: 12px; margin: 0 2px 6px; font-size: 12px; line-height: 1.4; color: var(--dim); border-radius: 12px; background: var(--panel-2); border: 1px solid var(--line); }
+.conn-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.conn-state { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--text); }
+.conn-state::before { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
+.conn.up .conn-state::before { background: var(--live); box-shadow: 0 0 0 3px color-mix(in srgb, var(--live) 22%, transparent); }
+.conn.down .conn-state::before { background: var(--bad); }
+.conn-badge { flex: none; padding: 1px 6px; border-radius: 4px; background: var(--live); color: #0b0d11; font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.conn-badge[hidden] { display: none; }
+.conn-info { display: flex; flex-direction: column; }
+.conn-info:empty { display: none; }
 /* Show / hide every overlay, at the foot of the sidebar. */
 .nav-visible { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; margin: 0 2px 10px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); font-weight: 600; }
 .nav-visible small { display: block; font-weight: 400; color: var(--dim); font-size: 11px; white-space: nowrap; }
 kbd { font: inherit; font-size: 11px; padding: 0 5px; border-radius: 4px; background: color-mix(in srgb, var(--panel-2) 70%, var(--text) 8%); border: 1px solid var(--line); color: inherit; }
 
-main { padding: 26px 32px; overflow: auto; }
+main { padding: 22px 28px 28px; overflow: auto; }
+/* Page header: a small label over the page title, the page's main buttons on the right. */
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 18px; max-width: 1240px; }
+.page-head-left { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.page-eyebrow { font-family: var(--display); font-size: 12px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); min-height: 1em; }
+.page-title { margin: 0; font-family: var(--display); font-size: 34px; font-weight: 700; line-height: 1; letter-spacing: 0.02em; text-transform: uppercase; }
+.page-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.page-actions:empty { display: none; }
+.page-actions button, .page-actions details.menu > summary { min-height: 36px; }
 h2 { margin: 0 0 8px; font-family: var(--display); font-size: 22px; font-weight: 700; line-height: 1.1; letter-spacing: 0.04em; text-transform: uppercase; }
 p { margin: 6px 0 12px; }
 a { color: var(--accent); }
@@ -137,12 +153,14 @@ textarea { width: 100%; min-height: 90px; font-family: 'Cascadia Mono', Consolas
 fieldset { border: 1px solid var(--line); border-radius: var(--r); padding: 6px 14px 8px; margin: 0; min-width: 0; background: color-mix(in srgb, var(--panel-2) 35%, transparent); }
 legend { color: var(--dim); font-family: var(--display); font-size: 12.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em; padding: 0 6px; }
 .field[hidden] { display: none; }
-.field { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 9px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.field { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 11px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
 .field:last-child { border-bottom: none; }
 .field.wide { flex-direction: column; align-items: stretch; gap: 8px; }
 .field.wide .field-end { align-self: flex-end; }
 .field-label { display: flex; flex-direction: column; flex: 1 1 45%; min-width: 0; }
-.field-name { font-weight: 500; }
+.field-name { font-weight: 600; }
+/* Values in a fixed box, in the display face, so they line up down a list. */
+.num input[type='number'] { width: 64px; text-align: center; font-family: var(--display); font-size: 17px; font-weight: 600; padding: 3px 6px; font-variant-numeric: tabular-nums; }
 .field-end { display: inline-flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0; max-width: 60%; }
 .field-end select { min-width: 0; max-width: 100%; text-overflow: ellipsis; }
 .field-end input[type='range'] { flex: 0 1 140px; min-width: 60px; }
@@ -204,6 +222,15 @@ button.add-btn { margin-bottom: 6px; border-style: dashed; color: var(--dim); ba
 button.add-btn:hover { color: var(--text); border-color: var(--accent); background: var(--soft); }
 .spacer { flex: 1; }
 .desc { margin: 4px 0 12px; }
+/* Overlay editor header: name and what it does, the switch and actions on the right. */
+.editor-title { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; }
+.editor-title-row { display: flex; align-items: center; gap: 8px; }
+.editor-title .desc { margin: 2px 0 0 8px; }
+.editor-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+/* The tab row with the settings search at its end. */
+.tab-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; margin: 16px 0 6px; border-bottom: 1px solid var(--line); }
+.tab-row > .tabs { flex: 1 1 auto; margin: 0; border-bottom: none; }
+.tab-row > input.search { margin-left: auto !important; flex: 0 1 220px; width: auto; min-width: 160px; margin: 0 0 6px; padding-top: 6px; padding-bottom: 6px; }
 input.search { width: 100%; margin: 12px 0 10px; padding: 8px 12px 8px 34px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238d97a8' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: 11px 50%; }
 .tabs { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 6px; border-bottom: 1px solid var(--line); }
 button.tab { position: relative; min-height: 34px; padding: 5px 12px; background: transparent; border-color: transparent; border-radius: 0; color: var(--dim); }
@@ -236,7 +263,7 @@ details.menu[open] > summary { border-color: var(--accent); box-shadow: var(--ri
 .g-desc { color: var(--dim); font-size: 12px; line-height: 1.4; }
 .g-count { font-size: 11px; color: var(--good); }
 .ov-main { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; min-width: 0; }
-.editor-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.editor-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; padding-bottom: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
 .title-input { font-family: var(--display); font-size: 24px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding: 2px 8px; background: transparent; border-color: transparent; flex: 1; min-width: 160px; }
 .title-input:hover, .title-input:focus { border-color: var(--line); }
 .actions { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -461,3 +488,32 @@ button.chip > .lmu-badge, .col-name > .lmu-badge { margin-left: 6px; padding: 0 
 .title-input:focus::placeholder { color: var(--dim); }
 .brand .logo { white-space: nowrap; }
 @media (max-width: 1100px) { .brand { font-size: 14.5px; gap: 8px; padding-left: 4px; } .brand-mark { width: 26px; height: 26px; } }
+
+/* General: headline readings, two columns of cards, the rest full width. */
+.gen-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; max-width: 1240px; }
+.gen-tile { padding: 12px 14px 8px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); min-width: 0; }
+.gen-tile-label { font-family: var(--display); font-size: 12px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
+.gen-tile-val { font-family: var(--display); font-size: 30px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gen-tile-val.warn { color: #ffb020; }
+.gen-tile-val.bad { color: var(--bad); }
+.gen-spark { display: block; width: 100%; height: 24px; margin-top: 4px; }
+.gen-spark polyline { fill: none; stroke: var(--live); stroke-width: 1.6; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.gen-tile:last-child .gen-spark polyline { stroke: var(--accent); }
+.gen-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; max-width: 1240px; }
+.gen-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.gen-col > .card { margin-bottom: 0; max-width: none; }
+.gen-cols + .card, .gen-cols ~ .card { margin-top: 16px; max-width: 1240px; }
+@media (max-width: 1080px) {
+  .gen-cols { grid-template-columns: minmax(0, 1fr); }
+  .gen-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* Settings listed plainly inside a card (no group frame). */
+.form.plain fieldset { border: none; padding: 0; background: none; }
+.form.plain legend { display: none; }
+/* Update rate: three cards to pick one from. */
+.rate-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 4px 0 6px; }
+button.rate-card { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; border-radius: 10px; text-align: left; background: var(--bg); border: 1px solid var(--line); min-width: 0; }
+button.rate-card:hover { border-color: var(--hover-line); background: var(--bg); }
+button.rate-card.sel { background: var(--panel-2); border-color: var(--accent); }
+.rate-name { font-family: var(--display); font-size: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.rate-help { font-size: 11px; color: var(--dim); }

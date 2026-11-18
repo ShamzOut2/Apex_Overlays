@@ -546,7 +546,7 @@ export const leaguesPage: Page = {
 
     const top = h('section', 'card');
     top.append(
-      h('h2', '', 'League builder'),
+      h('h2', '', 'Leagues'),
       h('p', 'dim', 'Make your own classes for league racing: group cars by number, driver, team or car, give each class a name and colour, set the points, and see live points in the relative and standings.'),
     );
     cfg.leagueMode ??= 'auto';

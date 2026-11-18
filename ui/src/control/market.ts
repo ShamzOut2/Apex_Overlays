@@ -418,7 +418,7 @@ export const marketPage: Page = {
     if (listings == null && !loading && !loadError) load().then(rerender);
 
     const intro = card(
-      'Layout Market',
+      'Shared layouts',
       h('p', 'dim', 'Layouts other drivers have shared. Add one and switch to it under Overlays → Layouts; your theme stays.'),
     );
     const bar = h('div', 'toolbar');
