@@ -7,7 +7,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 ## Unreleased
 
 ### New features
-- A modern look for the Relative and Standings (Layout → Look; Classic keeps the old one): positions, numbers, gaps and lap times in Barlow Condensed (or your overlay font), car numbers in slanted chips of their class colour, slanted session badge and PIT tags, class headers as a slanted class chip with a fading line, and your row marked down its left edge in your highlight colour. The iRating pill stays as it was
+- A modern look for the Relative and Standings (Layout → Look; Classic keeps the old one): positions, numbers, gaps and lap times in Barlow Condensed (or your overlay font), car numbers in slanted chips of their class colour, slanted session badge and PIT tags, class headers as a slanted class chip with a fading line, and your row marked down its left edge in your highlight colour. The iRating, licence and class chips are slanted too; the iRating still fills with the licence colour when the licence column is hidden
 - Relative, modern look: a gap bar fills in behind a car as it gets closer to you and turns the "close" colour within a second (or the gap you set), with the gap itself in that colour; an arrow by the gap shows whether it is moving your way (green) or not (red). The bar, its range and both colours are settings (Colours)
 - Standings, modern look: a line joins cars within a second (or the gap you set) of the car ahead, with their interval in the same colour (its colour is a setting), and the top three positions in gold, silver and bronze
 - Relative and Standings: set the driver column's width (Column style → Set the driver column width); longer names are cut short with …
@@ -27,6 +27,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - Minimising to the tray now closes the settings window rather than hiding it: hidden, it still used about 5% of a core and 180 MB of memory; closed, nothing
 
 ### Fixes
+- The D and W in the tyre circles (Relative and Standings) sit in the middle of the circle with every overlay font; they were a little high or low depending on the font
 - The Ray FF1600's class showed an F1 badge in the Standings: its class is called "F1.6" in the car data, and "F1" matched. It now shows the FF1600 badge (so does a class named "Formula 1600")
 - Le Mans Ultimate private qualifying: the other drivers (each in their own session) are now also left off the track map, the spotter and the battle box, as they already were off the relative and radar (General → Private qualifying: hide other cars)
 

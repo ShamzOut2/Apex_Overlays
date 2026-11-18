@@ -544,11 +544,16 @@ export function markerSettings(outside: boolean): SettingDef[] {
 /** Tyre badge: a white circle with D for dry tyres, a blue one with W for wets. */
 export function tireCell(c: HTMLElement, wet: boolean | null) {
   let b = c.firstElementChild as HTMLElement | null;
-  if (!b) {
+  let l = b?.firstElementChild as HTMLElement | null;
+  if (!b || !l) {
     b = h('span', 'tyre');
-    c.append(b);
+    // The letter in a box of its own, trimmed to its capital height, so it sits in the
+    // middle of the circle whatever the font.
+    l = h('span', 'tl');
+    b.append(l);
+    c.replaceChildren(b);
   }
-  text(b, wet == null ? '' : wet ? 'W' : 'D');
+  text(l, wet == null ? '' : wet ? 'W' : 'D');
   if (b.hidden !== (wet == null)) b.hidden = wet == null;
   toggle(b, 'wet', wet === true);
 }
