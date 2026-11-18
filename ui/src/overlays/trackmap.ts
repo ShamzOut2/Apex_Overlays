@@ -1,5 +1,6 @@
 import { fitCanvas, h, show, text } from '../lib/dom';
 import type { OverlayDef } from '../lib/overlay';
+import { trackValue } from '../lib/settings';
 import { onColor } from '../lib/theme';
 import type { CarDot, Cars, SectorTimes, TrackMap } from '../lib/types';
 
@@ -16,9 +17,9 @@ export const trackmap: OverlayDef = {
     { key: 'style', label: 'Style', type: 'select', default: 'full', options: [['full', 'Full circuit'], ['flat', 'Flat (straight line)'], ['round', 'Round']], group: 'Style' },
     { key: 'fallback', when: (v) => v.style === 'full', label: 'Until the outline is recorded', type: 'select', default: 'round', options: [['round', 'Use round map'], ['flat', 'Use flat map']], group: 'Style' },
     { key: 'flatLanes', when: (v) => v.style === 'flat' || (v.style === 'full' && v.fallback === 'flat'), label: 'Flat map: one lane per class', type: 'bool', default: true, group: 'Style' },
-    { key: 'rotate', label: 'Rotate', type: 'number', default: 0, min: 0, max: 359, step: 1, unit: '°', group: 'Orientation' },
-    { key: 'flipX', label: 'Mirror horizontally', type: 'bool', default: false, group: 'Orientation' },
-    { key: 'flipY', label: 'Mirror vertically', type: 'bool', default: false, group: 'Orientation' },
+    { key: 'rotate', label: 'Rotate', type: 'number', default: 0, min: 0, max: 359, step: 1, unit: '°', group: 'Orientation', perTrack: true },
+    { key: 'flipX', label: 'Mirror horizontally', type: 'bool', default: false, group: 'Orientation', perTrack: true },
+    { key: 'flipY', label: 'Mirror vertically', type: 'bool', default: false, group: 'Orientation', perTrack: true },
     { key: 'trackWidth', label: 'Track width', type: 'number', default: 6, min: 1, max: 30, unit: 'px', group: 'Track' },
     { key: 'trackColor', label: 'Track colour', type: 'color', default: '#e6e9ef', group: 'Track' },
     { key: 'outlineWidth', label: 'Outline width', type: 'number', default: 3, min: 0, max: 20, unit: 'px', group: 'Track' },
@@ -90,9 +91,11 @@ export const trackmap: OverlayDef = {
     const transform = (p: Pt, w: number, hh: number): Pt => {
       let x = p[0] - 0.5;
       let y = p[1] - 0.5;
-      if (s.flipX) x = -x;
-      if (s.flipY) y = -y;
-      const a = ((s.rotate as number) * Math.PI) / 180;
+      // Rotation and mirroring are saved per track.
+      const id = map?.trackId;
+      if (trackValue(s, id, 'flipX')) x = -x;
+      if (trackValue(s, id, 'flipY')) y = -y;
+      const a = ((Number(trackValue(s, id, 'rotate')) || 0) * Math.PI) / 180;
       const rx = x * Math.cos(a) - y * Math.sin(a);
       const ry = x * Math.sin(a) + y * Math.cos(a);
       const labels = (s.cornerLabels !== 'none' && map?.corners?.length) || (s.straightLabels && map?.straights?.length) ? (s.cornerOffset as number) + (s.cornerFontSize as number) : 0;

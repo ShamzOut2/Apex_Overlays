@@ -115,7 +115,7 @@ export function fieldValue(id: string, d: Session, u: f.Units, o: FieldOpts = {}
     case 'humidity':
       return `${o.compact ? 'Hum ' : ''}${Math.round(d.humidity * 100)}%`;
     case 'sof':
-      return d.sof ? (o.compact ? `SOF ${f.iRating(d.sof)}` : String(d.sof)) : '';
+      return d.sof ? `${o.compact ? 'SOF ' : ''}${f.sof(d.sof)}` : '';
     case 'cars':
       return `${d.numCars}${o.compact ? ' cars' : ''}`;
     case 'incidents':

@@ -27,6 +27,18 @@ interface Base {
   /** An app-wide setting shown here too (a path in the config, e.g. "fuel.avgLaps"): edited
    *  in one place for every overlay, not per overlay. */
   shared?: string;
+  /** Saved for each track separately (in the overlay's `tracks`, by track id): the overlay's
+   *  own value is used on tracks that have none. */
+  perTrack?: boolean;
+}
+
+/** Per-track values of an overlay's settings, by track id (see `perTrack`). */
+export type TrackValues = Record<string, Values>;
+
+/** A `perTrack` setting's value on a track: the track's own, else the overlay's. */
+export function trackValue(v: Values, trackId: number | undefined, key: string): unknown {
+  const own = trackId ? (v.tracks as TrackValues | undefined)?.[String(trackId)]?.[key] : undefined;
+  return own ?? v[key];
 }
 
 /** Column `id` is switched on in a columns setting (or there is no such setting). */
@@ -84,6 +96,11 @@ export function merge(schema: SettingDef[], stored: Values | undefined): Values 
       default:
         v[s.key] = typeof raw === 'string' ? raw : s.default;
     }
+  }
+  // The per-track values, kept as stored (each track's own object of settings).
+  const tracks = stored?.tracks;
+  if (schema.some((s) => s.perTrack) && tracks && typeof tracks === 'object' && !Array.isArray(tracks)) {
+    v.tracks = Object.fromEntries(Object.entries(tracks).filter(([, t]) => t && typeof t === 'object' && !Array.isArray(t)));
   }
   return v;
 }

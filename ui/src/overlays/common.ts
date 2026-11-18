@@ -402,6 +402,25 @@ export function extraCols<R extends Driver & Extras>(s: Values, units: () => Uni
         c.title = l ? (l.energy ? 'Virtual energy left' : 'Fuel left') : '';
       },
     },
+    {
+      id: 'pitTime',
+      label: 'Pit time',
+      width: '5.4em',
+      align: 'center',
+      render: (c, r) => {
+        const p = r.pitTime;
+        // A penalty stop (stop-and-go, served while black-flagged) is marked as such; a stop
+        // that was both shows the service time, marked +P.
+        const pen = !!p && p.penalty > 0 && p.service < 0.5;
+        text(c, !p ? '' : pen ? `S&G ${p.penalty.toFixed(1)}` : `${p.service.toFixed(1)}${p.penalty > 0 ? ' +P' : ''}`);
+        toggle(c, 'pit-live', !!p?.live);
+        toggle(c, 'pit-pen', pen);
+        c.title = !p
+          ? ''
+          : [p.service > 0 ? `Serviced for ${p.service.toFixed(1)} s` : '', p.penalty > 0 ? `Penalty served: ${p.penalty.toFixed(1)} s` : ''].filter(Boolean).join('; ') +
+            (p.live ? ' (this stop)' : ' (last stop)');
+      },
+    },
     { id: 'fuelTotal', label: 'Fuel Σ', width: '3.4em', align: 'center', render: (c, r) => text(c, r.fuelAdded ? fuelText(r.fuelAdded.total, r.fuelAdded.unit, units()) : '') },
     { id: 'seasonPoints', label: 'Champ', width: '3.2em', align: 'center', render: (c, r) => text(c, r.seasonPoints == null ? '' : String(+r.seasonPoints.toFixed(1))) },
   ];

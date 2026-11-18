@@ -778,6 +778,36 @@ const MIRROR_URL: &str = "https://raw.githubusercontent.com/meowmachine/racing-t
 /// `data/README.md`), so the official maps work offline from GitHub and without a login.
 const BUNDLED_INDEX: &str = include_str!("../../../data/iracing-track-maps.json");
 
+/// Every official outline in the index, built when this version was made (see
+/// `data/README.md`): the map shows as soon as the track loads, with no download and no lap.
+const BUNDLED_OUTLINES: &str = include_str!("../../../data/iracing-track-outlines.json");
+
+/// Points packed as base64 of little-endian u16 pairs (0..65535 for 0..1).
+fn unpack_points(b64: &str) -> Option<Vec<[f32; 2]>> {
+    use base64::Engine as _;
+    let bytes = base64::engine::general_purpose::STANDARD.decode(b64).ok()?;
+    if bytes.len() % 4 != 0 {
+        return None;
+    }
+    let v = |i: usize| u16::from_le_bytes([bytes[i], bytes[i + 1]]) as f32 / 65535.0;
+    Some((0..bytes.len() / 4).map(|i| [v(i * 4), v(i * 4 + 2)]).collect())
+}
+
+/// The outline built into the app for a track, if it has one.
+pub fn bundled_outline(outlines: &serde_json::Value, track_id: i64, name: &str) -> Option<TrackMap> {
+    let t = outlines.get("tracks")?.get(track_id.to_string())?;
+    let points = unpack_points(t.get("p")?.as_str()?).filter(|p| p.len() == BINS)?;
+    let pit = t.get("pit").and_then(|p| p.as_str()).and_then(unpack_points).unwrap_or_default();
+    Some(TrackMap {
+        track_id,
+        name: name.to_string(),
+        points,
+        source: "iracing".into(),
+        version: MAP_VERSION,
+        pit: pit.as_chunks::<2>().0.to_vec(),
+    })
+}
+
 /// The map layers the outline is built from.
 const LAYERS: [&str; 4] = ["active", "start-finish", "turns", "pitroad"];
 
@@ -858,6 +888,8 @@ pub fn spawn(
         let index_file = data_dir.join("iracing").join("published-track-maps.json");
         let catalogue_file = data_dir.join("iracing").join("track-map-catalogue.json");
         let bundled: Value = serde_json::from_str(BUNDLED_INDEX).unwrap_or_default();
+        let outlines: Value = serde_json::from_str(BUNDLED_OUTLINES).unwrap_or_default();
+        let mut bundled_shown: Option<i64> = None;
         let agent = crate::net::agent();
         let mut client: Option<crate::iracing_api::Client> = None;
         let mut done: Option<i64> = None;
@@ -942,6 +974,15 @@ pub fn spawn(
                 hub.command(Command::SetOfficialMap(m));
                 done = Some(id);
                 continue;
+            }
+            // The outline built into the app, shown at once; the download below still runs (it
+            // can use turn 1 from the track data, and picks up map changes) and replaces it.
+            if bundled_shown != Some(id) {
+                bundled_shown = Some(id);
+                if let Some(m) = bundled_outline(&outlines, id, &name) {
+                    log::info!("track map for {id} built into the app");
+                    hub.command(Command::SetOfficialMap(m));
+                }
             }
             if Instant::now() < retry_at {
                 continue;
@@ -1093,6 +1134,22 @@ mod tests {
         let total = index.as_object().unwrap().len();
         println!("{} of {total} without an official outline: {bad:?}", bad.len());
         assert!(bad.len() * 100 <= total, "{} of {total} failed: {bad:#?}", bad.len());
+    }
+
+    #[test]
+    fn bundled_outlines_decode() {
+        let outlines: serde_json::Value = serde_json::from_str(BUNDLED_OUTLINES).unwrap();
+        let index: serde_json::Value = serde_json::from_str(BUNDLED_INDEX).unwrap();
+        let n = outlines["tracks"].as_object().unwrap().len();
+        // Nearly every indexed layout has one (a few are refused: see every_indexed_track_builds).
+        assert!(n * 100 >= index.as_object().unwrap().len() * 98, "{n}");
+        // Lime Rock Park (101), with its pit lane.
+        let m = bundled_outline(&outlines, 101, "Lime Rock Park").unwrap();
+        assert_eq!(m.points.len(), BINS);
+        assert!(!m.pit.is_empty());
+        assert!(m.points.iter().all(|p| (0.0..=1.0).contains(&p[0]) && (0.0..=1.0).contains(&p[1])));
+        assert!((m.points[0][0] - 0.5009).abs() < 0.001 && (m.points[0][1] - 0.7646).abs() < 0.001);
+        assert!(bundled_outline(&outlines, 999_999, "x").is_none());
     }
 
     // A 200 x 100 rectangle; start/finish halfway along the top; turn 1 at the top-right corner,

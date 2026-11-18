@@ -1,7 +1,7 @@
 import { otherGameOnly, overlayBadges, withLmuBadge } from '../lib/badges';
 import { h, text } from '../lib/dom';
 import * as f from '../lib/format';
-import { commonFor, merge, type SettingDef } from '../lib/settings';
+import { commonFor, merge, type SettingDef, type TrackValues, trackValue } from '../lib/settings';
 import { applyUiTheme, PRESETS, THEME, themeValues } from '../lib/theme';
 import type { OverlayInstance, SavedLayout } from '../lib/types';
 import { byKind, hiddenKind, OVERLAYS } from '../overlays/registry';
@@ -289,7 +289,18 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
     const [obj, k] = sharedAt(s.shared);
     if (obj?.[k] !== undefined) values[s.key] = obj[k];
   }
-  const entries = [...def.settings.map((s) => ({ s, tab: tabOf(s, false) })), ...common.map((s) => ({ s, tab: tabOf(s, true) }))];
+  // Settings saved per track (track map orientation): while in a session, these show and edit
+  // the current track's own values; otherwise the overlay's, used on tracks with none.
+  const track = state.session?.connected && state.session.trackId ? state.session : null;
+  const isPerTrack = (k: string) => !!track && !!def.settings.find((s) => s.key === k)?.perTrack;
+  const trackOwn = () => ((o.settings.tracks as TrackValues | undefined) ?? {})[String(track?.trackId)] ?? {};
+  for (const s of def.settings) if (isPerTrack(s.key)) values[s.key] = trackValue(values, track?.trackId, s.key);
+  const shown = def.settings.map((s): SettingDef => {
+    if (!s.perTrack) return s;
+    const note = track ? `Saved for ${track.trackName || 'this track'} only` : 'Saved per track: join a session to set it for that track. This is used on tracks without their own';
+    return { ...s, help: s.help ? `${s.help}. ${note}` : note };
+  });
+  const entries = [...shown.map((s) => ({ s, tab: tabOf(s, false) })), ...common.map((s) => ({ s, tab: tabOf(s, true) }))];
   const tabs = [...new Set(entries.map((e) => e.tab))].sort((a, b) => tabRank(a) - tabRank(b));
   let tab = ui.tab.get(o.id) ?? tabs[0];
   if (!tabs.includes(tab)) tab = tabs[0];
@@ -303,6 +314,10 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
     if (path) {
       const [obj, key] = sharedAt(path);
       obj[key] = v;
+    } else if (isPerTrack(k)) {
+      const tracks = { ...((o.settings.tracks as TrackValues | undefined) ?? {}) };
+      tracks[String(track!.trackId)] = { ...trackOwn(), [k]: v };
+      o.settings = { ...o.settings, tracks };
     } else o.settings = { ...o.settings, [k]: v };
     save();
     drawTabs();

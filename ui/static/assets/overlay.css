@@ -326,6 +326,8 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .c-fuelAdded.filling { color: var(--pit); font-weight: 700; }
 .c-fuelLeft.fuel-ve { color: #3dd6f5; }
 .c-fuelLeft.fuel-low { color: var(--bad); font-weight: 700; }
+.c-pitTime.pit-live { color: var(--pit); font-weight: 700; }
+.c-pitTime.pit-pen { color: var(--bad); }
 .c-irDelta, .c-srDelta, .c-points { font-variant-numeric: tabular-nums; }
 .header .info[data-flag='yellow'] { color: #ffd400; }
 .header .info[data-flag='red'] { color: var(--bad); }

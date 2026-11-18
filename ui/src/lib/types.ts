@@ -195,6 +195,9 @@ export interface Extras {
   fuelAdded: { last: number; total: number; unit: 'L' | '%'; filling: boolean } | null;
   /** Fuel or virtual energy left (LMU: every car; iRacing: you). */
   fuelLeft: { value: number; unit: 'L' | '%'; energy: boolean } | null;
+  /** Seconds stood in the pit box at the last stop, or at this one while it goes on (live):
+   *  being serviced, and serving a penalty (stop-and-go, while black-flagged). */
+  pitTime: { service: number; penalty: number; live: boolean } | null;
 }
 
 export interface RelRow extends Driver, Extras {

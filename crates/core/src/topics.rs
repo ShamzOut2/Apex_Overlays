@@ -763,6 +763,8 @@ pub struct Extras {
     /// Fuel put in at pit stops, where the game tells it for this car (LMU: every car;
     /// iRacing: only the player).
     pub fuel_added: Option<FuelAddedOut>,
+    /// Seconds stood in the pit box at the last stop (or this one, live).
+    pub pit_time: Option<PitTimeOut>,
     /// Fuel or virtual energy left, where the game tells it for this car (LMU: every car;
     /// iRacing: only the player).
     pub fuel_left: Option<FuelLeftOut>,
@@ -776,6 +778,17 @@ pub struct FuelLeftOut {
     pub unit: &'static str,
     /// Virtual energy (LMU's Hypercar, LMGT3...) rather than fuel.
     pub energy: bool,
+}
+
+#[derive(Serialize, Clone, Copy)]
+#[serde(rename_all = "camelCase")]
+pub struct PitTimeOut {
+    /// Being serviced (fuel, tyres, repairs).
+    pub service: f32,
+    /// Serving a penalty (stop-and-go).
+    pub penalty: f32,
+    /// The stop is still going on (in the box, or not yet out of the pit lane).
+    pub live: bool,
 }
 
 #[derive(Serialize, Clone, Copy)]
@@ -840,6 +853,7 @@ pub fn extras(e: &Engine, idx: usize) -> Extras {
             filling: e.hist[idx].fuel_filling,
         }),
         fuel_left: fuel_left(e, idx),
+        pit_time: e.hist[idx].pit_time().map(|(p, live)| PitTimeOut { service: round(p.service, 1), penalty: round(p.penalty, 1), live }),
     }
 }
 
@@ -1497,17 +1511,26 @@ pub fn laptimes(e: &Engine) -> LapTimesOut {
 /// The player's settings changed from the wheel.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CarSettingsOut<'a> {
+pub struct CarSettingsOut {
     pub game: &'static str,
     /// In the car (settings are only shown for your own car).
     pub driving: bool,
-    pub items: &'a [model::CarSetting],
+    pub items: Vec<model::CarSetting>,
 }
 
-pub fn car_settings(e: &Engine) -> CarSettingsOut<'_> {
+pub fn car_settings(e: &Engine) -> CarSettingsOut {
     let t = &e.tel;
     let driving = t.driving();
-    CarSettingsOut { game: e.source, driving, items: if driving { &t.car_settings } else { &[] } }
+    let mut items = if driving { t.car_settings.clone() } else { vec![] };
+    // iRacing: the live brake bias (read in %, whatever the car's scale) follows changes made
+    // in the car. Cars whose live value is not a percentage (an offset from the setup, say)
+    // show the bias their setup states instead.
+    if driving && e.source == "iracing" && !items.iter().any(|s| s.id == "brakeBias") {
+        if let Some(b) = e.info.setup_brake_bias {
+            items.insert(0, model::CarSetting { id: "brakeBias", value: b, max: None });
+        }
+    }
+    CarSettingsOut { game: e.source, driving, items }
 }
 
 /// The player's tyres and brakes.

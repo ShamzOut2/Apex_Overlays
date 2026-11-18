@@ -463,6 +463,9 @@ pub struct SessionInfo {
     pub league_id: i64,
     pub event_type: String,
     pub incident_limit: Option<i32>,
+    /// The player's brake bias (front %) as the car's setup states it (iRacing's CarSetup,
+    /// updated when it is changed from the wheel), where the setup lists one.
+    pub setup_brake_bias: Option<f32>,
     /// Incidents for the first penalty, and for each further one after it (WeekendOptions
     /// IncidentWarningInitialLimit / IncidentWarningSubsequentLimit); None when unlimited.
     pub incident_warning: Option<i32>,
@@ -488,6 +491,32 @@ pub struct SessionInfo {
     pub sectors: Vec<f32>,
     /// Qualifying order carried into the race (QualifyResultsInfo), in finishing order.
     pub qualify: Vec<ResultPos>,
+}
+
+/// The brake bias in a car's setup: the first "…BrakeBias" / "…BrakePressureBias" entry given
+/// in percent (e.g. "BrakePressureBias: 54.25%"), not a peak bias or migration setting.
+fn setup_brake_bias(setup: &yaml::Yaml) -> Option<f32> {
+    fn walk(y: &yaml::Yaml) -> Option<f32> {
+        if let yaml::Yaml::Map(m) = y {
+            for (k, v) in m {
+                let key = k.to_ascii_lowercase();
+                let is_bias = (key.contains("brakebias") || key.contains("brakepressurebias"))
+                    && !key.contains("peak")
+                    && !key.contains("migration")
+                    && !key.contains("rear");
+                if is_bias && v.str().is_some_and(|s| s.trim_end().ends_with('%')) {
+                    if let Some(x) = v.f64().filter(|x| (20.0..=90.0).contains(x)) {
+                        return Some(x as f32);
+                    }
+                }
+                if let Some(x) = walk(v) {
+                    return Some(x);
+                }
+            }
+        }
+        None
+    }
+    walk(setup)
 }
 
 impl SessionInfo {
@@ -588,6 +617,7 @@ impl SessionInfo {
             league_id: wi.get("LeagueID").i64().unwrap_or(0),
             event_type: wi.get("EventType").string(),
             incident_limit: wi.path("WeekendOptions.IncidentLimit").i64().map(|v| v as i32),
+            setup_brake_bias: setup_brake_bias(y.get("CarSetup")),
             incident_warning: wi.path("WeekendOptions.IncidentWarningInitialLimit").i64().map(|v| v as i32).filter(|v| *v > 0),
             incident_warning_every: wi.path("WeekendOptions.IncidentWarningSubsequentLimit").i64().map(|v| v as i32).filter(|v| *v > 0),
             standing_start: wi.path("WeekendOptions.StandingStart").i64().map(|v| v != 0),
@@ -746,6 +776,16 @@ pub fn session_state_label(s: i32) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn brake_bias_from_the_car_setup() {
+        let y = "CarSetup:\n UpdateCount: 4\n Chassis:\n  Front:\n   BrakePressureBias: 55.50%\n   PeakBrakeBias: 60.0%\n";
+        assert_eq!(SessionInfo::parse(y).setup_brake_bias, Some(55.5));
+        // Peak bias or a rear valve only: no brake bias.
+        let y = "CarSetup:\n Chassis:\n  Rear:\n   RearBrakeBias: 30%\n   PeakBrakeBias: 60.0%\n";
+        assert_eq!(SessionInfo::parse(y).setup_brake_bias, None);
+        assert_eq!(SessionInfo::parse("WeekendInfo:\n TrackID: 1\n").setup_brake_bias, None);
+    }
 
     #[test]
     fn countries_from_flair() {
