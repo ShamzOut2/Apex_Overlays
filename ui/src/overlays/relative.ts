@@ -143,7 +143,8 @@ export const relative: OverlayDef = {
           (row, r) => {
             row.style.setProperty('--class', stripeColor(r, s));
             if (bars) {
-              const near = r.isFocus ? '0' : Math.max(0, 1 - Math.abs(r.gap) / range).toFixed(3);
+              // In 5% steps: the bar moves when the eye can see it, not on every update.
+              const near = r.isFocus ? '0' : String(Math.round(Math.max(0, 1 - Math.abs(r.gap) / range) * 20) / 20);
               if (row.style.getPropertyValue('--near') !== near) row.style.setProperty('--near', near);
             }
           },

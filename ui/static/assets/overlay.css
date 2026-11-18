@@ -857,7 +857,7 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .panel.modern .c-gap .trend[hidden] { display: none; }
 .panel.modern .c-gap .trend { display: inline-block; min-width: 1.1em; font-size: 0.55em; vertical-align: 0.2em; text-align: left; }
 /* Gap bar: fills from the right behind the row as a car gets closer (--near 0..1). */
-.panel.modern .row.near::after { content: ''; position: absolute; z-index: -1; right: 0; top: 10%; bottom: 10%; width: calc(var(--near, 0) * 45%); background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--gapbar) 16%, transparent)); pointer-events: none; }
+.panel.modern .row.near::after { content: ''; position: absolute; z-index: -1; right: 0; top: 10%; bottom: 10%; width: 45%; transform: scaleX(var(--near, 0)); transform-origin: right; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--gapbar) 16%, transparent)); pointer-events: none; }
 .panel.modern .row.near.close::after { background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--close) 34%, transparent)); }
 /* Battle lines: join a car to the one ahead when they are within the close gap. */
 .panel.modern .row:is(.bt-up, .bt-down)::after { content: ''; position: absolute; left: 4px; width: 3px; top: 0; bottom: 0; background: var(--close); box-shadow: 0 0 6px color-mix(in srgb, var(--close) 60%, transparent); pointer-events: none; }
