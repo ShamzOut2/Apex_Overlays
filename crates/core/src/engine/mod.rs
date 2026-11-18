@@ -117,6 +117,25 @@ pub struct CarHist {
     pub fuel_filling: bool,
     fuel_low: Option<f32>,
     fuel_now: f32,
+    /// Time stationary in the pit box on this pit visit: serving a penalty (stop-and-go: the
+    /// car is black-flagged while it waits) and being serviced (fuel, tyres, repairs).
+    pit_now: PitStop,
+    /// The last stop's times (once the car has left the pit lane).
+    pub pit_last: Option<PitStop>,
+}
+
+/// Seconds a car stood in its pit box on one stop, split into the part spent serving a
+/// penalty and the part being serviced.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct PitStop {
+    pub service: f32,
+    pub penalty: f32,
+}
+
+impl PitStop {
+    fn any(&self) -> bool {
+        self.service + self.penalty >= 0.5
+    }
 }
 
 /// Where a car is in its stint, for the "stint lap" column.
@@ -129,6 +148,33 @@ pub enum Stint {
 }
 
 impl CarHist {
+    /// Time in the pit box: at this stop while the car is standing in it or still in the pit
+    /// lane after it (true), else at the last stop (false).
+    pub fn pit_time(&self) -> Option<(PitStop, bool)> {
+        if self.pit_now.any() {
+            Some((self.pit_now, true))
+        } else {
+            self.pit_last.map(|p| (p, false))
+        }
+    }
+
+    /// Counts the time stood in the pit box; `penalty`: the car is black-flagged (a stop-and-go
+    /// being served), else it is a service stop.
+    fn track_pit_time(&mut self, in_box: bool, penalty: bool, dt: f64) {
+        if in_box {
+            let t = if penalty { &mut self.pit_now.penalty } else { &mut self.pit_now.service };
+            *t += dt as f32;
+        }
+    }
+
+    /// Left the pit lane (or the car went to its garage): the stop, if it stopped, is done.
+    fn end_pit_stop(&mut self) {
+        if self.pit_now.any() {
+            self.pit_last = Some(self.pit_now);
+        }
+        self.pit_now = PitStop::default();
+    }
+
     /// Fuel put in at the last stop (or so far at this one) and over the session.
     pub fn fuel_added(&self) -> Option<(f32, f32)> {
         if self.fuel_filling {
@@ -902,6 +948,9 @@ impl Engine {
             h.pen_stopped = 0.0;
         }
         h.black = black;
+        // Standing in the pit box (the game says the car is in its stall, and it is not moving).
+        let in_box = c.on_pit_road && c.surface == surface::IN_PIT_STALL && h.speed < 0.5;
+        h.track_pit_time(in_box, black, tick_dt);
     }
 
     /// Slow-down penalties: how long each has been out and the time given up so far (time
@@ -996,6 +1045,9 @@ impl Engine {
                 None => None,
             };
             h.track_fuel(fuel, c.on_pit_road && c.in_world());
+            if !(c.on_pit_road && c.in_world()) {
+                h.end_pit_stop();
+            }
             if !c.in_world() {
                 continue;
             }
@@ -1593,6 +1645,60 @@ pub(crate) mod tests {
         cfg.penalties = vec![crate::config::Penalty { customer_id: e.static_of(1).unwrap().user_id, kind: "sg".into(), seconds: 40.0, ..Default::default() }];
         e.set_config(cfg);
         assert_eq!(e.penalty(1).unwrap().0, "S&G 40s");
+    }
+
+    #[test]
+    fn pit_time_service_and_penalty() {
+        let mut e = engine(2, true);
+        let step = |e: &mut Engine, t: f64, pct: f32, surf: i32, pit: bool, flags: u32| {
+            e.tel.session_time = t;
+            place(e, 0, 3, 0.5);
+            place(e, 1, 3, pct);
+            e.tel.cars[1].surface = surf;
+            e.tel.cars[1].on_pit_road = pit;
+            e.tel.cars[1].session_flags = flags;
+            e.tick();
+        };
+        let mut t = 0.0;
+        // Drives down the pit lane (not counted), stands in the box for 20 s, drives out.
+        let stop = |e: &mut Engine, t: &mut f64, secs: f64, black_for: f64| {
+            for k in 0..20 {
+                *t += 0.1;
+                step(e, *t, 0.95 + k as f32 * 0.002, surface::APPROACHING_PITS, true, if black_for > 0.0 { flags::BLACK } else { 0 });
+            }
+            let start = *t;
+            while *t < start + secs {
+                *t += 0.1;
+                let f = if *t - start < black_for { flags::BLACK } else { 0 };
+                step(e, *t, 0.01, surface::IN_PIT_STALL, true, f);
+            }
+            // Live while the stop goes on.
+            assert!(e.hist[1].pit_time().unwrap().1);
+            for k in 0..20 {
+                *t += 0.1;
+                step(e, *t, 0.012 + k as f32 * 0.002, surface::ON_TRACK, true, 0);
+            }
+            *t += 0.1;
+            step(e, *t, 0.06, surface::ON_TRACK, false, 0);
+            e.hist[1].pit_time().unwrap()
+        };
+        assert!(e.hist[1].pit_time().is_none());
+        // A service stop.
+        let (p, live) = stop(&mut e, &mut t, 20.0, 0.0);
+        assert!(!live);
+        assert!((p.service - 20.0).abs() < 0.5 && p.penalty == 0.0, "{p:?}");
+        let x = crate::topics::extras(&e, 1).pit_time.unwrap();
+        assert!(!x.live && (x.service - 20.0).abs() < 0.5);
+        // A stop-and-go: black-flagged the whole time it stands there.
+        t += 60.0;
+        let (p, _) = stop(&mut e, &mut t, 10.0, 99.0);
+        assert!((p.penalty - 10.0).abs() < 0.5 && p.service == 0.0, "{p:?}");
+        // The penalty served first, then serviced in the same stop.
+        t += 60.0;
+        let (p, _) = stop(&mut e, &mut t, 40.0, 10.0);
+        assert!((p.penalty - 10.0).abs() < 0.5 && (p.service - 30.0).abs() < 0.5, "{p:?}");
+        // The other car never stopped.
+        assert!(e.hist[0].pit_time().is_none());
     }
 
     #[test]

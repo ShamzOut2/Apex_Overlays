@@ -1,7 +1,7 @@
 import { otherGameOnly, overlayBadges, withLmuBadge } from '../lib/badges';
 import { h, text } from '../lib/dom';
 import * as f from '../lib/format';
-import { commonFor, merge, type SettingDef } from '../lib/settings';
+import { commonFor, merge, type SettingDef, type TrackValues, trackValue } from '../lib/settings';
 import { applyUiTheme, PRESETS, THEME, themeValues } from '../lib/theme';
 import type { OverlayInstance, SavedLayout } from '../lib/types';
 import { byKind, hiddenKind, OVERLAYS } from '../overlays/registry';
@@ -276,7 +276,31 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
 
   const common = commonFor(def.commonDefaults, def.fitsWidth, def.fill);
   const values = merge([...common, ...def.settings], o.settings);
-  const entries = [...def.settings.map((s) => ({ s, tab: tabOf(s, false) })), ...common.map((s) => ({ s, tab: tabOf(s, true) }))];
+  // App-wide settings shown in this overlay's settings: their value lives in the config.
+  const sharedPath = (k: string) => def.settings.find((s) => s.key === k)?.shared;
+  const sharedAt = (path: string): [Record<string, unknown>, string] => {
+    const keys = path.split('.');
+    let obj = state.config as unknown as Record<string, unknown>;
+    for (const k of keys.slice(0, -1)) obj = obj[k] as Record<string, unknown>;
+    return [obj, keys[keys.length - 1]];
+  };
+  for (const s of def.settings) {
+    if (!s.shared) continue;
+    const [obj, k] = sharedAt(s.shared);
+    if (obj?.[k] !== undefined) values[s.key] = obj[k];
+  }
+  // Settings saved per track (track map orientation): while in a session, these show and edit
+  // the current track's own values; otherwise the overlay's, used on tracks with none.
+  const track = state.session?.connected && state.session.trackId ? state.session : null;
+  const isPerTrack = (k: string) => !!track && !!def.settings.find((s) => s.key === k)?.perTrack;
+  const trackOwn = () => ((o.settings.tracks as TrackValues | undefined) ?? {})[String(track?.trackId)] ?? {};
+  for (const s of def.settings) if (isPerTrack(s.key)) values[s.key] = trackValue(values, track?.trackId, s.key);
+  const shown = def.settings.map((s): SettingDef => {
+    if (!s.perTrack) return s;
+    const note = track ? `Saved for ${track.trackName || 'this track'} only` : 'Saved per track: join a session to set it for that track. This is used on tracks without their own';
+    return { ...s, help: s.help ? `${s.help}. ${note}` : note };
+  });
+  const entries = [...shown.map((s) => ({ s, tab: tabOf(s, false) })), ...common.map((s) => ({ s, tab: tabOf(s, true) }))];
   const tabs = [...new Set(entries.map((e) => e.tab))].sort((a, b) => tabRank(a) - tabRank(b));
   let tab = ui.tab.get(o.id) ?? tabs[0];
   if (!tabs.includes(tab)) tab = tabs[0];
@@ -286,7 +310,15 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
   let relevant = () => {};
   const onChange = (k: string, v: unknown) => {
     values[k] = v;
-    o.settings = { ...o.settings, [k]: v };
+    const path = sharedPath(k);
+    if (path) {
+      const [obj, key] = sharedAt(path);
+      obj[key] = v;
+    } else if (isPerTrack(k)) {
+      const tracks = { ...((o.settings.tracks as TrackValues | undefined) ?? {}) };
+      tracks[String(track!.trackId)] = { ...trackOwn(), [k]: v };
+      o.settings = { ...o.settings, tracks };
+    } else o.settings = { ...o.settings, [k]: v };
     save();
     drawTabs();
     relevant();
@@ -885,6 +917,8 @@ const strategyPage: Page = {
         [
           { key: 'avgLaps', label: 'Laps averaged', type: 'number', default: 5, min: 1, max: 20 },
           { key: 'marginLaps', label: 'Safety margin', type: 'number', default: 1, min: 0, max: 5, step: 0.1, unit: 'laps' },
+          { key: 'raceMinutes', label: 'Race length (minutes)', type: 'number', default: 0, min: 0, max: 1440, unit: 'min', help: 'For the race estimate before the start, when the game does not say (Le Mans Ultimate before the race session). 0: none' },
+          { key: 'raceLaps', label: 'Race length (laps)', type: 'number', default: 0, min: 0, max: 2000, unit: 'laps', help: 'For a race set by laps. 0: none' },
           { key: 'includePitLaps', label: 'Include in/out laps', type: 'bool', default: false },
           { key: 'includeCautionLaps', label: 'Include caution laps', type: 'bool', default: false },
         ],

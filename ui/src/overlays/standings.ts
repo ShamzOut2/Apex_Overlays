@@ -6,7 +6,7 @@ import { columns, enabledColumns, NAME_STYLES } from '../lib/settings';
 import { type Col, columnFitter, Table } from '../lib/table';
 import type { Session, StandClass, StandRow, Standings } from '../lib/types';
 import { classBadge } from '../lib/classBadges';
-import { classLogo, COLUMN_STYLE_SETTINGS, driverCols, extraCols, STRIPE_COLOR_SETTING, stripeColor, tireCell } from './common';
+import { classLogo, COLUMN_STYLE_SETTINGS, driverCols, extraCols, markersCell, STRIPE_COLOR_SETTING, stripeColor, tireCell } from './common';
 
 const COLS = [
   { id: 'pos', label: 'Class position — POS' },
@@ -37,6 +37,7 @@ const COLS = [
   { id: 'points', label: 'League points for position — PTS' },
   { id: 'fuelLeft', label: 'Fuel / energy left — FUEL', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
   { id: 'fuelAdded', label: 'Fuel added at last stop — FUEL+', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
+  { id: 'pitTime', label: 'Pit time: stood in the box at the last stop (S&G: a penalty) — PIT TIME' },
   { id: 'fuelTotal', label: 'Fuel added this session — FUEL Σ', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
   { id: 'seasonPoints', label: 'Championship total (projected) — CHAMP' },
 ];
@@ -66,6 +67,18 @@ export const standings: OverlayDef = {
     { key: 'topRows', label: 'Always show top', type: 'number', default: 3, min: 0, max: 20, group: 'Layout', help: 'The rest of the rows follow the car you are watching' },
     { key: 'columns', label: 'Columns', type: 'columns', ...columns(COLS, ['pos', 'number', 'flag', 'name', 'irating', 'gap', 'interval', 'lastLap', 'bestLap']), group: 'Columns' },
     { key: 'nameStyle', label: 'Name format', type: 'select', default: 'full', options: NAME_STYLES, group: 'Columns' },
+    {
+      key: 'markersAt',
+      label: 'Flags & penalties',
+      type: 'select',
+      default: 'name',
+      options: [
+        ['name', 'Next to the driver’s name'],
+        ['end', 'Outside the table, on the right'],
+      ],
+      group: 'Columns',
+      help: 'Yellow, black, meatball and blue flags, SLOW, and penalties like DT or S&G',
+    },
     { key: 'gapDecimals', label: 'Gap decimals', type: 'number', default: 1, min: 0, max: 3, group: 'Columns' },
     ...COLUMN_STYLE_SETTINGS,
     ...headerSettings(['time', 'lap', 'cars']),
@@ -95,7 +108,15 @@ export const standings: OverlayDef = {
     const overall = s.mode === 'overall';
     const header = sessionHeader(s, 'Standings', () => ctx.units);
     const body = h('div', 'sections');
-    root.append(header.el, body);
+    // Flags and penalties outside the table: the table on a card of its own, the markers
+    // just past its right edge, on the overlay's clear background.
+    const outside = s.markersAt === 'end';
+    if (outside) {
+      root.classList.add('mk-outside');
+      const card = h('div', 'st-card');
+      card.append(header.el, body);
+      root.append(card);
+    } else root.append(header.el, body);
 
     const cols: Col<StandRow>[] = [
       { id: 'pos', label: 'Pos', width: '2.4em', align: 'center', render: (c, r) => text(c, String(r.classPosition)) },
@@ -133,8 +154,10 @@ export const standings: OverlayDef = {
       { id: 'pits', label: 'Stops', width: '2.8em', align: 'center', render: (c, r) => text(c, r.pitStops ? String(r.pitStops) : '') },
       { id: 'tire', label: 'Tyre', width: '2.4em', align: 'center', render: (c, r) => tireCell(c, r.tireWet) },
       ...extraCols<StandRow>(s, () => ctx.units),
+      // Flags and penalties outside the table: placed past the row's end (see .mk-outside).
+      { id: 'markers', label: '', width: '0px', render: (c, r) => markersCell(c, r, s) },
     ];
-    const order = enabledColumns(s.columns);
+    const order = [...enabledColumns(s.columns), ...(s.markersAt === 'end' ? ['markers'] : [])];
     let sections: Section[] = [];
     const fit = columnFitter();
     let key = '';
@@ -196,7 +219,7 @@ export const standings: OverlayDef = {
           show(sec.name, !(url && s.classLogo === 'only'));
           sec.logo.alt = c.name;
           sec.head.style.setProperty('--class', c.color);
-          text(sec.meta, [c.sof ? `SOF ${f.iRating(c.sof)}` : '', `${c.count} cars`, c.bestLap ? f.lapTime(c.bestLap) : ''].filter(Boolean).join('  ·  '));
+          text(sec.meta, [c.sof ? `SOF ${f.sof(c.sof)}` : '', `${c.count} cars`, c.bestLap ? f.lapTime(c.bestLap) : ''].filter(Boolean).join('  ·  '));
           const mine = c.id === d.focusClass || s.mode !== 'multiclass';
           const rows = pick(c.rows, mine ? (s.maxRows as number) : (s.otherClassRows as number));
           show(sec.el, rows.length > 0);

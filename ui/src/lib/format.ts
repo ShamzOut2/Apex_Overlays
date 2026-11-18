@@ -72,3 +72,9 @@ export function name(full: string, style: string): string {
 export function iRating(ir: number): string {
   return ir >= 1000 ? `${(ir / 1000).toFixed(1)}k` : String(ir);
 }
+
+/** Strength of field: in full up to 9999 (1539, 8320), then 10.0k, 12.3k… */
+export function sof(v: number): string {
+  const n = Math.round(v);
+  return n >= 10_000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+}

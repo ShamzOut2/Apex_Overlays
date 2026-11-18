@@ -20,6 +20,8 @@ const EXTRAS: [string, string, string, boolean][] = [
 ];
 
 const full = (v: Record<string, unknown>) => v.mode !== 'compact';
+/** Details (average, laps to go, extras) show in the full layout, and in the compact one when asked for. */
+const details = (v: Record<string, unknown>) => full(v) || !!v.compactDetails;
 
 /** How the fuel looks against the finish. */
 type State = 'ok' | 'marginal' | 'short' | 'none';
@@ -34,13 +36,37 @@ export const fuel: OverlayDef = {
   commonDefaults: { autoHeight: true },
   settings: [
     { key: 'mode', label: 'Layout', type: 'select', default: 'full', options: [['full', 'Full'], ['compact', 'Compact (laps, bar and fuel at the finish)']], group: 'Layout' },
+    { key: 'compactDetails', when: (v) => !full(v), label: 'Details under the bar', type: 'bool', default: false, group: 'Layout', help: 'The average, laps to go and the extra details you pick' },
     { key: 'showHeader', when: full, label: '“Fuel” title and status pill', type: 'bool', default: true, group: 'Layout' },
     { key: 'show_level', when: full, label: 'Fuel in tank', type: 'bool', default: true, group: 'Layout' },
     { key: 'showGauge', label: 'Fuel bar', type: 'bool', default: true, group: 'Layout' },
-    { key: 'show_perLapAvg', when: full, label: 'Per lap (average)', type: 'bool', default: true, group: 'Layout' },
-    { key: 'show_lapsRemaining', when: full, label: 'Laps to go', type: 'bool', default: true, group: 'Layout' },
+    { key: 'show_perLapAvg', when: details, label: 'Average per lap', type: 'bool', default: true, group: 'Layout' },
+    { key: 'avgLaps', when: details, label: 'Laps in the average', type: 'number', default: 5, min: 1, max: 20, unit: 'laps', group: 'Layout', shared: 'fuel.avgLaps', help: 'Your last clean laps. Everything the calculator works out uses this average (same as Strategy → Fuel)' },
+    { key: 'show_lapsRemaining', when: details, label: 'Laps to go', type: 'bool', default: true, group: 'Layout' },
     { key: 'show_atFinish', label: 'Fuel at the finish', type: 'bool', default: true, group: 'Layout', help: 'What is left when you cross the line (minus: how much you are short)' },
-    ...EXTRAS.map(([key, label, , on]) => ({ key: `show_${key}`, when: full, label, type: 'bool' as const, default: on, group: 'Extra details' })),
+    {
+      key: 'show_race',
+      label: 'Race estimate before the start',
+      type: 'bool',
+      default: true,
+      group: 'Race estimate',
+      help: 'In practice, qualifying and on the grid: how many laps the race will be (from its laps, or its time and your lap time), the fuel for all of it and the stops',
+    },
+    {
+      key: 'raceMinutes',
+      when: (v) => v.show_race !== false,
+      label: 'Race length when the game does not say',
+      type: 'number',
+      default: 0,
+      min: 0,
+      max: 1440,
+      unit: 'min',
+      group: 'Race estimate',
+      shared: 'fuel.raceMinutes',
+      help: 'Le Mans Ultimate tells the race length only once in the race session. 0: none',
+    },
+    { key: 'raceLaps', when: (v) => v.show_race !== false, label: 'Or in laps', type: 'number', default: 0, min: 0, max: 2000, unit: 'laps', group: 'Race estimate', shared: 'fuel.raceLaps' },
+    ...EXTRAS.map(([key, label, , on]) => ({ key: `show_${key}`, when: details, label, type: 'bool' as const, default: on, group: 'Extra details' })),
     { key: 'showHistory', when: full, label: 'Per-lap history bars', type: 'bool', default: false, group: 'Extra details' },
     { key: 'marginalLaps', label: 'Amber when the spare is under', type: 'number', default: 0.5, min: 0, max: 5, step: 0.1, unit: 'laps', group: 'Status', help: 'Fuel left at the finish, in laps, below which it shows as marginal' },
     { key: 'warnLaps', label: 'Outside races, red when fuel is under', type: 'number', default: 2, min: 0, max: 10, step: 0.5, unit: 'laps', group: 'Status', help: 'Practice and sessions without a set length' },
@@ -94,27 +120,26 @@ export const fuel: OverlayDef = {
     const stats: Record<string, ReturnType<typeof stat>> = {};
     const extras: Record<string, ReturnType<typeof stat>> = {};
     const hist = h('div', 'fl-history');
+    // The race ahead, before the start.
+    const raceRow = h('div', 'fl-stats fl-race');
+    const raceStat = (title: string) => {
+      const st = stat(title);
+      raceRow.append(st.el);
+      return st;
+    };
+    const raceLaps = raceStat('RACE LAPS');
+    const raceFuel = raceStat('RACE FUEL');
+    const raceStops = raceStat('RACE STOPS');
+    show(raceRow, false);
     const atFinishC = h('span', 'fl-num fl-at');
 
-    if (compact) {
-      const left = h('div', 'fl-c-left');
-      left.append(hero, label('LAPS'));
-      root.append(left, bar, atFinishC);
-      show(atFinishC, s.show_atFinish !== false);
-    } else {
-      const top = h('div', 'fl-top');
-      pill = h('span', 'fl-pill');
-      top.append(label('FUEL'), pill);
-      show(top, s.showHeader !== false);
-      const main = h('div', 'fl-main');
-      tank = figure('fl-tank');
-      main.append(hero, h('span', 'fl-label fl-hero-label', 'LAPS LEFT'), tank.el);
-      show(tank.el, s.show_level !== false);
+    /** The rows of figures: the average, laps to go and fuel at the finish, then the extras. */
+    const detailRows = (withAtFinish: boolean) => {
       const row = h('div', 'fl-stats');
       for (const [key, title, on] of [
-        ['perLapAvg', 'PER LAP', s.show_perLapAvg !== false],
+        ['perLapAvg', 'AVG / LAP', s.show_perLapAvg !== false],
         ['lapsRemaining', 'LAPS TO GO', s.show_lapsRemaining !== false],
-        ['atFinish', 'AT FINISH', s.show_atFinish !== false],
+        ['atFinish', 'AT FINISH', withAtFinish && s.show_atFinish !== false],
       ] as const) {
         if (!on) continue;
         stats[key] = stat(title);
@@ -128,8 +153,31 @@ export const fuel: OverlayDef = {
       }
       show(row, row.childElementCount > 0);
       show(more, more.childElementCount > 0);
+      return [row, more];
+    };
+
+    if (compact) {
+      const left = h('div', 'fl-c-left');
+      left.append(hero, label('LAPS'));
+      const line = h('div', 'fl-c-line');
+      line.append(left, bar, atFinishC);
+      root.append(line);
+      show(atFinishC, s.show_atFinish !== false);
+      // Fuel at the finish is already on the line.
+      if (s.compactDetails) root.append(...detailRows(false));
+      root.append(raceRow);
+    } else {
+      const top = h('div', 'fl-top');
+      pill = h('span', 'fl-pill');
+      top.append(label('FUEL'), pill);
+      show(top, s.showHeader !== false);
+      const main = h('div', 'fl-main');
+      tank = figure('fl-tank');
+      main.append(hero, h('span', 'fl-label fl-hero-label', 'LAPS LEFT'), tank.el);
+      show(tank.el, s.show_level !== false);
+      const [row, more] = detailRows(true);
       show(hist, !!s.showHistory);
-      root.append(top, main, bar, row, more, hist);
+      root.append(top, main, bar, row, more, raceRow, hist);
     }
 
     const vol = (l: number | null | undefined, d = dec) => (l == null ? '–' : `${f.fuel(l, u()).toFixed(d)} ${f.fuelUnit(u())}`);
@@ -179,10 +227,23 @@ export const fuel: OverlayDef = {
           if (line != null) finish.style.left = `calc((100% + var(--fl-gap)) * ${(line / nSeg).toFixed(4)} - var(--fl-gap) / 2)`;
         }
 
+        const r = s.show_race !== false ? d.race : null;
+        show(raceRow, !!r);
+        if (r) {
+          text(raceLaps.v, `${r.exact ? '' : '~'}${r.laps}`);
+          raceLaps.el.title = r.exact
+            ? `A ${r.laps}-lap race`
+            : `${r.minutes != null ? `${r.minutes} minutes` : 'The race'} at ${f.lapTime(r.lapTime)} a lap${r.from === 'settings' ? ' (the race length from your settings)' : ''}`;
+          text(raceFuel.v, vol(r.fuel, 1));
+          raceFuel.el.title = r.fuel == null ? 'Needs a lap to know your use per lap' : `For every lap plus your ${d.marginLaps}-lap margin. Start with ${vol(r.startFuel, 1)}`;
+          text(raceStops.v, r.stops == null ? '–' : String(r.stops));
+          raceStops.el.title = 'Starting with a full tank';
+        }
+
         if (compact) {
           text(atFinishC, atFinish == null ? vol(d.level, 1).replace(` ${f.fuelUnit(u())}`, '') : signed(atFinish, false));
           atFinishC.title = atFinish == null ? 'Fuel in tank' : 'Fuel at the finish';
-          return;
+          if (!s.compactDetails) return;
         }
 
         if (pill) {
@@ -203,7 +264,9 @@ export const fuel: OverlayDef = {
 
         const set = (cells: Record<string, ReturnType<typeof stat>>, k: string, v: string) => cells[k] && text(cells[k].v, v);
         set(stats, 'perLapAvg', perLap == null ? '–' : `${vol(perLap)}${d.estimateFrom === 'history' ? '*' : ''}`);
-        if (stats.perLapAvg) stats.perLapAvg.el.title = d.estimateFrom === 'history' ? 'From your earlier sessions here until you have a clean lap' : `Average of ${d.lapsSampled} laps`;
+        if (stats.perLapAvg)
+          stats.perLapAvg.el.title =
+            d.estimateFrom === 'history' ? 'From your earlier sessions here until you have a clean lap' : `Average of your last ${Math.min(d.avgLaps, d.lapsSampled)} clean laps (set to ${d.avgLaps})`;
         set(stats, 'lapsRemaining', laps(toGo));
         set(stats, 'atFinish', atFinish == null ? '–' : signed(atFinish, true));
 

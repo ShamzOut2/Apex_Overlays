@@ -20,6 +20,20 @@ To check every layout still builds a good outline, download each entry's three l
 `<dir>/<trackId>/<layer>.svg` and run
 `APEX_TRACK_SVGS=<dir> cargo test -p apex-core every_indexed_track -- --ignored`.
 
+## iracing-track-outlines.json
+
+The official outline of every layout in `iracing-track-maps.json`, already built, so the map
+shows the moment a track loads, with no download and no lap to drive. Built into the app;
+the app still downloads the SVGs when it can and replaces the built-in outline with its own
+(in case iRacing redraws a map). Format: `{"version": 2, "tracks": {"<trackId>": {"p": ...,
+"pit": ...}}}`, where `p` is the 500 outline points and `pit` the pit lane dashes (pairs of
+points), each as base64 of little-endian u16 x, y pairs (0 to 65535 for 0 to 1).
+
+To rebuild it, run the `every_indexed_track` check above (it writes each outline to
+`<dir>/out/<trackId>.json`), then pack them:
+
+    python3 tools/pack_track_outlines.py <dir>/out data/iracing-track-outlines.json
+
 ## trackmaps/
 
 The shared track map library: outlines recorded by drivers (one clean lap each), so other

@@ -199,6 +199,20 @@ pub fn laps_remaining(c: &RaceClock) -> Option<f64> {
     Some(((p_end - 1e-3).ceil() - c.player_progress).max(0.0))
 }
 
+/// Laps a race will be, before it starts: its lap count, or for a timed race the laps that
+/// fit in its time at `lap_time` (the leader finishes the lap they are on when the clock hits
+/// zero), whichever ends it first. `exact`: set by laps rather than estimated from the time.
+pub fn race_laps(laps: Option<i32>, secs: Option<f64>, lap_time: f32) -> Option<(f32, bool)> {
+    let by_laps = laps.filter(|&l| l > 0).map(|l| l as f32);
+    let by_time = secs.filter(|&t| t > 0.0 && t < 1e6 && lap_time > 0.0).map(|t| ((t / lap_time as f64) - 1e-3).ceil().max(1.0) as f32);
+    match (by_laps, by_time) {
+        (Some(l), Some(t)) if t < l => Some((t, false)),
+        (Some(l), _) => Some((l, true)),
+        (None, Some(t)) => Some((t, false)),
+        (None, None) => None,
+    }
+}
+
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Plan {
     pub fuel_to_finish: f32,
@@ -279,6 +293,20 @@ mod tests {
         let c = RaceClock { laps_total: None, time_remaining: Some(250.0), leader_progress: 5.0, leader_lap: 100.0, player_progress: 5.0, player_lap: 100.0 };
         // 2.5 laps at zero → leader finishes lap 8, i.e. 3 more laps.
         assert!((laps_remaining(&c).unwrap() - 3.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn race_length_before_the_start() {
+        // 40 minutes at 1:42: 23.5 laps fit, so the leader finishes the 24th.
+        assert_eq!(race_laps(None, Some(2400.0), 102.0), Some((24.0, false)));
+        // Exactly 20 laps' time: the leader crosses the line as the clock reaches zero.
+        assert_eq!(race_laps(None, Some(2000.0), 100.0), Some((20.0, false)));
+        assert_eq!(race_laps(Some(30), None, 100.0), Some((30.0, true)));
+        // Laps and time: whichever comes first.
+        assert_eq!(race_laps(Some(30), Some(1500.0), 100.0), Some((15.0, false)));
+        assert_eq!(race_laps(Some(10), Some(3600.0), 100.0), Some((10.0, true)));
+        assert_eq!(race_laps(None, Some(2400.0), 0.0), None);
+        assert_eq!(race_laps(None, None, 100.0), None);
     }
 
     #[test]

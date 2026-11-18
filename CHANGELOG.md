@@ -4,6 +4,29 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 1.3.1
+
+### New features
+- Endurance races: the incident tracker keeps your last 300 incidents instead of 100 once a race over 5 hours is detected (by its time limit, or its laps at your lap time). Only the newest 30 (the most it shows) are sent to the overlay, so its updates stay small
+- Fuel calculator: the number of laps in the average can be set in the calculator's own settings (the same setting as Strategy → Fuel), and the average is labelled AVG / LAP
+- Fuel calculator: the compact layout can show details under the bar too (Details under the bar): the average, laps to go and the extra details you pick
+- Standings: flags and penalties (meatball, black flag, SLOW, DT, S&G…) can sit outside the table, just past the right edge of each driver's row, instead of next to the name (Columns → Flags & penalties)
+- Pit time column for the relative and standings (PIT TIME): how long each car stood still in its pit box at its last stop, counting live (in the pit colour) during a stop. A penalty stop is told apart from a service stop: a stop-and-go served under the black flag shows as "S&G 30.0" in red; a stop for fuel, tyres or repairs shows its time; a stop that was both shows the service time marked +P (hover for both). iRacing and Le Mans Ultimate, every car
+- Fuel calculator: estimates the race before it starts. In practice, qualifying and on the grid it shows how many laps the race will be (RACE LAPS: exact for a race set by laps, ~ for a timed race, worked out from its time and your lap time), the fuel for all of it with your safety margin (RACE FUEL; hover for what to start with) and the stops it takes starting with a full tank (RACE STOPS). On the grid the whole calculator (laps to go, fuel at the finish, pit window) plans the race. iRacing gives the race length from the start of the event; Le Mans Ultimate only once in the race session, so for its practice and qualifying you can set the race length (minutes or laps) in the calculator's settings or Strategy → Fuel
+- Track map: rotation and mirroring (horizontal and vertical) are saved for each track. Set them while in a session and they apply to that track only; other tracks keep their own, or the overlay's setting if they have none
+
+### Improvements
+- iRacing track maps show the moment a track loads, with no lap to drive: the official outline of every track layout (421 of them) is now built into the app, so nothing has to be downloaded first (the app still fetches the latest map in the background when it can)
+- Le Mans Ultimate track maps draw much sooner when you are alone on track (practice, testing): a fast car's samples are joined up instead of leaving gaps, so one clean lap is enough rather than several
+- SOF in overlay headers shows in full below 10,000 (1539, 8320) and as 10.0k, 12.3k… from 10,000 up, the same in every header
+
+### Fixes
+- Car settings: brake bias no longer shows as 5500% on cars where iRacing gives it in hundredths (the Audi RS 3 LMS TCR and others); it is read in the right scale on every car and follows the changes you make in the car. On cars whose live value is not a percentage, the bias from the car's setup is shown instead. Values outside a believable range are hidden rather than shown wrong
+- Text badges next to drivers have their words centred: SLOW, penalties (DT, S&G 40s, +5s…) and PIT
+- The flag markers without text (meatball, black, blue, yellow, chequered, disqualified) are bigger and redrawn as sharp vector flags with a light sheen, crisp at any size or screen scaling
+- Flags next to a driver's name no longer have the left edge of their outline cut off
+- Le Mans Ultimate no longer flickers between "connected" and "waiting" when it is not running but another program (SimHub, CrewChief…) keeps its shared memory open: the app checks the game is really running before connecting, and waits a few seconds before looking again
+
 ## 1.3.0
 
 ### New features

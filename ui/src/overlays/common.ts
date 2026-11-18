@@ -120,7 +120,7 @@ type NameRow = Partial<Extras> & { onPitRoad?: boolean; inWorld?: boolean };
  * black, meatball, blue, ...), a penalty box (DT / S&G 40s / +5s) and, right of the name,
  * PIT while on pit road (OUT when the car has left the world, e.g. in the garage).
  */
-function nameCell(c: HTMLElement, name: string, r: NameRow, s: Values) {
+export function nameCell(c: HTMLElement, name: string, r: NameRow, s: Values) {
   let fin = c.querySelector(':scope > .fin') as HTMLElement | null;
   let marks = c.querySelector(':scope > .marks') as HTMLElement | null;
   let pen = c.querySelector(':scope > .pen') as HTMLElement | null;
@@ -140,7 +140,14 @@ function nameCell(c: HTMLElement, name: string, r: NameRow, s: Values) {
   if (pit.hidden !== !pitText) pit.hidden = !pitText;
   const finished = s.finishFlag !== false && !!r.finished;
   if (fin.hidden !== !finished) fin.hidden = !finished;
-  const flags = s.driverFlags !== false ? (r.flags ?? []) : [];
+  // Flags and penalties at the end of the row instead (standings): none by the name.
+  markers(marks, pen, r, s, s.markersAt === 'end');
+  text(label, name);
+}
+
+/** The flags (yellow, black, meatball, blue, SLOW…) and the penalty box of a driver. */
+function markers(marks: HTMLElement, pen: HTMLElement, r: NameRow, s: Values, off = false) {
+  const flags = !off && s.driverFlags !== false ? (r.flags ?? []) : [];
   const key = flags.join();
   if (marks.dataset.k !== key) {
     marks.dataset.k = key;
@@ -155,11 +162,22 @@ function nameCell(c: HTMLElement, name: string, r: NameRow, s: Values) {
   }
   const slow = marks.querySelector(':scope > .slow-tag') as HTMLElement | null;
   if (slow && r.slowdown) slow.title = `${FLAG_TITLES.slow} · ${Math.round(r.slowdown.seconds)}s so far, about ${r.slowdown.lost.toFixed(1)}s given up`;
-  const penalty = s.penaltyBox !== false ? (r.penalty ?? '') : '';
+  const penalty = !off && s.penaltyBox !== false ? (r.penalty ?? '') : '';
   text(pen, penalty);
   if (pen.hidden !== !penalty) pen.hidden = !penalty;
   toggle(pen, 'served', !!r.penaltyServed);
-  text(label, name);
+}
+
+/** A last column with each driver's flags and penalty box (standings: "at the end of the row"). */
+export function markersCell(c: HTMLElement, r: NameRow, s: Values) {
+  let marks = c.querySelector(':scope > .marks') as HTMLElement | null;
+  let pen = c.querySelector(':scope > .pen') as HTMLElement | null;
+  if (!marks || !pen) {
+    marks = h('span', 'marks');
+    pen = h('span', 'pen');
+    c.replaceChildren(marks, pen);
+  }
+  markers(marks, pen, r, s);
 }
 
 export function driverCols<R extends Driver & Partial<Extras>>(s: Values): Col<R>[] {
@@ -382,6 +400,25 @@ export function extraCols<R extends Driver & Extras>(s: Values, units: () => Uni
         toggle(c, 'fuel-ve', !!l?.energy);
         toggle(c, 'fuel-low', !!l && l.unit === '%' && l.value < 10);
         c.title = l ? (l.energy ? 'Virtual energy left' : 'Fuel left') : '';
+      },
+    },
+    {
+      id: 'pitTime',
+      label: 'Pit time',
+      width: '5.4em',
+      align: 'center',
+      render: (c, r) => {
+        const p = r.pitTime;
+        // A penalty stop (stop-and-go, served while black-flagged) is marked as such; a stop
+        // that was both shows the service time, marked +P.
+        const pen = !!p && p.penalty > 0 && p.service < 0.5;
+        text(c, !p ? '' : pen ? `S&G ${p.penalty.toFixed(1)}` : `${p.service.toFixed(1)}${p.penalty > 0 ? ' +P' : ''}`);
+        toggle(c, 'pit-live', !!p?.live);
+        toggle(c, 'pit-pen', pen);
+        c.title = !p
+          ? ''
+          : [p.service > 0 ? `Serviced for ${p.service.toFixed(1)} s` : '', p.penalty > 0 ? `Penalty served: ${p.penalty.toFixed(1)} s` : ''].filter(Boolean).join('; ') +
+            (p.live ? ' (this stop)' : ' (last stop)');
       },
     },
     { id: 'fuelTotal', label: 'Fuel Σ', width: '3.4em', align: 'center', render: (c, r) => text(c, r.fuelAdded ? fuelText(r.fuelAdded.total, r.fuelAdded.unit, units()) : '') },

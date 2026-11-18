@@ -16,6 +16,10 @@ use crate::engine::trackmap::{fill_gaps, Frame, TrackMap, BINS, MAP_VERSION};
 const COMPLETE: f32 = 0.97;
 /// Pit lane stretches further apart than this (in lap bins) are not joined up.
 const PIT_GAP: usize = 4;
+/// A car's two positions this many stretches apart or fewer (one scoring update) are joined
+/// up: a fast car moves further than one stretch between updates, and alone on track it would
+/// otherwise leave gaps that take many laps to fill.
+const JOIN: usize = 12;
 
 #[derive(Clone, Copy, Default)]
 struct Sum {
@@ -44,11 +48,22 @@ pub struct MapBuilder {
     last_et: f64,
     done: bool,
     ready: Option<TrackMap>,
+    /// Each car's last position (stretch, east, north, in the pit lane), to join up to the next.
+    prev: std::collections::HashMap<i32, (usize, f64, f64, bool)>,
 }
 
 impl Default for MapBuilder {
     fn default() -> Self {
-        Self { track_id: 0, name: String::new(), track: vec![Sum::default(); BINS], pit: vec![Sum::default(); BINS], last_et: -1.0, done: false, ready: None }
+        Self {
+            track_id: 0,
+            name: String::new(),
+            track: vec![Sum::default(); BINS],
+            pit: vec![Sum::default(); BINS],
+            last_et: -1.0,
+            done: false,
+            ready: None,
+            prev: Default::default(),
+        }
     }
 }
 
@@ -71,13 +86,23 @@ impl MapBuilder {
         }
         self.last_et = et;
         for v in &snap.vehicles {
-            if let Some((bin, x, z, pit)) = sample(v, len) {
-                if pit {
-                    self.pit[bin].add(x, z);
-                } else {
-                    self.track[bin].add(x, z);
+            let Some((bin, x, z, pit)) = sample(v, len) else {
+                self.prev.remove(&v.mID);
+                continue;
+            };
+            let bins = if pit { &mut self.pit } else { &mut self.track };
+            bins[bin].add(x, z);
+            // The stretches passed since this car's last position, filled in along the way.
+            if let Some(&(b0, x0, z0, p0)) = self.prev.get(&v.mID) {
+                let gap = (bin + BINS - b0) % BINS;
+                if p0 == pit && (2..=JOIN).contains(&gap) {
+                    for k in 1..gap {
+                        let f = k as f64 / gap as f64;
+                        bins[(b0 + k) % BINS].add(x0 + (x - x0) * f, z0 + (z - z0) * f);
+                    }
                 }
             }
+            self.prev.insert(v.mID, (bin, x, z, pit));
         }
         if self.progress() >= COMPLETE {
             self.ready = Some(self.build());
@@ -214,6 +239,23 @@ mod tests {
         assert!(!map.pit.is_empty(), "pit lane drawn");
         let pr = ((map.pit[0][0][0] - 0.5).powi(2) + (map.pit[0][0][1] - 0.5).powi(2)).sqrt();
         assert!(pr < lo, "pit lane inside the track ({pr} < {lo})");
+    }
+
+    #[test]
+    fn one_fast_car_alone_draws_the_track_in_one_lap() {
+        let mut b = MapBuilder::default();
+        // Alone on track at 80 m/s (16 m between updates, more than one 8 m stretch).
+        let (speed, mut dist, mut et) = (80.0, 0.0, 0.0);
+        let mut laps = 0.0;
+        while b.progress() < COMPLETE && laps < 1.05 {
+            et += 0.2;
+            dist += speed * 0.2;
+            laps = dist / 4000.0;
+            let mut s = snap(et, &[(dist % 4000.0, false)]);
+            s.vehicles[0].mLocalVel.z = -speed;
+            b.feed(&s, 7, "Test");
+        }
+        assert!(b.progress() >= COMPLETE, "one lap was enough ({:.0}% after {laps:.2} laps)", b.progress() * 100.0);
     }
 
     #[test]

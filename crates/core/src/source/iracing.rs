@@ -48,6 +48,19 @@ vars! {
     dc_regen = "dcMGUKRegenGain", dc_boost = "dcBoostLevel",
 }
 
+/// A brake bias as front %, whatever scale the car reports it in; `None` when it is not one
+/// (an offset or a setting of another kind).
+pub fn brake_bias_pct(v: f32) -> Option<f32> {
+    let pct = if v > 0.0 && v <= 1.0 {
+        v * 100.0
+    } else if v > 100.0 && v <= 10_000.0 {
+        v / 100.0
+    } else {
+        v
+    };
+    (20.0..=90.0).contains(&pct).then_some(pct)
+}
+
 /// One wheel's tyre readings (iRacing updates them when the crew measures them at a stop).
 #[derive(Default, Clone, Copy)]
 pub struct WheelVars {
@@ -171,7 +184,18 @@ pub fn fill(v: &Vars, r: Row, t: &mut Telemetry) {
     ];
     for (var, id) in dc {
         if var.is_some() {
-            t.car_settings.push(CarSetting { id, value: r.f32(var), max: None });
+            let value = r.f32(var);
+            // Brake bias in front %: cars give it as a %, a fraction or in hundredths of a %
+            // (5500 for 55.00%); anything else is not a bias in % and is left out.
+            let value = if matches!(id, "brakeBias" | "peakBias") {
+                match brake_bias_pct(value) {
+                    Some(v) => v,
+                    None => continue,
+                }
+            } else {
+                value
+            };
+            t.car_settings.push(CarSetting { id, value, max: None });
         }
     }
     for (i, c) in t.cars.iter_mut().enumerate().take(MAX_CARS) {
@@ -358,6 +382,12 @@ mod tests {
         fill_wheels(&wheel_vars(&vars), Row(&row), &mut t);
         let ids: Vec<_> = t.car_settings.iter().map(|s| (s.id, s.value)).collect();
         assert_eq!(ids, vec![("brakeBias", 54.5), ("abs", 3.0), ("tc", 4.0)]);
+        // Brake bias in other scales: hundredths of a % (5500), a fraction; not a bias: an offset.
+        assert_eq!(brake_bias_pct(5500.0), Some(55.0));
+        assert_eq!(brake_bias_pct(0.565), Some(56.5));
+        assert_eq!(brake_bias_pct(54.25), Some(54.25));
+        assert_eq!(brake_bias_pct(-2.0), None);
+        assert_eq!(brake_bias_pct(3.0), None);
         let w = t.wheels.unwrap();
         assert_eq!(w[0].temps, Some([80.0, 85.0, 90.0]));
         assert_eq!(w[0].pressure, Some(165.0));

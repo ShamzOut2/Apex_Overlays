@@ -326,6 +326,8 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .c-fuelAdded.filling { color: var(--pit); font-weight: 700; }
 .c-fuelLeft.fuel-ve { color: #3dd6f5; }
 .c-fuelLeft.fuel-low { color: var(--bad); font-weight: 700; }
+.c-pitTime.pit-live { color: var(--pit); font-weight: 700; }
+.c-pitTime.pit-pen { color: var(--bad); }
 .c-irDelta, .c-srDelta, .c-points { font-variant-numeric: tabular-nums; }
 .header .info[data-flag='yellow'] { color: #ffd400; }
 .header .info[data-flag='red'] { color: var(--bad); }
@@ -336,9 +338,9 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .session-badge[data-type='race'] { background: var(--accent); color: var(--on-accent, #fff); }
 .session-badge[data-type='qualifying'] { background: var(--best); color: var(--on-best, #fff); }
 .session-badge[data-type='practice'], .session-badge[data-type='warmup'] { background: var(--good); color: var(--on-good, #0b0e13); }
-.c-name { display: flex; align-items: center; gap: 0.35em; }
+.c-name { display: flex; align-items: center; gap: 0.35em; padding-left: 2px; }
 .c-name .nm { overflow: hidden; text-overflow: ellipsis; }
-.fin { flex: none; width: 1.05em; height: 0.75em; border-radius: 1px; background: repeating-conic-gradient(#111 0 25%, #fff 0 50%) 0 0 / 0.35em 0.35em; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
+.fin { flex: none; width: 1.5em; height: 1.07em; border-radius: 2px; background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 45%, rgba(0,0,0,0.18)), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 20' shape-rendering='geometricPrecision'%3E%3Crect width='28' height='20' fill='%23f5f5f5'/%3E%3Crect x='0' y='0' width='4' height='4' fill='%23111'/%3E%3Crect x='8' y='0' width='4' height='4' fill='%23111'/%3E%3Crect x='16' y='0' width='4' height='4' fill='%23111'/%3E%3Crect x='24' y='0' width='4' height='4' fill='%23111'/%3E%3Crect x='4' y='4' width='4' height='4' fill='%23111'/%3E%3Crect x='12' y='4' width='4' height='4' fill='%23111'/%3E%3Crect x='20' y='4' width='4' height='4' fill='%23111'/%3E%3Crect x='0' y='8' width='4' height='4' fill='%23111'/%3E%3Crect x='8' y='8' width='4' height='4' fill='%23111'/%3E%3Crect x='16' y='8' width='4' height='4' fill='%23111'/%3E%3Crect x='24' y='8' width='4' height='4' fill='%23111'/%3E%3Crect x='4' y='12' width='4' height='4' fill='%23111'/%3E%3Crect x='12' y='12' width='4' height='4' fill='%23111'/%3E%3Crect x='20' y='12' width='4' height='4' fill='%23111'/%3E%3Crect x='0' y='16' width='4' height='4' fill='%23111'/%3E%3Crect x='8' y='16' width='4' height='4' fill='%23111'/%3E%3Crect x='16' y='16' width='4' height='4' fill='%23111'/%3E%3Crect x='24' y='16' width='4' height='4' fill='%23111'/%3E%3C/svg%3E") center / 100% 100%; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.35); }
 .fin[hidden] { display: none; }
 .pb { color: var(--good) !important; }
 .c-name .nm { min-width: 0; white-space: nowrap; }
@@ -425,19 +427,20 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .databox .db-label { overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 100%; }
 
 /* Flags and penalty box next to driver names */
-.c-name .marks { display: inline-flex; gap: 0.2em; flex: none; }
-.c-name .marks:empty { display: none; }
-.mk { width: 1.05em; height: 0.75em; border-radius: 1px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); flex: none; }
-.mk-yellow { background: #ffd400; }
-.mk-black { background: #000; box-shadow: 0 0 0 1px #fff; }
-.mk-disqualify { background: linear-gradient(45deg, transparent 42%, #fff 42% 58%, transparent 58%), linear-gradient(-45deg, #000 42%, #fff 42% 58%, #000 58%); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7); }
-.mk-repair { background: radial-gradient(circle, #ff7a00 0 34%, #000 36%); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6); }
-.mk-furled { background: linear-gradient(135deg, #fff 50%, #000 50%); }
-.mk-blue { background: linear-gradient(135deg, #0057d9 38%, #ffd400 38% 55%, #0057d9 55%); }
-.c-name .pen { flex: none; padding: 0 0.3em; border-radius: 2px; background: #000; color: #fff; border: 1px solid #fff; font-size: 0.72em; font-weight: 800; letter-spacing: 0.03em; line-height: 1.35; text-shadow: none; }
-.c-name .pen.served { background: transparent; color: var(--dim); border-color: var(--dim); }
-.c-name .pen[hidden] { display: none; }
-.c-name .pit-tag { flex: none; padding: 0 0.3em; border-radius: 2px; border: 1px solid currentColor; color: var(--dim); font-size: 0.68em; font-weight: 800; letter-spacing: 0.04em; line-height: 1.35; }
+.c-name .marks, .c-markers .marks { display: inline-flex; gap: 0.2em; flex: none; }
+.c-name .marks:empty, .c-markers .marks:empty { display: none; }
+.c-markers { display: flex; align-items: center; justify-content: flex-end; gap: 0.3em; }
+.mk { width: 1.5em; height: 1.07em; border-radius: 2px; background-size: 100% 100%; background-position: center; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.35); flex: none; }
+.mk-yellow { background-image: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 45%, rgba(0,0,0,0.18)), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 20' shape-rendering='geometricPrecision'%3E%3Crect width='28' height='20' fill='%23ffcf1f'/%3E%3C/svg%3E"); }
+.mk-black { background-image: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 45%, rgba(0,0,0,0.18)), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 20' shape-rendering='geometricPrecision'%3E%3Crect width='28' height='20' fill='%230d0d0f'/%3E%3C/svg%3E"); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8), 0 1px 2px rgba(0, 0, 0, 0.35); }
+.mk-disqualify { background-image: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 45%, rgba(0,0,0,0.18)), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 20' shape-rendering='geometricPrecision'%3E%3Crect width='28' height='20' fill='%230d0d0f'/%3E%3Cpath d='M5 3L23 17M23 3L5 17' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E"); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8), 0 1px 2px rgba(0, 0, 0, 0.35); }
+.mk-repair { background-image: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 45%, rgba(0,0,0,0.18)), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 20' shape-rendering='geometricPrecision'%3E%3Crect width='28' height='20' fill='%230d0d0f'/%3E%3Ccircle cx='14.0' cy='10.0' r='5.6' fill='%23ff7a12'/%3E%3C/svg%3E"); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8), 0 1px 2px rgba(0, 0, 0, 0.35); }
+.mk-furled { background-image: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 45%, rgba(0,0,0,0.18)), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 20' shape-rendering='geometricPrecision'%3E%3Crect width='28' height='20' fill='%230d0d0f'/%3E%3Cpath d='M0 0H28L0 20Z' fill='%23f4f4f4'/%3E%3C/svg%3E"); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8), 0 1px 2px rgba(0, 0, 0, 0.35); }
+.mk-blue { background-image: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 45%, rgba(0,0,0,0.18)), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 20' shape-rendering='geometricPrecision'%3E%3Crect width='28' height='20' fill='%231659dd'/%3E%3Cpath d='M-2 22L30 -2' stroke='%23ffd21f' stroke-width='5.2'/%3E%3C/svg%3E"); }
+.c-name .pen, .c-markers .pen { flex: none; display: inline-flex; align-items: center; justify-content: center; padding: 0.3em 0.32em 0.3em 0.35em; border-radius: 2px; background: #000; color: #fff; border: 1px solid #fff; font-size: 0.72em; font-weight: 800; letter-spacing: 0.03em; line-height: 1; text-box: trim-both cap alphabetic; text-shadow: none; }
+.c-name .pen.served, .c-markers .pen.served { background: transparent; color: var(--dim); border-color: var(--dim); }
+.c-name .pen[hidden], .c-markers .pen[hidden] { display: none; }
+.c-name .pit-tag { flex: none; display: inline-flex; align-items: center; justify-content: center; padding: 0.3em 0.32em 0.3em 0.36em; border-radius: 2px; border: 1px solid currentColor; color: var(--dim); font-size: 0.68em; font-weight: 800; letter-spacing: 0.04em; line-height: 1; text-box: trim-both cap alphabetic; }
 .c-name .pit-tag[hidden] { display: none; }
 
 /* Spotter */
@@ -566,7 +569,7 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .dl-ref { font-size: 0.8em; color: var(--dim); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* SLOW: a car serving a slow-down penalty (iRacing's furled black flag). */
-.slow-tag { display: inline-block; padding: 0 0.3em; border-radius: 3px; background: #ff9f1a; color: #111; font-size: 0.72em; font-weight: 800; letter-spacing: 0.04em; line-height: 1.35; text-shadow: none; flex: none; }
+.slow-tag { display: inline-flex; align-items: center; justify-content: center; padding: 0.3em 0.32em 0.3em 0.36em; border-radius: 3px; background: #ff9f1a; color: #111; font-size: 0.72em; font-weight: 800; letter-spacing: 0.04em; line-height: 1; text-box: trim-both cap alphabetic; text-shadow: none; flex: none; }
 .sa-card.sa-overtake { --edge: #ff9f1a; }
 .sa-icon .sa-slow { font-size: 1.15em; padding: 0.15em 0.35em; animation: sa-blink 1s ease-in-out infinite; }
 .safety.still .sa-slow { animation: none; }
@@ -599,11 +602,15 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .fuel .fl-extra { padding-top: 0.65em; border-top: 1px solid var(--track); }
 .fuel .fl-extra > :nth-child(3) .fl-val { color: var(--text); }
 .fuel .fl-extra .fl-val { font-size: 1.2em; }
+.fuel .fl-race { padding-top: 0.65em; border-top: 1px solid var(--track); }
+.fuel .fl-race .fl-val { font-size: 1.2em; }
+.fuel .fl-race > :nth-child(3) .fl-val { color: var(--text); }
 .fuel .fl-history { display: flex; align-items: flex-end; gap: 0.18em; height: 2em; }
 .fuel .fl-hbar { flex: 1; max-width: 1.1em; min-height: 2px; border-radius: 0.15em 0.15em 0 0; background: var(--dim); opacity: 0.4; }
 .fuel .fl-hbar:last-child { background: var(--tone); opacity: 0.9; }
 /* Compact: laps, bar, fuel at the finish in one row */
-.panel.fuel.fl-compact { flex-direction: row; align-items: center; gap: 1em; padding: 0.7em 1.1em; }
+.panel.fuel.fl-compact { padding: 0.7em 1.1em; gap: 0.6em; }
+.fuel.fl-compact .fl-c-line { display: flex; align-items: center; gap: 1em; }
 .fuel.fl-compact .fl-c-left { display: flex; flex-direction: column; gap: 0.25em; }
 .fuel.fl-compact .fl-hero { font-size: 2.9em; line-height: 0.85; }
 .fuel.fl-compact .fl-bar { flex: 1; height: 0.95em; }
@@ -802,3 +809,10 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .td-compact .td-info { display: none; }
 .td-compact .td-card { padding: 0.5em; background: none; }
 .td-note { font-size: 0.85em; padding: 0.2em 0; }
+
+/* Standings: flags and penalties outside the table, level with each driver's row. */
+.panel.mk-outside { background: transparent; border: none; box-shadow: none; overflow: visible; }
+.mk-outside > .st-card { display: flex; flex-direction: column; flex: 1; min-height: 0; margin-right: 7.5em; background: var(--bg); border: var(--border); border-radius: var(--radius); }
+.panel.auto-height.mk-outside > .st-card { flex: none; }
+.mk-outside .sections, .mk-outside .table, .mk-outside .body { overflow: visible; }
+.mk-outside .cell.c-markers { position: absolute; left: calc(100% + 0.5em); top: 0; bottom: 0; display: flex; align-items: center; gap: 0.3em; overflow: visible; }

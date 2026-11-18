@@ -236,6 +236,9 @@ pub struct Mock {
     /// Smoothed longitudinal acceleration of the player car, drives the pedal inputs.
     accel_smooth: f64,
     race_seconds: f64,
+    /// How much faster than real time the race runs once under way (testing long races;
+    /// APEX_OVERLAYS_MOCK_SPEED, default 1).
+    speed: f64,
     /// The leader has crossed the line after the clock ran out.
     checkered: bool,
     /// Make the player pit on this lap (APEX_OVERLAYS_MOCK_PIT_LAP, for trying the pit overlay).
@@ -292,6 +295,7 @@ impl Mock {
             incidents: 0,
             accel_smooth: 0.0,
             race_seconds,
+            speed: std::env::var("APEX_OVERLAYS_MOCK_SPEED").ok().and_then(|v| v.parse().ok()).filter(|v: &f64| *v > 0.0).unwrap_or(1.0),
             checkered: false,
             pit_lap: std::env::var("APEX_OVERLAYS_MOCK_PIT_LAP").ok().and_then(|v| v.parse().ok()),
             limiter_until: Default::default(),
@@ -740,7 +744,7 @@ impl Source for Mock {
 
     fn poll(&mut self, tel: &mut Telemetry) -> Poll {
         if self.time >= self.fast_forward_until {
-            let due = self.started + Duration::from_secs_f64((self.time - self.fast_forward_until) / 1.0);
+            let due = self.started + Duration::from_secs_f64((self.time - self.fast_forward_until) / self.speed);
             let now = Instant::now();
             if due > now {
                 std::thread::sleep(due - now);
@@ -810,5 +814,67 @@ mod tests {
         assert!(b.track.ahead.is_some() && b.track.behind.is_some());
         // Ten minutes in, it is raining (weather cycle) and the advisor reacts.
         assert!(e.tel.track_wetness >= 3, "{}", e.tel.track_wetness);
+    }
+
+    /// Endurance: a whole 24-hour race through the engine, every overlay's data built at its
+    /// usual rate, as the app does. Memory, time per update and data sizes must not keep
+    /// growing. Takes some minutes:
+    /// `cargo test --release -p apex-core endurance_24h -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn endurance_24h() {
+        use crate::topics::Topic;
+        use std::time::Instant;
+        const HOURS: usize = 24;
+        let rss_mb = || {
+            std::fs::read_to_string("/proc/self/statm")
+                .ok()
+                .and_then(|s| s.split_whitespace().nth(1)?.parse::<f64>().ok())
+                .map_or(0.0, |p| p * 4096.0 / 1048576.0)
+        };
+        let mut m = Mock::new();
+        m.race_seconds = HOURS as f64 * 3600.0;
+        m.fast_forward_until = 1e12;
+        // A full set of overlays, so every topic is sized as in use.
+        let cfg = crate::config::Config { overlays: crate::config::catalogue(), ..Default::default() };
+        let mut e = Engine::new(cfg, None);
+        let mut tel = Telemetry::default();
+        let per_hour = 60 * 3600;
+        let mut rows = Vec::new();
+        let mut biggest = std::collections::BTreeMap::<&str, usize>::new();
+        println!("hour | memory MB | µs per update (engine + all overlays' data) | data built per hour MB | laps done (leader) | incidents kept");
+        for hour in 1..=HOURS {
+            let t0 = Instant::now();
+            let mut bytes = 0usize;
+            for _ in 0..per_hour {
+                if let Poll::Data { session_yaml: Some(y) } = m.poll(&mut tel) {
+                    e.set_session(SessionInfo::parse(&y));
+                }
+                e.tel.clone_from(&tel);
+                e.connected = true;
+                e.tick();
+                let tick = e.tel.tick as u64;
+                for t in Topic::ALL {
+                    if tick.is_multiple_of(t.every()) {
+                        let s = t.build(&e);
+                        bytes += s.len();
+                        let b = biggest.entry(t.name()).or_default();
+                        *b = (*b).max(s.len());
+                    }
+                }
+            }
+            let us = t0.elapsed().as_secs_f64() * 1e6 / per_hour as f64;
+            let leader_laps = e.order.first().map_or(0, |r| e.tel.cars[r.idx].lap);
+            let rss = rss_mb();
+            println!("{hour:4} | {rss:9.1} | {us:8.1} | {:8.1} | {leader_laps:5} | {}", bytes as f64 / 1048576.0, e.incidents.list.len());
+            rows.push((rss, us));
+        }
+        println!("largest single message per topic (bytes): {biggest:?}");
+        // Settled after the first hours: memory and time per update stay flat to the end.
+        let (rss2, us2) = rows[2];
+        let (rss_end, us_end) = rows[HOURS - 1];
+        assert!(rss_end < rss2 * 1.25 + 8.0, "memory kept growing: {rss2:.1} MB at hour 3, {rss_end:.1} MB at hour {HOURS}");
+        assert!(us_end < us2 * 1.5 + 20.0, "updates got slower: {us2:.1} µs at hour 3, {us_end:.1} µs at hour {HOURS}");
+        assert!(m.checkered, "the race finished");
     }
 }
