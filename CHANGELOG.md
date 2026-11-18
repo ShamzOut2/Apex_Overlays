@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.3.3
 
 ### New features
 - Estimated laps for timed sessions: a new header detail, Estimated laps left (~31.7 laps: the time left over your lap time), for the session details, standings and relative, and in the fuel calculator (Extra details) and the virtual energy calculator. Its decimals can be set (1 by default)
