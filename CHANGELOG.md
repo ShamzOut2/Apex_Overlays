@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.3.7
 
 ### New features
 - A modern look for the Relative and Standings (Layout → Look; Classic keeps the old one): positions, numbers, gaps and lap times in Barlow Condensed (or your overlay font), car numbers in slanted chips of their class colour, slanted session badge and PIT tags, class headers as a slanted class chip with a fading line, and your row marked down its left edge in your highlight colour. The iRating, licence and class chips are slanted too; the iRating still fills with the licence colour when the licence column is hidden
