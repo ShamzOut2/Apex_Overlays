@@ -12,6 +12,7 @@ pub mod garage61;
 pub mod hub;
 pub mod iracing_api;
 pub mod league;
+pub mod licence;
 pub mod logging;
 pub mod lookup;
 pub mod market;
@@ -76,7 +77,10 @@ pub fn start(opts: Options) -> std::io::Result<App> {
     listener.set_nonblocking(true)?;
     let addr = listener.local_addr()?;
 
-    let state = server::AppState { hub: hub.clone(), config: config.clone(), ui_dir: opts.ui_dir.clone(), data_dir: opts.data_dir.clone() };
+    // The optional Apex Labs key (General → Licence): checked at start and once a day.
+    let licence = std::sync::Arc::new(licence::Licence::new(&opts.data_dir));
+    licence::spawn(licence.clone());
+    let state = server::AppState { hub: hub.clone(), config: config.clone(), ui_dir: opts.ui_dir.clone(), data_dir: opts.data_dir.clone(), licence };
     std::thread::Builder::new().name("http".into()).spawn(move || {
         let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().expect("tokio runtime");
         rt.block_on(async move {
