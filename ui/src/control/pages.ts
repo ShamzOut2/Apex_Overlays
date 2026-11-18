@@ -2080,8 +2080,8 @@ function monitorOf(o: { x: number; y: number; width: number; height: number }, m
   return [...mons].sort((a, b) => dist(a) - dist(b))[0];
 }
 
-/** How a monitor reads in the picker: "Monitor 2 (main) · 2560 × 1440 · 125%". */
-const monitorLabel = (m: ScreenMonitor) => `Monitor ${m.index}${m.primary ? ' (main)' : ''} · ${m.resolution[0]} × ${m.resolution[1]}${Math.abs(m.scale - 1) > 0.01 ? ` · ${Math.round(m.scale * 100)}%` : ''}`;
+/** How a monitor reads in the picker (under "Monitor"): "2 · 2560 × 1440 · 125% · main". */
+const monitorLabel = (m: ScreenMonitor) => `${m.index} · ${m.resolution[0]} × ${m.resolution[1]}${Math.abs(m.scale - 1) > 0.01 ? ` · ${Math.round(m.scale * 100)}%` : ''}${m.primary ? ' · main' : ''}`;
 
 /**
  * Where each overlay sits on the screen, small; click one to open its settings. Off ones are
