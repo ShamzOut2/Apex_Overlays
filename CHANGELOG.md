@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.3.9
 
 ### New features
 - "Private qualifying: hide other cars" now works in iRacing too: in Lone Qualify (each driver alone on track, as in official races) the other cars are left off the relative, track map, radar, spotter and battle box, as they already were in Le Mans Ultimate's online qualifying. Open Qualify, with everyone out together, is not affected. The switch is no longer marked LMU only
