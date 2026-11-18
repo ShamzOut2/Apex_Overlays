@@ -1073,7 +1073,11 @@ pub fn standings(e: &Engine) -> StandingsOut<'_> {
             progress: round(e.progress(r.idx) as f32, 3),
         });
     }
-    StandingsOut { is_race: e.is_race(), focus_class: t.focus_idx().and_then(|f| e.static_of(f)).map(|s| s.class.id.as_str()), classes }
+    // The class of the car followed; in the garage or the menus (no car on track) your own
+    // class, so "my class only" still shows it.
+    let player = usize::try_from(t.player_idx).ok();
+    let focus_class = t.focus_idx().or(player).and_then(|f| e.static_of(f)).map(|s| s.class.id.as_str());
+    StandingsOut { is_race: e.is_race(), focus_class, classes }
 }
 
 #[derive(Serialize)]

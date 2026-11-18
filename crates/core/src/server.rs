@@ -515,6 +515,8 @@ fn handle(s: &AppState, m: ClientMsg, subs: &mut HashSet<String>, send_now: &mut
             let (source, message) = (cut(&source, 60), cut(&message, 4000));
             if level == "warn" {
                 log::warn!(target: "ui", "{source}: {message}");
+            } else if level == "info" {
+                log::info!(target: "ui", "{source}: {message}");
             } else {
                 log::error!(target: "ui", "{source}: {message}");
             }

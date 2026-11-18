@@ -16,6 +16,8 @@ export interface Ctx {
   send(msg: object): void;
   /** Change how often a topic is delivered (times a second; 0 = as it comes), e.g. less often while idle. */
   limit(topic: TopicName, hz: number): void;
+  /** Writes a line about this overlay to the app's log file (what it did and why). */
+  log?(message: string): void;
 }
 
 export interface View {

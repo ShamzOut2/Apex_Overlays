@@ -34,17 +34,39 @@ let key = '';
 let status: Status | null = null;
 let session: Session | null = null;
 let player: Player | null = null;
+let lastHidden: boolean | null = null;
 
 const units = (): Units => (config?.units === 'metric' || config?.units === 'imperial' ? config.units : (session?.units ?? 'metric'));
 
 const client = new Client(onData, (up) => {
+  // The connection to the app: lost and found again (written once it is back).
+  if (!up && wasConnected) lostAt = Date.now();
+  if (up && lostAt) {
+    logLine(`connection to the app lost for ${((Date.now() - lostAt) / 1000).toFixed(1)}s (hidden meanwhile)`);
+    lostAt = 0;
+  }
+  wasConnected = up;
   updateVisibility();
   // The desktop app forgets auto sizes when it restarts, and messages sent while the
   // connection was opening are lost: tell it again.
   if (up) resendAutoSize();
 });
 client.subscribe('config', 'status', 'session');
-reportErrors(client, () => `overlay ${inst?.kind ?? '?'} (${id || 'no id'})`);
+const source = () => `overlay ${inst?.kind ?? '?'}${inst && inst.id !== inst.kind ? ` (${inst.id})` : ''}`;
+reportErrors(client, source);
+
+/** A line in the app's log about this overlay (not for the settings' preview); at most 40 a
+ *  minute, so something that flips back and forth cannot flood it. */
+let logBudget = 40;
+setInterval(() => (logBudget = 40), 60_000);
+function logLine(message: string) {
+  if (preview || logBudget <= 0) return;
+  logBudget--;
+  client.report('info', source(), logBudget === 0 ? `${message} (more lines this minute left out)` : message);
+}
+
+let wasConnected = false;
+let lostAt = 0;
 
 edit.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
@@ -112,6 +134,7 @@ function rebuild() {
     latest: client.latest,
     send: (m) => client.send(m),
     limit: (t, hz) => client.limit(t, hz),
+    log: logLine,
   };
   view = def.create(panel, ctx);
   stale.clear();
@@ -132,6 +155,8 @@ function rebuild() {
 
 /** Auto-size: the panel hugs its content and asks the desktop app to fit the window to it (0 = off). */
 let sizer: ResizeObserver | null = null;
+let tinyLogged = false;
+let everBig = false;
 let lastSize = { width: -1, height: -1 };
 let measure: (() => void) | null = null;
 function resendAutoSize() {
@@ -153,6 +178,13 @@ function setupAutoSize() {
     if (!client.connected) return;
     lastSize = { width, height };
     client.send({ op: 'autoSize', id, width, height });
+    // A window fitted to almost nothing looks as if the overlay was switched off (not worth a
+    // line while it starts, before its data has come).
+    if (height >= 40) everBig = true;
+    if (height > 0 && height < 40 && !tinyLogged && everBig) {
+      tinyLogged = true;
+      logLine(`window fitted to its content: ${Math.round(width)} x ${Math.round(height)} px (nothing much to show)`);
+    } else if (height >= 40) tinyLogged = false;
   };
   if (!autoH && !autoW) {
     measure = null;
@@ -215,7 +247,23 @@ function updateVisibility() {
   // Only for the other game: hidden, even while moving overlays.
   const src = status?.source;
   const wrongGame = !preview && !!def?.game && (src === 'iracing' || src === 'lmu') && src !== def.game;
-  document.body.classList.toggle('hidden', wrongGame || !(visible || editing || preview));
+  const hidden = wrongGame || !(visible || editing || preview);
+  // Why it is hidden, for the log when that changes.
+  if (status && def && hidden !== lastHidden) {
+    const why = [
+      !status.visible && 'all overlays hidden (show / hide)',
+      settings.hideWhenDisconnected && !(session?.connected ?? false) && 'no game connected',
+      settings.hideWhenNotDriving && !player?.onTrack && 'not in the car (Hide unless I am in the car)',
+      settings.hideInPits && player?.onPitRoad && 'on pit road (Hide while on pit road)',
+      settings.raceOnly && !session?.isRace && 'not a race (races only)',
+      !client.connected && 'no connection to the app',
+      wrongGame && `for the other game (${def.game})`,
+    ].filter(Boolean);
+    // Hidden before anything is known (starting up) is not worth a line.
+    if (lastHidden !== null) logLine(hidden ? `hidden: ${why.join(', ') || 'unknown reason'}` : 'shown');
+    lastHidden = hidden;
+  }
+  document.body.classList.toggle('hidden', hidden);
   if (!document.body.classList.contains('hidden') && stale.size) {
     for (const t of stale) if (client.latest[t] !== undefined) deliver(t, client.latest[t]);
     stale.clear();
