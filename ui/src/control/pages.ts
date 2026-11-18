@@ -1045,6 +1045,81 @@ const garage61Page: Page = {
 };
 
 /** In-app updates (desktop app only). */
+interface LicenceStatus {
+  hasKey: boolean;
+  key: string;
+  valid: boolean;
+  user: string;
+  tierName: string;
+  error: string;
+  manageUrl: string;
+  getKeyUrl: string;
+}
+
+/** The optional Apex Labs key: free during early access, the same key as Apex Commentator. */
+function licenceCard(): HTMLElement {
+  const c = card('Licence');
+  const status = h('div', 'notice', 'Checking…');
+  const error = h('p', 'small');
+  error.style.color = 'var(--bad)';
+  const input = h('input');
+  input.placeholder = 'APEX-XXXX-XXXX-XXXX-XXXX';
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  input.setAttribute('aria-label', 'Apex Labs key');
+  input.style.flex = '1 1 260px';
+  const bar = h('div', 'toolbar');
+  const call = async (method: string, path: string, body?: unknown) => {
+    bar.querySelectorAll('button').forEach((b) => (b.disabled = true));
+    try {
+      const r = await fetch(path, { method, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || `Request failed (${r.status})`);
+      render(data as LicenceStatus);
+      return true;
+    } catch (e) {
+      text(error, (e as Error).message);
+      bar.querySelectorAll('button').forEach((b) => (b.disabled = false));
+      return false;
+    }
+  };
+  const render = (st: LicenceStatus) => {
+    text(status, st.valid ? `${st.tierName} · registered to ${st.user || 'you'}` : st.hasKey ? 'Key added, not confirmed yet.' : 'No key added.');
+    status.classList.toggle('good', st.valid);
+    text(error, st.error);
+    const open = (url: string) => () => client.send({ op: 'openUrl', url });
+    if (st.hasKey) {
+      bar.replaceChildren(
+        h('code', '', st.key),
+        button('Check now', () => void call('POST', '/api/licence/check')),
+        button('Manage key', open(st.manageUrl)),
+        button('Remove from this PC', () => void call('DELETE', '/api/licence'), 'danger'),
+      );
+    } else {
+      input.value = '';
+      const add = () => {
+        if (!input.value.trim()) return text(error, 'Paste your key first.');
+        void call('POST', '/api/licence', { key: input.value });
+      };
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') add();
+      };
+      bar.replaceChildren(input, button('Add key', add, 'primary'), button('Get your key', open(st.getKeyUrl)));
+    }
+  };
+  c.append(
+    h('p', 'dim', 'Apex Overlays is free during early access and works without a key. A free Apex Labs key registers you, works in Apex Commentator too, and is how paid plans and team or league perks will reach you later.'),
+    status,
+    bar,
+    error,
+  );
+  fetch('/api/licence')
+    .then((r) => r.json())
+    .then(render)
+    .catch(() => text(status, 'Licence status unavailable.'));
+  return c;
+}
+
 function updatesCard(): HTMLElement {
   const cfg = state.config!;
   const u = state.update;
@@ -1738,6 +1813,7 @@ const generalPage: Page = {
           },
         ),
       ),
+      licenceCard(),
       gameCard(),
       hotkeysCard(),
       vrCard(),

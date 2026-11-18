@@ -4,6 +4,11 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 1.3.2
+
+### New features
+- Licence (General page): paste your free Apex Labs key, which you get by signing in with Discord on the Apex Labs website. It is optional during early access, nothing is locked without one, and the same key works in Apex Commentator
+
 ## 1.3.1
 
 ### New features

@@ -30,6 +30,8 @@ pub struct AppState {
     pub ui_dir: Option<PathBuf>,
     /// User data directory; `<data>/logos` holds optional manufacturer logo images.
     pub data_dir: PathBuf,
+    /// The optional Apex Labs licence key.
+    pub licence: Arc<crate::licence::Licence>,
 }
 
 /// The Le Mans Ultimate track maps built on this PC, for the shared map library
@@ -98,6 +100,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/market/{id}", get(market_layout))
         .route("/api/market/preview/{file}", get(market_preview))
         .route("/api/log", get(log_file))
+        .route("/api/licence", get(licence_status).post(licence_set).delete(licence_remove))
+        .route("/api/licence/check", axum::routing::post(licence_check))
         .route("/api/team-logo", axum::routing::post(upload_team_logo).layer(axum::extract::DefaultBodyLimit::max(TEAM_LOGO_MAX)))
         .route("/team-logos/{file}", get(team_logo))
         .fallback(|s: State<AppState>, uri: Uri| async move { asset(&s, uri.path().trim_start_matches('/')) })
@@ -105,6 +109,37 @@ pub fn router(state: AppState) -> Router {
 }
 
 /// The end of the log file (the last ~300 KB) and where it is, for Settings → General → Logs.
+#[derive(serde::Deserialize)]
+struct LicenceKey {
+    key: String,
+}
+
+/// Runs a licence call (which may wait on the network) off the async threads.
+async fn licence_call(s: AppState, f: impl FnOnce(&crate::licence::Licence) -> Result<crate::licence::Status, String> + Send + 'static) -> Response {
+    let l = s.licence.clone();
+    match tokio::task::spawn_blocking(move || f(&l)).await {
+        Ok(Ok(st)) => Json(st).into_response(),
+        Ok(Err(msg)) => (StatusCode::BAD_REQUEST, Json(serde_json::json!({ "error": msg }))).into_response(),
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+}
+
+async fn licence_status(State(s): State<AppState>) -> Response {
+    licence_call(s, |l| Ok(l.status())).await
+}
+
+async fn licence_set(State(s): State<AppState>, Json(k): Json<LicenceKey>) -> Response {
+    licence_call(s, move |l| l.set_key(&k.key)).await
+}
+
+async fn licence_check(State(s): State<AppState>) -> Response {
+    licence_call(s, |l| Ok(l.refresh())).await
+}
+
+async fn licence_remove(State(s): State<AppState>) -> Response {
+    licence_call(s, |l| Ok(l.remove())).await
+}
+
 async fn log_file(s: State<AppState>) -> Response {
     let dir = crate::logging::dir(&s.data_dir);
     let body = serde_json::json!({

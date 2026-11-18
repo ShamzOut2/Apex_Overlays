@@ -83,7 +83,8 @@ pub fn preview(file: &str) -> Result<Option<Vec<u8>>, String> {
 /// Web pages the settings window may open: the app's own repository (the share form, a
 /// layout's page).
 pub fn may_open(url: &str) -> bool {
-    url.starts_with(&format!("{REPO_URL}/")) && !url.chars().any(|c| c.is_whitespace() || c.is_control() || matches!(c, '"' | '\'' | '\\' | '<' | '>'))
+    let ours = url.starts_with(&format!("{REPO_URL}/")) || url == crate::licence::GET_KEY_URL || url.starts_with(&format!("{}/", crate::licence::SERVICE));
+    ours && !url.chars().any(|c| c.is_whitespace() || c.is_control() || matches!(c, '"' | '\'' | '\\' | '<' | '>'))
 }
 
 #[cfg(test)]
@@ -98,6 +99,9 @@ mod tests {
         assert_eq!(preview("7-x/y.jpg").unwrap(), None);
         assert!(may_open("https://github.com/ShamzOut2/Apex_Overlays/issues/new?template=share-layout.yml&title=Layout"));
         assert!(!may_open("https://github.com/ShamzOut2/Apex_Overlays"), "the repository's own pages only");
+        assert!(may_open("https://shamzout2.github.io/Apex-Labs/key/"), "the Get your key page");
+        assert!(may_open("https://apex-keys.shamzout.workers.dev/"), "the key page");
+        assert!(!may_open("https://apex-keys.shamzout.workers.dev.evil.test/"));
         assert!(!may_open("https://example.com/ShamzOut2/Apex_Overlays/"));
         assert!(!may_open("https://github.com/ShamzOut2/Apex_Overlays/\" & calc"));
         assert!(may_open("https://github.com/ShamzOut2/Apex_Overlays/issues/new?title=Layout%3A%20Race"));
