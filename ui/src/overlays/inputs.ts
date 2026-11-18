@@ -2,6 +2,7 @@ import { h, show, style, text, toggle } from '../lib/dom';
 import * as f from '../lib/format';
 import type { OverlayDef } from '../lib/overlay';
 import type { CarInfo, Player } from '../lib/types';
+import { cornerSpeeds } from './cornerSpeeds';
 import { inputTrace, TRACE_SETTINGS } from './inputTrace';
 
 const WHEEL_SVG = `<svg viewBox="-50 -50 100 100"><circle r="42" fill="none" stroke="currentColor" stroke-width="9"/><path d="M-40 4 H-12 L-6 14 H6 L12 4 H40" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/><path d="M0 14 V40" stroke="currentColor" stroke-width="8"/><rect x="-3" y="-50" width="6" height="12" fill="var(--accent)"/></svg>`;
@@ -50,6 +51,16 @@ export const inputs: OverlayDef = {
     { key: 'showWheel', label: 'Steering wheel', type: 'bool', default: true, group: 'Elements' },
     { key: 'showGear', label: 'Gear', type: 'bool', default: true, group: 'Elements' },
     { key: 'showSpeed', label: 'Speed', type: 'bool', default: true, group: 'Elements' },
+    {
+      key: 'showCornerSpeeds',
+      label: 'Corner speeds (max in, min through)',
+      type: 'bool',
+      default: false,
+      group: 'Corner speeds',
+      help: 'Above your speed: the top speed going into the last corner, stored when you brake. Below it: the lowest speed through it, stored when you are back on the throttle',
+    },
+    { key: 'cornerBrakeAt', when: (v) => !!v.showCornerSpeeds, label: 'A corner starts at brake', type: 'number', default: 10, min: 1, max: 80, unit: '%', group: 'Corner speeds', help: 'Lighter touches of the brake are not counted' },
+    { key: 'cornerThrottleAt', when: (v) => !!v.showCornerSpeeds, label: 'It ends at throttle', type: 'number', default: 20, min: 1, max: 100, unit: '%', group: 'Corner speeds', help: 'With the brake released' },
     { key: 'showRpm', label: 'RPM', type: 'bool', default: false, group: 'Elements', help: 'Engine RPM under the shift lights. It turns the “shift now” colour at the car’s shift point' },
     { key: 'showSteerAngle', when: (v) => v.showWheel !== false, label: 'Steering angle', type: 'bool', default: false, group: 'Elements', help: 'The wheel’s angle in degrees above the steering wheel, with L or R for the direction' },
     {
@@ -110,7 +121,18 @@ export const inputs: OverlayDef = {
     const rpm = h('div', 'rpm');
     rpm.style.setProperty('--rpm-shift', s.shiftFlashColor as string);
     const angle = h('div', 'steer-angle');
-    side.append(angle, wheel, gear, spd);
+    // Corner speeds: the top speed into the last corner above the speed, the lowest through it below.
+    const cornerOn = !!s.showCornerSpeeds;
+    const cMax = h('div', 'corner-speed c-max');
+    const cMin = h('div', 'corner-speed c-min');
+    cMax.title = 'Top speed going into the last corner (stored when you braked)';
+    cMin.title = 'Lowest speed through the last corner (stored when you were back on the throttle)';
+    cMax.style.color = s.brakeColor as string;
+    cMin.style.color = s.throttleColor as string;
+    side.append(angle, wheel, gear, cMax, spd, cMin);
+    show(cMax, cornerOn);
+    show(cMin, cornerOn);
+    const corners = cornerSpeeds({ brakeOn: (s.cornerBrakeAt as number) / 100, throttleOn: (s.cornerThrottleAt as number) / 100 });
     show(canvas, s.showTrace as boolean);
     show(bars, s.showBars as boolean);
     show(wheel, s.showWheel as boolean);
@@ -119,7 +141,7 @@ export const inputs: OverlayDef = {
     show(rpm, !!s.showRpm);
     const showAngle = !!s.showSteerAngle && s.showWheel !== false;
     show(angle, showAngle);
-    show(side, (s.showWheel || s.showGear || s.showSpeed) as boolean);
+    show(side, (s.showWheel || s.showGear || s.showSpeed || cornerOn) as boolean);
     main.append(canvas, bars, side);
     root.append(lights, rpm, main);
 
@@ -231,6 +253,14 @@ export const inputs: OverlayDef = {
         text(gear, p.gear === -1 ? 'R' : p.gear === 0 ? 'N' : String(p.gear));
         text(spd, `${Math.round(f.speed(p.speed, ctx.units))}`);
         spd.dataset.unit = f.speedUnit(ctx.units);
+        if (cornerOn) {
+          const c = corners.push(p.speed, p.throttle, p.brake, p.onTrack);
+          const v = (x: number | null) => (x == null ? '–' : String(Math.round(f.speed(x, ctx.units))));
+          text(cMax, `▲ ${v(c.max)}`);
+          text(cMin, `▼ ${v(c.min)}`);
+          // While in a corner the last minimum is the previous corner's: shown dimmer.
+          toggle(cMin, 'stale', c.inCorner);
+        }
         if (s.showRpm) {
           text(rpm, String(Math.max(0, Math.round(p.rpm))));
           // At the shift point: the shift lights' "shift now" point when known, else iRacing's.
