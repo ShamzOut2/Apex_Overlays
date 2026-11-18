@@ -153,6 +153,7 @@ fn run(
     log::info!("overlays: {}", config.read(|c| c.overlay_summary()));
     // Now and then, a line saying what the app is doing, so a log shows it was running.
     let mut heartbeat = std::time::Instant::now();
+    let mut pits = PitExit::default();
     let mut e = Engine::new(config.get(), Some(data_dir));
     e.source = source.active();
     if mock {
@@ -234,6 +235,7 @@ fn run(
             Poll::Disconnected => {
                 if e.connected {
                     log::info!("{}: disconnected", e.source);
+                    hub.on_track.store(false, Ordering::Relaxed);
                     logged_session = (0, String::new());
                     e.reset();
                     hub.connected.store(false, Ordering::Relaxed);
@@ -339,6 +341,14 @@ fn run(
                     }
                     e.map.building = if e.map.map.is_none() { source.track_map_progress() } else { None };
                 }
+                // Driving out of the pit lane, and whether you are on track now (for the desktop
+                // app: the settings window can go to the tray as you leave the pits).
+                let driving = e.tel.driving();
+                if pits.update(driving, e.tel.on_pit_road) {
+                    log::info!("left the pits");
+                    hub.host(crate::hub::HostEvent::LeftPits);
+                }
+                hub.on_track.store(driving && !e.tel.on_pit_road, Ordering::Relaxed);
                 let t0 = std::time::Instant::now();
                 e.tick();
                 publish(&e, &hub, &mut keys, false);
@@ -346,6 +356,48 @@ fn run(
                 hub.stats.tick_ns.fetch_add(t0.elapsed().as_nanos() as u64, Ordering::Relaxed);
             }
         }
+    }
+}
+
+/// Notices you driving out of the pit lane: in the car on pit road, then off it. Leaving the
+/// car in the pits (to the garage, say) keeps it waiting for the drive out.
+#[derive(Default)]
+struct PitExit {
+    in_pits: bool,
+}
+
+impl PitExit {
+    /// One telemetry update; true when you have just left the pits.
+    fn update(&mut self, driving: bool, on_pit_road: bool) -> bool {
+        let left = self.in_pits && driving && !on_pit_road;
+        self.in_pits = (driving && on_pit_road) || (self.in_pits && !driving);
+        left
+    }
+}
+
+#[cfg(test)]
+mod pit_exit_tests {
+    use super::PitExit;
+
+    #[test]
+    fn notices_driving_out_of_the_pits_once() {
+        let mut p = PitExit::default();
+        // On track from the start (a race from the grid): not leaving the pits.
+        assert!(!p.update(true, false));
+        // Into the pit lane, stopped, out again: once.
+        assert!(!p.update(true, true));
+        assert!(!p.update(true, true));
+        assert!(p.update(true, false));
+        assert!(!p.update(true, false));
+        // In the pits, to the garage (not driving), then Drive from the pit box and out.
+        assert!(!p.update(true, true));
+        assert!(!p.update(false, false));
+        assert!(!p.update(true, true));
+        assert!(p.update(true, false));
+        // Watching a replay or spectating (not driving): never.
+        let mut q = PitExit::default();
+        assert!(!q.update(false, true));
+        assert!(!q.update(false, false));
     }
 }
 

@@ -48,6 +48,9 @@ pub enum HostEvent {
     CloseApp {
         quit: bool,
     },
+    /// You have just driven out of the pit lane (on pit road, then off it, in the car): the
+    /// desktop app can close the settings window to the tray.
+    LeftPits,
     /// An overlay wants mouse clicks (true) or to be click-through again (false).
     Interactive {
         id: String,
@@ -97,6 +100,8 @@ pub struct Hub {
     pub edit_mode: AtomicBool,
     pub visible: AtomicBool,
     pub connected: AtomicBool,
+    /// In the car and out of the pit lane (driving on track) right now.
+    pub on_track: AtomicBool,
     pub clients: AtomicUsize,
     pub source: Mutex<&'static str>,
     /// Set by the desktop app, which can install updates; the headless server cannot.
@@ -130,6 +135,7 @@ impl Default for Hub {
             edit_mode: AtomicBool::new(false),
             visible: AtomicBool::new(true),
             connected: AtomicBool::new(false),
+            on_track: AtomicBool::new(false),
             clients: AtomicUsize::new(0),
             source: Mutex::new("none"),
             updates_supported: AtomicBool::new(false),

@@ -4,6 +4,33 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 1.3.7
+
+### New features
+- A modern look for the Relative and Standings (Layout → Look; Classic keeps the old one): positions, numbers, gaps and lap times in Barlow Condensed (or your overlay font), car numbers in slanted chips of their class colour, slanted session badge and PIT tags, class headers as a slanted class chip with a fading line, and your row marked down its left edge in your highlight colour. The iRating, licence and class chips are slanted too; the iRating still fills with the licence colour when the licence column is hidden
+- Relative, modern look: a gap bar fills in behind a car as it gets closer to you and turns the "close" colour within a second (or the gap you set), with the gap itself in that colour; an arrow by the gap shows whether it is moving your way (green) or not (red). The bar, its range and both colours are settings (Colours)
+- Standings, modern look: a line joins cars within a second (or the gap you set) of the car ahead, with their interval in the same colour (its colour is a setting), and the top three positions in gold, silver and bronze
+- Relative and Standings: set the driver column's width (Column style → Set the driver column width); longer names are cut short with …
+- Shift lights overlay: the car's rev lights on their own, with the RPM if you want it (under, above or beside the lights). The same lights as in Driver inputs, with all their settings: the car's own pattern and per-gear shift points where known, the light order, number, size, flash speed and colours; the RPM turns the "shift now" colour at the car's shift point
+- Choose the monitor your overlays are on: the screen map on the Overlays page lists your monitors with their resolution (and scaling, e.g. Monitor 2 · 1920 × 1080 · 125%); picking one moves every overlay there, each at the same place on the screen and kept inside it. The map shows the monitor they are on
+- Little moments in the settings window, each played once when it happens and then still (nothing loops): the lights go out as the game connects; a red-and-white kerb runs in under the page title and the page settles in when you open it; the page you are on lights three sector lights; switches sweep their colour across and light an LED in the knob; the line under the open tab glides to the one you pick; hovering an overlay draws a racing line under it and lights it on the screen map; General's readings roll to their new values like a timing board; a pit board saying SAVED slides in when a change is saved. Slanted main buttons and tags, and a cut corner and accent mark on the panels. Turn them off under General → Display → Animations in this window (Windows' "Animation effects: off" turns them off too)
+- A new look for the settings window: the app's own Inter for everything you read and Barlow Condensed for titles, labels and readings, flatter panels, one accent colour and cyan for what is live. Colours still follow your theme
+- Sidebar: a connection card at the top (the game, the session type, track, cars and time left, and the game switch), the pages in groups (On screen, Race weekend, App), the version under the name, and a switch at the bottom to show or hide every overlay, with its hotkey. The window opens on Overlays
+- Every page has a header: its title, with its main buttons on the right (on Overlays: Layouts, Move & share and Move & resize with its hotkey; on General: Open logs and Back up settings)
+- Overlays page: a small map of your screen shows where every overlay sits (click one to open it; switched-off ones are dashed); each overlay in the list shows its type and size and why it may not be on screen (Hidden in pits, In the car only, Races only); the editor shows the overlay's name with what it does under it, the settings search at the end of the tab row, and values in fixed boxes. "When it shows" is one choice (Show: whenever the game is running, not on pit road, only in the car, in the car not on pit road, or always) instead of three switches; it sets the same settings, so overlays behave as before. Showing and hiding every overlay is the switch at the foot of the sidebar
+- General page: live readings across the top (app CPU, memory, data out, engine time, each with its last minute as a small graph), then Display and Server on the left and the overlay update rate (three cards to pick from), Licence and Updates on the right; everything else (game, hotkeys, VR, monitoring, logs, corners, backup) below
+- The settings window goes to the tray when you drive out of the pits (General → Performance, on by default), so it uses no CPU or memory while you race; your overlays keep running. Opened again from the tray while on track, it stays open until you next leave the pits
+- Closing the settings window during a session asks whether to minimise it to the tray instead, as that keeps your overlays and frees what the window uses
+
+### Performance
+- The settings window uses far less CPU while open: a pulsing "connected" dot redrew the window 60 times a second, and the General page received your car's data 60 times a second for one button. Measured with a game connected: about 15% of a CPU core down to 1.4% on most pages, General 19% to about 3.5%, Overlays 22% to 12–14% (its live preview). The time left in the sidebar changes once a minute, so it does not redraw the window every second. Blur and gradient effects are gone too
+- Minimising to the tray now closes the settings window rather than hiding it: hidden, it still used about 5% of a core and 180 MB of memory; closed, nothing
+
+### Fixes
+- The D and W in the tyre circles (Relative and Standings) sit in the middle of the circle with every overlay font; they were a little high or low depending on the font
+- The Ray FF1600's class showed an F1 badge in the Standings: its class is called "F1.6" in the car data, and "F1" matched. It now shows the FF1600 badge (so does a class named "Formula 1600")
+- Le Mans Ultimate private qualifying: the other drivers (each in their own session) are now also left off the track map, the spotter and the battle box, as they already were off the relative and radar (General → Private qualifying: hide other cars)
+
 ## 1.3.6
 
 ### New features

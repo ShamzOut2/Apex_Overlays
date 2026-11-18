@@ -49,7 +49,7 @@ checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
 name = "apex-core"
-version = "1.3.6"
+version = "1.3.7"
 dependencies = [
  "apex-irsdk",
  "axum",
@@ -68,14 +68,14 @@ dependencies = [
 
 [[package]]
 name = "apex-irsdk"
-version = "1.3.6"
+version = "1.3.7"
 dependencies = [
  "windows-sys 0.59.0",
 ]
 
 [[package]]
 name = "apex-overlays-desktop"
-version = "1.3.6"
+version = "1.3.7"
 dependencies = [
  "apex-core",
  "apex-xr-shared",
@@ -93,7 +93,7 @@ dependencies = [
 
 [[package]]
 name = "apex-overlays-server"
-version = "1.3.6"
+version = "1.3.7"
 dependencies = [
  "apex-core",
  "log",
@@ -101,7 +101,7 @@ dependencies = [
 
 [[package]]
 name = "apex-xr-layer"
-version = "1.3.6"
+version = "1.3.7"
 dependencies = [
  "apex-xr-shared",
  "openxr-sys",
@@ -110,7 +110,7 @@ dependencies = [
 
 [[package]]
 name = "apex-xr-shared"
-version = "1.3.6"
+version = "1.3.7"
 
 [[package]]
 name = "async-broadcast"

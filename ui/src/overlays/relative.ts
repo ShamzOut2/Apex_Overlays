@@ -1,11 +1,11 @@
-import { text } from '../lib/dom';
+import { h, text, toggle } from '../lib/dom';
 import * as f from '../lib/format';
 import { headerSettings, sessionHeader } from '../lib/header';
 import type { OverlayDef } from '../lib/overlay';
 import { columns, enabledColumns, NAME_STYLES } from '../lib/settings';
 import { type Col, columnFitter, Table } from '../lib/table';
 import type { RelRow, Relative, Session } from '../lib/types';
-import { COLUMN_STYLE_SETTINGS, driverCols, markerSettings, extraCols, STRIPE_COLOR_SETTING, stripeColor, tireCell } from './common';
+import { applyLook, COLUMN_STYLE_SETTINGS, driverCols, lookSettings, markerSettings, extraCols, STRIPE_COLOR_SETTING, stripeColor, tireCell } from './common';
 
 const COLS = [
   { id: 'pos', label: 'Class position — POS' },
@@ -48,6 +48,7 @@ export const relative: OverlayDef = {
     { key: 'carsAhead', label: 'Cars ahead', type: 'number', default: 4, min: 0, max: 10, group: 'Layout' },
     { key: 'carsBehind', label: 'Cars behind', type: 'number', default: 4, min: 0, max: 10, group: 'Layout' },
     { key: 'keepEmptyRows', label: 'Keep empty rows (fixed height)', type: 'bool', default: true, group: 'Layout' },
+    ...lookSettings('relative'),
     { key: 'columns', label: 'Columns', type: 'columns', ...columns(COLS, ['pos', 'number', 'flag', 'name', 'license', 'irating', 'lastLap', 'bestLap', 'gap']), group: 'Columns' },
     { key: 'nameStyle', label: 'Name format', type: 'select', default: 'full', options: NAME_STYLES, group: 'Columns' },
     {
@@ -76,6 +77,13 @@ export const relative: OverlayDef = {
   ],
   create(root, ctx) {
     const s = ctx.settings;
+    applyLook(root, s);
+    const modern = root.classList.contains('modern');
+    const close = s.closeGap as number;
+    const range = s.gapBarRange as number;
+    const bars = modern && s.gapBar !== false;
+    const trends = modern && s.gapTrend !== false;
+    const trend = gapTrends();
     const header = sessionHeader(s, 'Relative', () => ctx.units);
     const cols: Col<RelRow>[] = [
       { id: 'pos', label: 'Pos', width: '2.4em', align: 'center', render: (c, r) => text(c, r.classPosition > 0 ? String(r.classPosition) : '') },
@@ -86,7 +94,7 @@ export const relative: OverlayDef = {
       {
         id: 'gap',
         label: s.gapMode === 'leader' ? 'Leader' : s.gapMode === 'ahead' ? 'Int' : 'Gap',
-        width: '3.5em',
+        width: trends ? '4.2em' : '3.5em',
         align: 'center',
         render: (c, r) => {
           const dec = s.gapDecimals as number;
@@ -95,11 +103,11 @@ export const relative: OverlayDef = {
             const leader = s.gapMode === 'leader';
             const v = leader ? r.gapLeader : r.interval;
             const laps = leader ? r.gapLeaderLaps : r.intervalLaps;
-            return text(c, r.classPosition === 1 ? (leader ? 'Leader' : '') : f.gap(v, laps, dec));
+            return gapCell(c, r.classPosition === 1 ? (leader ? 'Leader' : '') : f.gap(v, laps, dec), trends ? trend.of(r) : 0, modern, trends);
           }
-          if (r.isFocus) return text(c, '');
+          if (r.isFocus) return gapCell(c, '', 0, modern, trends);
           const v = s.gapSign === 'abs' ? Math.abs(r.gap) : s.gapSign === 'aheadNegative' ? -r.gap : r.gap;
-          text(c, s.gapSign === 'abs' ? v.toFixed(dec) : f.signed(v, dec));
+          gapCell(c, s.gapSign === 'abs' ? v.toFixed(dec) : f.signed(v, dec), trends ? trend.of(r) : 0, modern, trends);
         },
       },
     ];
@@ -119,6 +127,7 @@ export const relative: OverlayDef = {
         const slots: (RelRow | null)[] = [];
         for (let k = -ahead; k <= behind; k++) slots.push(me < 0 ? null : (rows[me + k] ?? null));
         const out = s.keepEmptyRows ? slots : slots.filter((r) => r != null);
+        if (trends) trend.add(out);
         table.render(
           out,
           (r) => ({
@@ -127,11 +136,75 @@ export const relative: OverlayDef = {
             'lap-behind': (s.lapColors as boolean) && r.lapDiff < 0,
             pit: (s.dimPitCars as boolean) && r.onPitRoad,
             off: r.offTrack,
+            // Modern look: a car within the "close" gap, and the gap bar behind the row.
+            close: modern && !r.isFocus && Math.abs(r.gap) < close,
+            near: bars && !r.isFocus && Math.abs(r.gap) < range,
           }),
-          (row, r) => row.style.setProperty('--class', stripeColor(r, s)),
+          (row, r) => {
+            row.style.setProperty('--class', stripeColor(r, s));
+            if (bars) {
+              const near = r.isFocus ? '0' : Math.max(0, 1 - Math.abs(r.gap) / range).toFixed(3);
+              if (row.style.getPropertyValue('--near') !== near) row.style.setProperty('--near', near);
+            }
+          },
         );
         if (s.autoWidth) fit([table]);
       },
     };
   },
 };
+
+/**
+ * The gap with, in the modern look, an arrow by it: ▲ green when the gap is moving your way
+ * (closing on a car ahead, pulling away from one behind), ▼ red when not, nothing when steady.
+ */
+function gapCell(c: HTMLElement, value: string, dir: number, modern: boolean, arrows: boolean) {
+  if (!modern) return text(c, value);
+  let arrow = c.firstElementChild as HTMLElement | null;
+  let v = arrow?.nextElementSibling as HTMLElement | null;
+  if (!arrow || !v) {
+    arrow = h('span', 'trend');
+    v = h('span', 'gv');
+    c.replaceChildren(arrow, v);
+  }
+  text(v, value);
+  if (arrow.hidden !== !arrows) arrow.hidden = !arrows;
+  text(arrow, dir > 0 ? '▲' : dir < 0 ? '▼' : '');
+  toggle(arrow, 'good', dir > 0);
+  toggle(arrow, 'bad', dir < 0);
+}
+
+/** How each car's gap has moved over the last second and a half (for the gain/loss arrows). */
+function gapTrends() {
+  const WINDOW = 1500;
+  const STEADY = 0.05;
+  const hist = new Map<number, { t: number; g: number }[]>();
+  let now = 0;
+  return {
+    add(rows: (RelRow | null)[]) {
+      now = performance.now();
+      const seen = new Set<number>();
+      for (const r of rows) {
+        if (!r || r.isFocus) continue;
+        seen.add(r.idx);
+        let h = hist.get(r.idx);
+        if (!h) hist.set(r.idx, (h = []));
+        h.push({ t: now, g: r.gap });
+        while (h.length > 2 && now - h[1].t >= WINDOW) h.shift();
+      }
+      for (const k of hist.keys()) if (!seen.has(k)) hist.delete(k);
+    },
+    /** +1: moving your way, -1: against you, 0: steady or not known yet. */
+    of(r: RelRow): number {
+      const h = hist.get(r.idx);
+      const ref = h?.[0];
+      if (!ref || now - ref.t < WINDOW * 0.66) return 0;
+      // A car that changed sides (passed or was passed) has no trend.
+      if (Math.sign(ref.g) !== Math.sign(r.gap)) return 0;
+      const d = Math.abs(r.gap) - Math.abs(ref.g);
+      if (Math.abs(d) < STEADY) return 0;
+      // Ahead (gap > 0): the gap shrinking is good; behind: it growing is.
+      return (r.gap > 0 ? d < 0 : d > 0) ? 1 : -1;
+    },
+  };
+}

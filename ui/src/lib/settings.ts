@@ -109,6 +109,23 @@ export function enabledColumns(v: unknown): string[] {
   return (v as ColumnSetting[]).filter((c) => c.on).map((c) => c.id);
 }
 
+/** "Show": one choice for the three visibility switches (hide with no game, unless in the car,
+ *  on pit road), and the switches each choice sets. */
+export const SHOW_WHEN: [string, string, { hideWhenDisconnected: boolean; hideWhenNotDriving: boolean; hideInPits: boolean }][] = [
+  ['game', 'Whenever the game is running', { hideWhenDisconnected: true, hideWhenNotDriving: false, hideInPits: false }],
+  ['noPits', 'Whenever the game is running, not on pit road', { hideWhenDisconnected: true, hideWhenNotDriving: false, hideInPits: true }],
+  ['car', 'Only while I am in the car', { hideWhenDisconnected: true, hideWhenNotDriving: true, hideInPits: false }],
+  ['carNoPits', 'In the car, not on pit road', { hideWhenDisconnected: true, hideWhenNotDriving: true, hideInPits: true }],
+  ['always', 'Always, even with no game running', { hideWhenDisconnected: false, hideWhenNotDriving: false, hideInPits: false }],
+];
+
+/** The "Show" choice the three switches add up to. */
+export function showWhenOf(v: Values): string {
+  if (v.hideWhenNotDriving) return v.hideInPits ? 'carNoPits' : 'car';
+  if (v.hideInPits) return 'noPits';
+  return v.hideWhenDisconnected === false ? 'always' : 'game';
+}
+
 /** Options every overlay gets. */
 export const COMMON: SettingDef[] = [
   { key: 'opacity', label: 'Overlay opacity', type: 'number', default: 100, min: 10, max: 100, step: 1, unit: '%', help: 'Fades the whole overlay, text included', group: 'Transparency' },
@@ -131,9 +148,19 @@ export const COMMON: SettingDef[] = [
     help: 'Adding or removing columns resizes the overlay (relative, standings and other tables)',
     group: 'General',
   },
-  { key: 'hideWhenDisconnected', label: 'Hide when the game is not running', type: 'bool', default: true, group: 'Visibility' },
-  { key: 'hideWhenNotDriving', label: 'Hide unless I am in the car', type: 'bool', default: false, group: 'Visibility' },
-  { key: 'hideInPits', label: 'Hide while on pit road', type: 'bool', default: false, group: 'Visibility' },
+  {
+    key: 'showWhen',
+    label: 'Show',
+    type: 'select',
+    default: 'game',
+    options: SHOW_WHEN.map(([id, label]) => [id, label] as [string, string]),
+    group: 'Visibility',
+    help: 'When the overlay is on screen',
+  },
+  // What "Show" sets (the overlays read these): edited through it, so not listed themselves.
+  { key: 'hideWhenDisconnected', when: () => false, label: 'Hide when the game is not running', type: 'bool', default: true, group: 'Visibility' },
+  { key: 'hideWhenNotDriving', when: () => false, label: 'Hide unless I am in the car', type: 'bool', default: false, group: 'Visibility' },
+  { key: 'hideInPits', when: () => false, label: 'Hide while on pit road', type: 'bool', default: false, group: 'Visibility' },
   { key: 'raceOnly', label: 'Only show in race sessions', type: 'bool', default: false, group: 'Visibility' },
   // VR (desktop app with SteamVR): where this overlay goes in the headset.
   { key: 'vrShow', label: 'Show in VR', type: 'bool', default: true, group: 'VR', help: 'When VR is on (General → VR)' },

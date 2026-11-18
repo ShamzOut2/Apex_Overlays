@@ -8,13 +8,16 @@ import { marketPage } from './control/market';
 import { renderUpdatePrompt } from './control/updatePrompt';
 import { renderClosePrompt } from './control/closePrompt';
 import { gameName, PAGES, type Page } from './control/pages';
-import { listen, pageTopics, save, state } from './control/state';
+import { client, listen, onSaved, pageTopics, save, state } from './control/state';
 import { applyUiTheme } from './lib/theme';
 import { labsLogo } from './control/brand';
+import { pageBody, pageHead, setPageHead } from './control/chrome';
+import { sessionType } from './lib/sessionFields';
 
-// General first, then the overlays and everything else.
+// In groups: what is on screen (the overlays first, the page the window opens on), the race
+// weekend, and the app itself.
 const byId = (id: string) => PAGES.find((p) => p.id === id)!;
-const pages: Page[] = [byId('general'), byId('overlays'), marketPage, byId('theme'), byId('strategy'), leaguesPage, raceControlPage, byId('streaming')];
+const pages: Page[] = [byId('overlays'), marketPage, byId('theme'), byId('strategy'), leaguesPage, raceControlPage, byId('general'), byId('streaming')];
 
 const nav = h('nav');
 const brand = h('div', 'brand');
@@ -23,10 +26,29 @@ logo.append(h('b', '', 'Apex'), ' Overlays');
 const mark = h('img', 'brand-mark') as HTMLImageElement;
 mark.src = '/assets/brand/apex-overlays-icon-64.png';
 mark.alt = '';
-brand.append(mark, logo);
-const conn = h('div', 'conn');
+// Under the name: the version and who makes it.
+const brandSub = h('span', 'brand-sub', 'Apex Labs');
+const brandText = h('span', 'brand-text');
+brandText.append(logo, brandSub);
+brand.append(mark, brandText);
+// The connection card under the name: the game, the session and the game switch.
+const conn = h('section', 'conn');
+conn.setAttribute('aria-label', 'Connection');
+const connHead = h('div', 'conn-head');
+const connState = h('span', 'conn-state');
+// Lights out: four red lights come on and go out as the game connects (once).
+const connLights = h('span', 'conn-lights');
+connLights.setAttribute('aria-hidden', 'true');
+connLights.append(...[0, 1, 2, 3].map(() => h('i')));
+const connBadge = h('span', 'conn-badge');
+connHead.append(connLights, connState, connBadge);
+const connInfo = h('div', 'conn-info');
 const main = h('main');
-nav.append(brand);
+main.append(pageHead, pageBody);
+nav.append(brand, conn);
+// Pages in groups; a heading before the first page of each group.
+const GROUPS: Record<string, string> = { overlays: 'On screen', strategy: 'Race weekend', general: 'App' };
+const GROUP_OF: Record<string, string> = { overlays: 'On screen', market: 'On screen', theme: 'On screen', strategy: 'Race weekend', leagues: 'Race weekend', teams: 'Race weekend', racecontrol: 'Race weekend', general: 'App settings', streaming: 'App' };
 const links = new Map<string, HTMLAnchorElement>();
 // Line icons for the sidebar (24×24, drawn with the current text colour).
 const ICONS: Record<string, string> = {
@@ -41,6 +63,7 @@ const ICONS: Record<string, string> = {
   streaming: '<rect x="2" y="5" width="15" height="14" rx="2"/><path d="m17 10 5-3v10l-5-3"/>',
 };
 for (const p of pages) {
+  if (GROUPS[p.id]) nav.append(h('div', 'nav-label', GROUPS[p.id]));
   const a = h('a');
   if (ICONS[p.id]) a.insertAdjacentHTML('beforeend', `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[p.id]}</svg>`);
   a.append(h('span', '', p.title));
@@ -48,7 +71,7 @@ for (const p of pages) {
   nav.append(a);
   links.set(p.id, a);
 }
-// Bottom of the sidebar: the Apex Labs logo with the game switch beside it, then the status.
+// The game switch, in the connection card.
 const gameSwitch = h('div', 'game-switch');
 gameSwitch.title = 'Which game to read. Auto: whichever is running';
 const GAMES: [string, string, string][] = [
@@ -77,9 +100,27 @@ function drawGameSwitch() {
     b.classList.toggle('live', chosen === 'auto' && id === running);
   }
 }
+conn.append(connHead, connInfo, gameSwitch);
+// Show / hide every overlay, with its hotkey.
+const visRow = h('label', 'nav-visible');
+const visText = h('span', '', 'Overlays on screen');
+const visHint = h('small');
+visText.append(visHint);
+const visSwitch = h('input') as HTMLInputElement;
+visSwitch.type = 'checkbox';
+visSwitch.className = 'switch small';
+visSwitch.setAttribute('aria-label', 'Show overlays on screen');
+visSwitch.onchange = () => state.status && client.send({ op: 'setVisible', value: visSwitch.checked });
+visRow.append(visText, visSwitch);
+function drawVisible() {
+  visSwitch.checked = state.status?.visible ?? true;
+  const key = (state.config?.hotkeys?.toggleVisibility ?? '').replace('CmdOrCtrl', 'Ctrl').replace('Shift', '⇧').split('+').join(' ');
+  text(visHint, key ? `Hotkey ${key}` : 'Show or hide all');
+}
+const navSpacer = h('div', 'nav-spacer');
 const navFoot = h('div', 'nav-foot');
-navFoot.append(labsLogo('nav-labs'), gameSwitch);
-nav.append(navFoot, conn);
+navFoot.append(labsLogo('nav-labs'));
+nav.append(navSpacer, visRow, navFoot);
 document.body.append(nav, main);
 // The desktop app opens this page as a small "update available" or "close?" window.
 const promptKind = new URLSearchParams(location.search).get('prompt');
@@ -95,7 +136,7 @@ const current = () => pages.find((p) => `#${p.id}` === location.hash) ?? subPage
 
 function render() {
   if (!state.config) {
-    main.replaceChildren(h('p', 'dim', 'Connecting to Apex Overlays…'));
+    pageBody.replaceChildren(h('p', 'dim', 'Connecting to Apex Overlays…'));
     return;
   }
   applyUiTheme(state.config.theme, document.documentElement);
@@ -105,15 +146,75 @@ function render() {
   pageTopics(p.id);
   const parent = subPages.find(([s]) => s === p)?.[1];
   links.forEach((a, id) => a.classList.toggle('sel', id === p.id || id === parent));
-  p.render(main);
+  // The header: the overlays page names the layout in use.
+  const cfg = state.config;
+  const layout = p.id === 'overlays' ? cfg.layouts?.find((l) => l.id === cfg.activeLayout)?.name : '';
+  setPageHead(layout ? `Layout · ${layout}` : (GROUP_OF[p.id] ?? ''), p.title);
+  // Animations off (General → Display) or asked for by Windows: none anywhere.
+  document.body.classList.toggle('no-motion', cfg.uiAnimations === false);
+  p.render(pageBody);
+  // Opening a page (not every redraw): the kerb runs in under the title, the cards settle in.
+  if (p.id !== shownPage) {
+    shownPage = p.id;
+    replay(pageHead, 'enter', 700);
+    replay(pageBody, 'enter', 900);
+  }
+}
+let shownPage = '';
+
+// The pit board: "saved" slides in after a change is saved (not again while it shows).
+const pitBoard = h('div', 'pit-board');
+pitBoard.setAttribute('role', 'status');
+pitBoard.append(h('span', 'pit-board-top', 'BOX · BOX'), h('span', 'pit-board-text', 'SAVED'));
+document.body.append(pitBoard);
+onSaved(() => {
+  if (pitBoard.classList.contains('show') || promptMode) return;
+  replay(pitBoard, 'show', 1900);
+});
+
+/** Time left to the minute ("1:20", "45 min"): the card changes once a minute, not every
+ *  second (each change redraws the window). */
+function minutesLeft(secs: number) {
+  const m = Math.ceil(Math.max(0, secs) / 60);
+  return m >= 60 ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}` : `${m} min`;
 }
 
+/** Plays a one-off animation again: the class comes off and back on, and off after `ms`. */
+const replayTimers = new Map<string, number>();
+function replay(el: HTMLElement, cls: string, ms: number) {
+  el.classList.remove(cls);
+  void el.offsetWidth;
+  el.classList.add(cls);
+  const key = `${el.className.split(' ')[0]}|${cls}`;
+  clearTimeout(replayTimers.get(key));
+  replayTimers.set(key, window.setTimeout(() => el.classList.remove(cls), ms));
+}
+
+let wasUp: boolean | null = null;
 function renderStatus() {
   const s = state.status;
   const sess = state.session;
-  conn.className = `conn ${s?.connected ? 'up' : 'down'}`;
+  const up = !!s?.connected;
+  // The game connecting (or found connected when the window opens): lights out.
+  if (up && wasUp !== true) replay(conn, 'lights-out', 1800);
+  if (s) wasUp = up;
+  // (Only these two: a class like lights-out must survive the next update.)
+  conn.classList.toggle('up', up);
+  conn.classList.toggle('down', !up);
   const game = gameName(s?.source ?? '');
-  text(conn, s ? (s.connected ? `${game} connected${sess?.trackName ? ` · ${sess.trackName}` : ''}` : `Waiting for ${s.source ? game : 'iRacing or Le Mans Ultimate'}…`) + ` · v${s.version}` : 'Not connected to server');
+  text(connState, !s ? 'Not connected to the app' : up ? `${game} live` : `Waiting for ${s.source ? game : 'a game'}…`);
+  // The session type (Practice, Race…), the track, and the cars and time left.
+  const type = up && sess ? sessionType(sess) : '';
+  text(connBadge, type);
+  connBadge.hidden = !type;
+  const lines: string[] = up && sess ? [[sess.trackName, sess.trackConfig].filter(Boolean).join(' · '), [sess.numCars ? `${sess.numCars} cars` : '', sess.timeRemain != null ? `${minutesLeft(sess.timeRemain)} left` : sess.lapsRemain != null ? `${sess.lapsRemain} laps left` : ''].filter(Boolean).join(' · ')].filter(Boolean) : [!s ? '' : 'iRacing or Le Mans Ultimate, when running'];
+  // Only when it changes (the time left ticks with every session update).
+  const key = lines.join('\n');
+  if (connInfo.dataset.k !== key) {
+    connInfo.dataset.k = key;
+    connInfo.replaceChildren(...lines.map((l) => h('span', '', l)));
+  }
+  text(brandSub, s ? `v${s.version} · Apex Labs` : 'Apex Labs');
 }
 
 let lastLive = 0;
@@ -150,8 +251,15 @@ let leagueKey = '';
 let wasInVr = false;
 let lastGame = '';
 listen((t) => {
-  if (t === 'config' || t === 'status') drawGameSwitch();
+  if (t === 'config' || t === 'status') {
+    drawGameSwitch();
+    drawVisible();
+  }
   if (t === 'config') render();
+  // The monitor picker on the overlays page (the list only changes when screens do).
+  if (t === 'monitors' && current().id === 'overlays' && !(document.activeElement instanceof HTMLSelectElement)) render();
+  // The close pop-up says more when you are in a session.
+  if (t === 'status' && promptKind === 'close') render();
   if (t === 'status') {
     renderStatus();
     // The Game card on General says which game is being read.

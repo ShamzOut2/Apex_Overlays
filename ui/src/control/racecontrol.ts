@@ -48,7 +48,7 @@ export const raceControlPage: Page = {
 
     const intro = h('section', 'card');
     intro.append(
-      h('h2', '', 'Race control'),
+      h('h2', '', 'Penalties'),
       h(
         'p',
         'dim',

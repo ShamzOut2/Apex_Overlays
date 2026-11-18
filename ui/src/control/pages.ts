@@ -1,15 +1,16 @@
 import { otherGameOnly, overlayBadges, withLmuBadge } from '../lib/badges';
 import { h, text } from '../lib/dom';
 import * as f from '../lib/format';
-import { commonFor, merge, type SettingDef, type TrackValues, trackValue } from '../lib/settings';
+import { commonFor, merge, type SettingDef, SHOW_WHEN, showWhenOf, type TrackValues, trackValue } from '../lib/settings';
 import { applyUiTheme, PRESETS, THEME, themeValues } from '../lib/theme';
-import type { OverlayInstance, SavedLayout } from '../lib/types';
+import type { OverlayInstance, Player, SavedLayout, ScreenMonitor } from '../lib/types';
 import { byKind, hiddenKind, OVERLAYS } from '../overlays/registry';
 import { CHOICES, field, form, relevance } from './form';
 import { hotkeyInput } from './hotkey';
 import { releaseHistory } from './releaseNotes';
 import { STATS } from '../lib/monitorStats';
-import { client, download, listen, save, state, uid, upload } from './state';
+import { client, download, fetchOnce, listen, save, state, uid, upload } from './state';
+import { pageActions } from './chrome';
 
 export type Page = { id: string; title: string; render(el: HTMLElement): void };
 
@@ -245,7 +246,14 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
       'danger',
     ],
   ]);
-  head.append(title, ...overlayBadges(def), enabled, copyBtn, more);
+  // The name (editable) with what the overlay does under it; switch and actions on the right.
+  const titleCol = h('div', 'editor-title');
+  const titleRow = h('div', 'editor-title-row');
+  titleRow.append(title, ...overlayBadges(def));
+  titleCol.append(titleRow, h('p', 'dim desc', def.description));
+  const headActions = h('div', 'editor-actions');
+  headActions.append(enabled, copyBtn, more);
+  head.append(titleCol, headActions);
 
   // Live preview of this overlay with its current settings.
   const preview = h('div', 'preview');
@@ -276,6 +284,7 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
 
   const common = commonFor(def.commonDefaults, def.fitsWidth, def.fill);
   const values = merge([...common, ...def.settings], o.settings);
+  values.showWhen = showWhenOf(values);
   // App-wide settings shown in this overlay's settings: their value lives in the config.
   const sharedPath = (k: string) => def.settings.find((s) => s.key === k)?.shared;
   const sharedAt = (path: string): [Record<string, unknown>, string] => {
@@ -314,6 +323,17 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
     if (path) {
       const [obj, key] = sharedAt(path);
       obj[key] = v;
+    } else if (k === 'showWhen') {
+      // One choice, stored as the three switches the overlays read.
+      const sw = SHOW_WHEN.find(([id]) => id === v)?.[2];
+      if (sw) {
+        Object.assign(values, sw);
+        o.settings = { ...o.settings, ...sw };
+        save();
+        // The overlay list's tags (Hidden in pits…) follow.
+        rerender();
+        return;
+      }
     } else if (isPerTrack(k)) {
       const tracks = { ...((o.settings.tracks as TrackValues | undefined) ?? {}) };
       tracks[String(track!.trackId)] = { ...trackOwn(), [k]: v };
@@ -377,7 +397,26 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
     return box;
   };
 
+  // The accent line under the open tab, which glides to the tab you pick.
+  const tabInd = h('span', 'tab-ind');
+  let tabIndPlaced = false;
+  const placeTabInd = () => {
+    const sel = tabBar.querySelector<HTMLElement>('.tab.sel');
+    tabInd.hidden = !sel;
+    if (!sel) return;
+    // The first time it is just put there; after that it slides.
+    if (!tabIndPlaced) tabInd.style.transition = 'none';
+    tabInd.style.left = `${sel.offsetLeft}px`;
+    tabInd.style.top = `${sel.offsetTop + sel.offsetHeight - 2}px`;
+    tabInd.style.width = `${sel.offsetWidth}px`;
+    if (!tabIndPlaced) {
+      void tabInd.offsetWidth;
+      tabInd.style.transition = '';
+      tabIndPlaced = true;
+    }
+  };
   const drawTabs = () => {
+    requestAnimationFrame(placeTabInd);
     tabBar.replaceChildren(
       ...tabs.map((t) => {
         const b = button(
@@ -434,13 +473,16 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
   };
   drawTabs();
   drawPanel();
-  wrap.append(head, h('p', 'dim desc', def.description), preview, search, tabBar, panel);
+  // Search sits at the end of the tab row.
+  const tabRow = h('div', 'tab-row');
+  tabRow.append(tabBar, search, tabInd);
+  wrap.append(head, preview, tabRow, panel);
   return wrap;
 }
 
 /** Where each kind of overlay goes by default on a 1920×1080 screen (as the app's catalogue). */
 const PLACES: Record<string, [number, number]> = {
-  relative: [40, 380], standings: [40, 40], trackmap: [1500, 40], inputs: [760, 860], inputGraph: [760, 740], fuel: [1540, 420],
+  relative: [40, 380], standings: [40, 40], trackmap: [1500, 40], inputs: [760, 860], shiftlights: [760, 790], inputGraph: [760, 740], fuel: [1540, 420],
   battle: [1200, 860], session: [510, 10], tyres: [1540, 680], flags: [860, 70], startLights: [760, 190], forecast: [1240, 520],
   laptimes: [40, 700], energy: [1540, 420], radar: [1220, 420], carsettings: [760, 770], tyredata: [1200, 600], spotter: [850, 520],
   pit: [845, 300], safety: [760, 160], delta: [760, 400], incidents: [40, 700], weather: [1240, 680], databox: [1240, 300], monitor: [1680, 40],
@@ -499,7 +541,6 @@ const overlaysPage: Page = {
     const rerender = () => this.render(el);
     if (!cfg.overlays.some((o) => o.id === selected && listed(o))) selected = cfg.overlays.find(listed)?.id ?? '';
     const editing = state.status?.editMode ?? false;
-    const visible = state.status?.visible ?? true;
 
     cfg.layouts ??= [];
     const version = state.status?.version ?? '';
@@ -684,14 +725,9 @@ const overlaysPage: Page = {
     moveMenu.append(pop);
     remember(moveMenu, 'move');
 
-    const bar = h('div', 'toolbar');
-    bar.append(
-      button(editing ? 'Done moving' : 'Edit mode (move & resize)', () => client.send({ op: 'setEditMode', value: !editing }), editing ? 'primary active' : 'primary'),
-      button(visible ? 'Hide all overlays' : 'Show all overlays', () => client.send({ op: 'setVisible', value: !visible })),
-      h('span', 'spacer'),
-      layoutsMenu,
-      moveMenu,
-    );
+    // In the page header: layouts, moving and sharing, and Move & resize. (Showing and hiding
+    // every overlay is the switch at the foot of the sidebar.)
+    pageActions(layoutsMenu, moveMenu, editButton(editing));
 
     const addOverlay = (kind: string) => {
       const d = byKind(kind)!;
@@ -704,16 +740,40 @@ const overlaysPage: Page = {
       rerender();
     };
     const list = h('div', 'ov-list');
-    list.append(button('＋ Add overlay', () => addOverlayDialog(addOverlay), 'add-btn'));
+    list.append(
+      screenMap(
+        cfg.overlays.filter(listed),
+        selected,
+        (id) => {
+          selected = id;
+          ui.query = '';
+          rerender();
+        },
+        rerender,
+      ),
+    );
     for (const o of cfg.overlays.filter(listed)) {
       const d = byKind(o.kind);
       const item = h('div', `ov-item${o.id === selected ? ' sel' : ''}${o.enabled ? '' : ' off'}`);
       item.tabIndex = 0;
+      item.dataset.id = o.id;
+      // Hovering an overlay lights it on the screen map (and the other way round).
+      item.onmouseenter = () => hot(o.id, true);
+      item.onmouseleave = () => hot(o.id, false);
       const names = h('span', 'ov-names');
       const oname = h('span', 'ov-name', o.name || d?.name || o.kind);
       oname.append(...overlayBadges(d));
       names.append(oname);
-      if (o.name && d) names.append(h('span', 'ov-kind', d.name));
+      // What it is and its size: "Relative · 600 × 320".
+      names.append(h('span', 'ov-kind', `${d?.name ?? o.kind} · ${o.width} × ${o.height}`));
+      // Why it may not be on screen: its own visibility settings, in the list.
+      const st = o.settings as Record<string, unknown>;
+      const tags = [st.hideInPits === true && 'Hidden in pits', st.hideWhenNotDriving === true && 'In the car only', st.raceOnly === true && 'Races only'].filter(Boolean) as string[];
+      if (tags.length) {
+        const t = h('span', 'ov-tags');
+        t.append(...tags.map((x) => h('span', 'ov-tag', x)));
+        names.append(t);
+      }
       const sw = h('input');
       sw.type = 'checkbox';
       sw.className = 'switch small';
@@ -740,6 +800,7 @@ const overlaysPage: Page = {
       };
       list.append(item);
     }
+    list.append(button('＋ Add overlay', () => addOverlayDialog(addOverlay), 'add-btn'));
     const sel = cfg.overlays.find((o) => o.id === selected);
     const main = h('div', 'ov-main');
     if (sel) main.append(overlayEditor(sel, rerender));
@@ -757,7 +818,7 @@ const overlaysPage: Page = {
     }
     const wrap = h('div', 'ov-layout');
     wrap.append(list, main);
-    el.replaceChildren(bar, ...gameStrip(rerender), wrap);
+    el.replaceChildren(...gameStrip(rerender), wrap);
   },
 };
 
@@ -1312,8 +1373,9 @@ function cornersCard(rerender: () => void): HTMLElement {
     bar.append(
       button(
         'Add corner at my car’s position',
-        () => {
-          const p = state.player?.lapPct ?? 0;
+        async () => {
+          // Your car's position, fetched now (the page does not stream it, to save CPU).
+          const p = (await fetchOnce<Player>('player'))?.lapPct ?? state.player?.lapPct ?? 0;
           custom.push({ name: '', number: (custom.reduce((m, x) => Math.max(m, x.number), 0) || 0) + 1, start: Math.max(0, p - 0.005), end: Math.min(1, p + 0.005) });
           custom.sort((a, b) => a.start - b.start);
           save();
@@ -1439,29 +1501,75 @@ function hotkeysCard(): HTMLElement {
 }
 
 /** Live readings of what Apex Overlays uses, updated in place once a second. */
-const monitorView = { tiles: new Map<string, HTMLElement>(), spark: null as SVGPolylineElement | null, cpu: [] as number[] };
+const monitorView = {
+  tiles: new Map<string, HTMLElement>(),
+  /** The headline readings' graphs (last minute), and their history. */
+  sparks: new Map<string, SVGPolylineElement>(),
+  hist: new Map<string, number[]>(),
+};
 
-function drawMonitor() {
+/** The readings at the top of General, each with its last minute as a small graph. */
+const HEADLINE: [string, (m: NonNullable<typeof state.monitor>) => number, number][] = [
+  ['cpu', (m) => m.cpu, 5],
+  ['memory', (m) => m.memoryMb, 50],
+  ['sent', (m) => m.sentKbps, 10],
+  ['tick', (m) => m.tickUs, 100],
+];
+
+function headlineTiles(): HTMLElement {
+  const row = h('section', 'gen-tiles');
+  row.setAttribute('aria-label', 'Live readings');
+  for (const [id] of HEADLINE) {
+    const s = STATS.find((x) => x.id === id)!;
+    const tile = h('div', 'gen-tile');
+    tile.title = s.help;
+    const v = h('div', 'gen-tile-val', '–');
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 100 24');
+    svg.setAttribute('preserveAspectRatio', 'none');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.classList.add('gen-spark');
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    svg.append(line);
+    tile.append(h('div', 'gen-tile-label', s.label), v, svg);
+    monitorView.tiles.set(id, v);
+    monitorView.sparks.set(id, line);
+    row.append(tile);
+  }
+  return row;
+}
+
+/** Shows the latest readings; `record`: a new reading arrived (added to the graphs). */
+function drawMonitor(record = false) {
   const m = state.monitor;
   if (!m) return;
-  monitorView.cpu.push(m.cpu);
-  if (monitorView.cpu.length > 60) monitorView.cpu.shift();
+  for (const [id, get] of HEADLINE) {
+    if (!record) break;
+    const hst = monitorView.hist.get(id) ?? [];
+    hst.push(get(m));
+    if (hst.length > 60) hst.shift();
+    monitorView.hist.set(id, hst);
+  }
   for (const s of STATS) {
     const el = monitorView.tiles.get(s.id);
     if (!el) continue;
-    el.textContent = s.value(m);
+    // The headline readings roll to their new value; the rest change in place.
+    if (monitorView.sparks.has(s.id)) roll(el, s.value(m));
+    else el.textContent = s.value(m);
     const lvl = s.level?.(m, 5) ?? '';
     el.classList.toggle('warn', lvl === 'warn');
     el.classList.toggle('bad', lvl === 'bad');
   }
-  // CPU over the last minute, scaled to its own peak (at least 5%).
-  const pts = monitorView.cpu;
-  const top = Math.max(5, ...pts);
-  monitorView.spark?.setAttribute('points', pts.map((v, i) => `${(i / 59) * 100},${30 - (v / top) * 28}`).join(' '));
+  // Each headline reading over the last minute, scaled to its own peak (with a floor).
+  for (const [id, , floor] of HEADLINE) {
+    const pts = monitorView.hist.get(id) ?? [];
+    const top = Math.max(floor, ...pts);
+    monitorView.sparks.get(id)?.setAttribute('points', pts.map((v, i) => `${(i / 59) * 100},${23 - (v / top) * 21}`).join(' '));
+  }
 }
 
 listen((t) => {
-  if (t === 'monitor' && monitorView.tiles.size && document.contains([...monitorView.tiles.values()][0])) drawMonitor();
+  if (t === 'monitor' && monitorView.tiles.size && document.contains([...monitorView.tiles.values()][0])) drawMonitor(true);
 });
 
 /** Overlays page: whose overlays these are, and copying the other game's. */
@@ -1659,23 +1767,12 @@ function monitoringCard(): HTMLElement {
   const c = card('Monitoring');
   c.append(h('p', 'dim', 'What Apex Overlays uses right now: the app and all its overlay windows. Hover a reading for what it means.'));
   const grid = h('div', 'mon-tiles');
-  monitorView.tiles.clear();
-  for (const s of STATS) {
+  // The headline readings are at the top of the page; the rest here.
+  for (const s of STATS.filter((x) => !HEADLINE.some(([id]) => id === x.id))) {
     const tile = h('div', 'mon-tile');
     tile.title = s.help;
     const v = h('div', 'mon-tile-val', '–');
     tile.append(h('div', 'mon-tile-label', s.label), v);
-    if (s.id === 'cpu') {
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('viewBox', '0 0 100 30');
-      svg.setAttribute('preserveAspectRatio', 'none');
-      svg.classList.add('mon-spark');
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-      svg.append(line);
-      monitorView.spark = line;
-      tile.append(svg);
-      tile.classList.add('wide');
-    }
     monitorView.tiles.set(s.id, v);
     grid.append(tile);
   }
@@ -1753,6 +1850,8 @@ const generalPage: Page = {
   title: 'General',
   render(el) {
     const cfg = state.config!;
+    const backup = () => download('apex-overlays.json', { ...cfg, garage61: { ...cfg.garage61, token: '' } });
+    pageActions(button('Open logs', () => client.send({ op: 'openLogs' })), button('Back up settings', backup));
     const opts = {
       units: cfg.units,
       port: cfg.server.port,
@@ -1761,13 +1860,11 @@ const generalPage: Page = {
       shortClassNames: cfg.shortClassNames,
       updateRate: cfg.updateRate ?? 'balanced',
       closeAction: cfg.closeAction ?? 'ask',
+      trayOnPitExit: cfg.trayOnPitExit ?? true,
       lmuPrivateQualifying: cfg.lmuPrivateQualifying ?? true,
+      uiAnimations: cfg.uiAnimations ?? true,
     };
-    el.replaceChildren(
-      card(
-        'General',
-        form(
-          [
+    const SCHEMA: SettingDef[] = [
             { key: 'units', label: 'Units', type: 'select', default: 'auto', options: [['auto', 'Same as the game'], ['metric', 'Metric'], ['imperial', 'Imperial']], group: 'Display' },
             {
               key: 'ratingsOfficialOnly',
@@ -1791,7 +1888,7 @@ const generalPage: Page = {
               type: 'bool',
               default: true,
               lmu: true,
-              help: 'In LMU’s online qualifying each driver is alone on track, so other cars are not really near you. Turn off for open qualifying.',
+              help: 'In LMU’s online qualifying each driver is alone on track, so the other cars are left off the relative, track map, radar, spotter and battle box. Turn off for open qualifying.',
               group: 'Display',
             },
             {
@@ -1819,35 +1916,98 @@ const generalPage: Page = {
               ],
               group: 'Display',
             },
+            {
+              key: 'uiAnimations',
+              label: 'Animations in this window',
+              type: 'bool',
+              default: true,
+              help: 'The lights as the game connects, pages settling in, the “saved” board. Each plays once and stops; Windows’ “Animation effects: off” turns them off too',
+              group: 'Display',
+            },
+            {
+              key: 'trayOnPitExit',
+              label: 'Minimise to the tray when I leave the pits',
+              type: 'bool',
+              default: true,
+              help: 'This window closes to the tray as you drive out, freeing its CPU and memory for the game. Opened again from the tray while on track, it stays open',
+              group: 'Performance',
+            },
             { key: 'port', label: 'Port', type: 'number', default: 8182, min: 1024, max: 65535, group: 'Server (restart to apply)' },
             { key: 'lanAccess', label: 'Allow other PCs on my network', type: 'bool', default: false, group: 'Server (restart to apply)' },
-          ],
-          opts,
-          (k, v) => {
-            if (k === 'units') cfg.units = v as typeof cfg.units;
-            if (k === 'port') cfg.server.port = v as number;
-            if (k === 'lanAccess') cfg.server.lanAccess = v as boolean;
-            if (k === 'ratingsOfficialOnly') cfg.ratingsOfficialOnly = v as boolean;
-            if (k === 'shortClassNames') cfg.shortClassNames = v as boolean;
-            if (k === 'updateRate') cfg.updateRate = v as 'fast' | 'balanced' | 'full';
-            if (k === 'closeAction') cfg.closeAction = v as 'ask' | 'quit' | 'keep';
-            if (k === 'lmuPrivateQualifying') cfg.lmuPrivateQualifying = v as boolean;
-            save();
-          },
-        ),
-      ),
-      licenceCard(),
+          ];
+    const onChange = (k: string, v: unknown) => {
+      if (k === 'units') cfg.units = v as typeof cfg.units;
+      if (k === 'port') cfg.server.port = v as number;
+      if (k === 'lanAccess') cfg.server.lanAccess = v as boolean;
+      if (k === 'ratingsOfficialOnly') cfg.ratingsOfficialOnly = v as boolean;
+      if (k === 'shortClassNames') cfg.shortClassNames = v as boolean;
+      if (k === 'updateRate') cfg.updateRate = v as 'fast' | 'balanced' | 'full';
+      if (k === 'closeAction') cfg.closeAction = v as 'ask' | 'quit' | 'keep';
+      if (k === 'trayOnPitExit') cfg.trayOnPitExit = v as boolean;
+      if (k === 'uiAnimations') {
+        cfg.uiAnimations = v as boolean;
+        document.body.classList.toggle('no-motion', v === false);
+      }
+      if (k === 'lmuPrivateQualifying') cfg.lmuPrivateQualifying = v as boolean;
+      save();
+    };
+    /** Some of the settings above, as a plain list in a card. */
+    const fields = (keys: string[]) => {
+      const f = form(SCHEMA.filter((x) => keys.includes(x.key)), opts, onChange);
+      f.classList.add('plain');
+      return f;
+    };
+    const display = card('Display', fields(['units', 'ratingsOfficialOnly', 'shortClassNames', 'lmuPrivateQualifying', 'closeAction', 'uiAnimations']));
+    const server = card('Server', h('p', 'dim small', 'Restart Apex Overlays after changing these.'), fields(['port', 'lanAccess']));
+    // The update rate as three cards to pick from, then the tray when leaving the pits.
+    const rateDef = SCHEMA.find((x) => x.key === 'updateRate')!;
+    const rates = h('div', 'rate-cards');
+    rates.setAttribute('role', 'radiogroup');
+    rates.setAttribute('aria-label', 'Overlay update rate');
+    const RATE_TEXT: Record<string, [string, string]> = { fast: ['Light', 'Least CPU and FPS impact'], balanced: ['Balanced', 'Recommended'], full: ['Every tick', '60 times a second'] };
+    const rateButtons = (rateDef.type === 'select' ? rateDef.options : []).map(([id]) => {
+      const b = h('button', 'rate-card');
+      b.setAttribute('role', 'radio');
+      b.append(h('span', 'rate-name', RATE_TEXT[id]?.[0] ?? id), h('span', 'rate-help', RATE_TEXT[id]?.[1] ?? ''));
+      b.onclick = () => {
+        opts.updateRate = id as typeof opts.updateRate;
+        onChange('updateRate', id);
+        drawRates();
+      };
+      return { id, b };
+    });
+    const drawRates = () => {
+      for (const { id, b } of rateButtons) {
+        b.classList.toggle('sel', opts.updateRate === id);
+        b.setAttribute('aria-checked', String(opts.updateRate === id));
+      }
+    };
+    drawRates();
+    rates.append(...rateButtons.map((r) => r.b));
+    const rate = card('Overlay update rate', h('p', 'dim', 'How often overlays redraw. Lower uses less CPU and leaves more frames for the game.'), rates, fields(['trayOnPitExit']));
+    // The headline readings, the rest under Monitoring further down.
+    monitorView.tiles.clear();
+    monitorView.sparks.clear();
+    const tiles = headlineTiles();
+    const cols = h('div', 'gen-cols');
+    const left = h('div', 'gen-col');
+    const right = h('div', 'gen-col');
+    left.append(display, server);
+    right.append(rate, licenceCard(), updatesCard());
+    cols.append(left, right);
+    el.replaceChildren(
+      tiles,
+      cols,
       gameCard(),
       hotkeysCard(),
       vrCard(),
       monitoringCard(),
-      updatesCard(),
       logsCard(),
       cornersCard(() => this.render(el)),
       card(
         'Backup',
         h('p', 'dim', 'Export everything (overlays, theme, leagues) to a file, or import a file shared by someone else.'),
-        button('Export settings', () => download('apex-overlays.json', { ...cfg, garage61: { ...cfg.garage61, token: '' } })),
+        button('Export settings', backup),
         button('Import settings', async () => {
           const data = (await upload()) as typeof cfg;
           if (!data || !Array.isArray(data.overlays)) return alert('That file is not an Apex Overlays export.');
@@ -1865,6 +2025,7 @@ const generalPage: Page = {
         ),
       ),
     );
+    drawMonitor();
   },
 };
 
@@ -1899,3 +2060,134 @@ const streamingPage: Page = {
 // Garage 61 (garage61Page) is held back until the integration is ready.
 export const PAGES: Page[] = [overlaysPage, themePage, strategyPage, generalPage, streamingPage];
 void garage61Page;
+
+
+/** The edit-mode button with its hotkey ("Move & resize", or "Done moving" while moving). */
+function editButton(editing: boolean) {
+  const key = (state.config?.hotkeys?.toggleEdit ?? '').replace('CmdOrCtrl', 'Ctrl').replace('Shift', '⇧').split('+').join(' ');
+  const b = button(editing ? 'Done moving' : 'Move & resize', () => client.send({ op: 'setEditMode', value: !editing }), editing ? 'primary active' : 'primary');
+  if (key) b.append(' ', h('kbd', '', key));
+  b.title = 'Drag overlays to move them, their corner to resize';
+  return b;
+}
+
+/** The monitor an overlay is on: the one holding its centre, else the nearest. */
+function monitorOf(o: { x: number; y: number; width: number; height: number }, mons: ScreenMonitor[]): ScreenMonitor | undefined {
+  const cx = o.x + o.width / 2, cy = o.y + o.height / 2;
+  const inside = mons.find((m) => cx >= m.x && cx < m.x + m.width && cy >= m.y && cy < m.y + m.height);
+  if (inside) return inside;
+  const dist = (m: ScreenMonitor) => Math.hypot(Math.max(m.x - cx, 0, cx - (m.x + m.width)), Math.max(m.y - cy, 0, cy - (m.y + m.height)));
+  return [...mons].sort((a, b) => dist(a) - dist(b))[0];
+}
+
+/** How a monitor reads in the picker (under "Monitor"): "2 · 2560 × 1440 · 125% · main". */
+const monitorLabel = (m: ScreenMonitor) => `${m.index} · ${m.resolution[0]} × ${m.resolution[1]}${Math.abs(m.scale - 1) > 0.01 ? ` · ${Math.round(m.scale * 100)}%` : ''}${m.primary ? ' · main' : ''}`;
+
+/**
+ * Where each overlay sits on the screen, small; click one to open its settings. Off ones are
+ * dashed, the selected one in the accent. In the desktop app, the monitor the overlays are on
+ * (with its resolution) can be changed here: every overlay moves to it, keeping its place.
+ */
+function screenMap(overlays: OverlayInstance[], selected: string, pick: (id: string) => void, rerender: () => void) {
+  const mons = state.monitors ?? [];
+  // The monitor most of the overlays are on (the main one when there are none).
+  const counts = new Map<number, number>();
+  for (const o of overlays.filter((x) => x.enabled)) {
+    const m = monitorOf(o, mons);
+    if (m) counts.set(m.index, (counts.get(m.index) ?? 0) + 1);
+  }
+  const best = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0];
+  const current = mons.find((m) => m.index === best) ?? mons.find((m) => m.primary) ?? mons[0];
+  const bounds = current ?? { x: 0, y: 0, width: Math.max(window.screen?.width || 1920, ...overlays.map((o) => o.x + o.width)), height: Math.max(window.screen?.height || 1080, ...overlays.map((o) => o.y + o.height)) };
+  const wrap = h('div', 'screen-map');
+  const head = h('div', 'screen-map-head');
+  if (current) {
+    const label = h('label', 'screen-map-pick');
+    label.append(h('span', '', 'Monitor'));
+    const sel = h('select') as HTMLSelectElement;
+    sel.setAttribute('aria-label', 'Monitor the overlays are on');
+    for (const m of mons) {
+      const opt = h('option', '', monitorLabel(m)) as HTMLOptionElement;
+      opt.value = String(m.index);
+      opt.title = m.name;
+      opt.selected = m.index === current.index;
+      sel.append(opt);
+    }
+    sel.onchange = () => {
+      const target = mons.find((m) => String(m.index) === sel.value);
+      if (target) moveToMonitor(target, mons, current);
+      rerender();
+    };
+    label.append(sel);
+    head.append(label);
+  } else head.append(h('span', '', 'Your screen'), h('span', '', `${bounds.width} × ${bounds.height}`));
+  const box = h('div', 'screen-map-box');
+  box.style.aspectRatio = `${bounds.width} / ${bounds.height}`;
+  let elsewhere = 0;
+  for (const o of overlays) {
+    if (current && monitorOf(o, mons)?.index !== current.index) {
+      elsewhere++;
+      continue;
+    }
+    const name = o.name || byKind(o.kind)?.name || o.kind;
+    const b = button('', () => pick(o.id), `${o.enabled ? '' : 'off '}${o.id === selected ? 'sel' : ''}`.trim());
+    b.title = `${name}${o.enabled ? '' : ' (off)'}`;
+    b.setAttribute('aria-label', b.title);
+    b.dataset.id = o.id;
+    b.onmouseenter = () => hot(o.id, true);
+    b.onmouseleave = () => hot(o.id, false);
+    const pct = (v: number, of: number) => `${Math.max(0, Math.min(100, (v / of) * 100)).toFixed(2)}%`;
+    Object.assign(b.style, { left: pct(o.x - bounds.x, bounds.width), top: pct(o.y - bounds.y, bounds.height), width: pct(Math.max(o.width, 8), bounds.width), height: pct(Math.max(o.height, 8), bounds.height) });
+    box.append(b);
+  }
+  wrap.append(head, box);
+  if (elsewhere) wrap.append(h('p', 'dim small screen-map-note', `${elsewhere} more on ${elsewhere === 1 ? 'another monitor' : 'other monitors'}: pick a monitor to bring them all here`));
+  return wrap;
+}
+
+/** Every overlay to `target`, each at the same place relative to its monitor's corner, kept
+ *  inside the new monitor (a smaller one pulls overlays in from its edges). */
+function moveToMonitor(target: ScreenMonitor, mons: ScreenMonitor[], fallback: ScreenMonitor) {
+  const cfg = state.config!;
+  for (const o of cfg.overlays) {
+    const from = monitorOf(o, mons) ?? fallback;
+    const rx = Math.max(0, Math.min(o.x - from.x, target.width - o.width));
+    const ry = Math.max(0, Math.min(o.y - from.y, target.height - o.height));
+    o.x = Math.round(target.x + rx);
+    o.y = Math.round(target.y + ry);
+  }
+  save(true);
+}
+
+/** Lights an overlay in both the list and the screen map (hover), or puts it out. */
+function hot(id: string, on: boolean) {
+  for (const el of document.querySelectorAll(`.ov-item[data-id="${CSS.escape(id)}"], .screen-map-box button[data-id="${CSS.escape(id)}"]`)) el.classList.toggle('hot', on);
+}
+
+/** One digit as a column of 0-9, shown at `ch` (it rolls when moved to another digit). */
+function digitColumn(ch: string): HTMLElement {
+  const box = h('span', 'roll-d');
+  const col = h('span', 'roll-col');
+  col.append(...'0123456789'.split('').map((d) => h('span', '', d)));
+  col.style.transform = `translateY(${-Number(ch) * 1.1}em)`;
+  box.append(col);
+  return box;
+}
+
+/** A reading that rolls to its new value digit by digit, like a timing board. When the shape
+ *  changes (99 to 100, say) it is drawn again instead. */
+function roll(el: HTMLElement, value: string) {
+  const prev = el.dataset.v;
+  if (prev === value) return;
+  el.dataset.v = value;
+  el.setAttribute('aria-label', value);
+  const shape = (t: string) => t.replace(/\d/g, '0');
+  if (prev === undefined || shape(prev) !== shape(value) || el.children.length !== value.length) {
+    el.replaceChildren(...[...value].map((ch) => (/\d/.test(ch) ? digitColumn(ch) : h('span', 'roll-ch', ch))));
+    for (const c of el.children) c.setAttribute('aria-hidden', 'true');
+    return;
+  }
+  [...value].forEach((ch, i) => {
+    if (/\d/.test(ch)) (el.children[i].firstElementChild as HTMLElement).style.transform = `translateY(${-Number(ch) * 1.1}em)`;
+  });
+}

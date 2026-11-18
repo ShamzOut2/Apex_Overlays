@@ -27,6 +27,9 @@ const PREFIX: &str = "ov-";
 type Geometry = (Option<(i32, i32)>, Option<(u32, u32)>);
 
 struct Core {
+    /// The settings window was opened while driving on track: it stays open until you next
+    /// drive out of the pits (rather than going to the tray as you leave the pits).
+    opened_on_track: AtomicBool,
     hub: Arc<Hub>,
     config: ConfigStore,
     url: String,
@@ -71,8 +74,21 @@ fn id_for(cfg: &Config, label: &str) -> Option<String> {
     cfg.overlays.iter().find(|o| label_for(&o.id) == label).map(|o| o.id.clone())
 }
 
+/// Closes the settings window and leaves Apex Overlays in the tray. Its window is closed, not
+/// hidden: a hidden one keeps its web page running (about a fifth of a CPU core and some
+/// 200 MB measured with it open, a quarter of that hidden), a closed one costs nothing. The
+/// overlays keep running; the tray icon opens the settings again.
+fn settings_to_tray(app: &AppHandle, why: &str) {
+    if let Some(w) = app.get_webview_window(SETTINGS) {
+        log::info!("settings window closed to the tray ({why})");
+        let _ = w.destroy();
+    }
+}
+
 fn show_settings(app: &AppHandle) {
     let core = app.state::<Core>();
+    // Opened while driving: it stays open as you drive (see LeftPits).
+    core.opened_on_track.store(core.hub.on_track.load(Ordering::Relaxed), Ordering::Relaxed);
     if let Some(w) = app.get_webview_window(SETTINGS) {
         let _ = w.show();
         let _ = w.unminimize();
@@ -327,6 +343,19 @@ fn handle_host_event(app: &AppHandle, ev: HostEvent) {
                 }
             }
         }
+        HostEvent::LeftPits => {
+            let core = app.state::<Core>();
+            if app.get_webview_window(SETTINGS).is_none() || !core.config.read(|c| c.tray_on_pit_exit) {
+                return;
+            }
+            if core.opened_on_track.swap(false, Ordering::Relaxed) {
+                // Opened from the tray while driving: left open; the next time you leave the
+                // pits it goes to the tray.
+                log::info!("left the pits: settings window kept open (it was opened on track)");
+            } else {
+                settings_to_tray(app, "you left the pits");
+            }
+        }
         HostEvent::CheckUpdate => {
             let app = app.clone();
             tauri::async_runtime::spawn(async move { check_update(app, false).await });
@@ -344,8 +373,8 @@ fn handle_host_event(app: &AppHandle, ev: HostEvent) {
             }
             if everything {
                 quit_all(app);
-            } else if let Some(w) = app.get_webview_window(SETTINGS) {
-                let _ = w.hide();
+            } else {
+                settings_to_tray(app, "chosen when closing");
             }
         }
         HostEvent::InstallUpdate => {
@@ -353,6 +382,35 @@ fn handle_host_event(app: &AppHandle, ev: HostEvent) {
             tauri::async_runtime::spawn(async move { install_update(app).await });
         }
     }
+}
+
+/// The monitors, for picking the one the overlays go on: each one's place and size on the
+/// desktop in the logical pixels overlay positions use, its resolution and scaling, and which
+/// is the main one. Published as the `monitors` topic (sent only when it changes).
+fn publish_monitors(app: &AppHandle) {
+    let Ok(list) = app.available_monitors() else { return };
+    let primary = app.primary_monitor().ok().flatten().map(|m| (*m.position(), *m.size()));
+    let monitors: Vec<serde_json::Value> = list
+        .iter()
+        .enumerate()
+        .map(|(i, m)| {
+            let (pos, size, scale) = (m.position(), m.size(), m.scale_factor().max(0.1));
+            // Windows names monitors like \\.\DISPLAY1: the plain part reads better.
+            let name = m.name().map(|n| n.trim_start_matches(r"\\.\").to_string()).unwrap_or_default();
+            serde_json::json!({
+                "index": i + 1,
+                "name": name,
+                "x": (pos.x as f64 / scale).round(),
+                "y": (pos.y as f64 / scale).round(),
+                "width": (size.width as f64 / scale).round(),
+                "height": (size.height as f64 / scale).round(),
+                "resolution": [size.width, size.height],
+                "scale": (scale * 100.0).round() / 100.0,
+                "primary": primary.is_some_and(|(p, s)| p == *pos && s == *size),
+            })
+        })
+        .collect();
+    app.state::<Core>().hub.publish("monitors", &serde_json::Value::Array(monitors).to_string());
 }
 
 fn publish_update(app: &AppHandle, v: serde_json::Value) {
@@ -604,6 +662,7 @@ fn main() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(Core {
+            opened_on_track: AtomicBool::new(false),
             hub: core.hub.clone(),
             config: core.config.clone(),
             url: core.url(),
@@ -645,6 +704,9 @@ fn main() {
                 let mut host = hub.host_events();
                 let mut cfg = config.subscribe();
                 let mut tick = tokio_interval();
+                // The monitors now, then every few seconds (one plugged in or rearranged).
+                publish_monitors(&h);
+                let mut ticks = 0u32;
                 // Hotkeys are re-registered only when their bindings change.
                 let binding_key = |c: &Config| format!("{:?}", hotkey_bindings(c));
                 let mut bound = config.read(binding_key);
@@ -664,7 +726,13 @@ fn main() {
                                 register_hotkeys(&h);
                             }
                         }
-                        _ = tick.tick() => flush_geometry(&h),
+                        _ = tick.tick() => {
+                            flush_geometry(&h);
+                            ticks += 1;
+                            if ticks.is_multiple_of(12) {
+                                publish_monitors(&h);
+                            }
+                        }
                     }
                 }
             });
@@ -675,13 +743,14 @@ fn main() {
             let label = window.label().to_string();
             match event {
                 WindowEvent::CloseRequested { api, .. } if label == SETTINGS => {
-                    // Ask whether the overlays should close too (unless the answer was remembered).
+                    // Ask whether the overlays should close too (unless the answer was
+                    // remembered). In a session it always asks, suggesting the tray, unless
+                    // the tray is the remembered answer.
                     api.prevent_close();
+                    let in_session = app.state::<Core>().hub.connected.load(Ordering::Relaxed);
                     match app.state::<Core>().config.read(|c| c.close_action.clone()).as_str() {
-                        "quit" => quit_all(app),
-                        "keep" => {
-                            let _ = window.hide();
-                        }
+                        "keep" => settings_to_tray(app, "closed"),
+                        "quit" if !in_session => quit_all(app),
                         _ => show_close_prompt(app),
                     }
                 }
