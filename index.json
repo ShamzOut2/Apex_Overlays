@@ -1,6 +1,89 @@
 {
  "layouts": [
   {
+   "id": "42",
+   "name": "Fins HUD",
+   "description": "My Layout",
+   "creator": "Fin",
+   "author": "finleygunn13-del",
+   "sessions": [],
+   "boxes": [
+    [
+     5,
+     752,
+     181,
+     193,
+     "relative"
+    ],
+    [
+     0,
+     0,
+     261,
+     222,
+     "standings"
+    ],
+    [
+     624,
+     0,
+     484,
+     446,
+     "trackmap"
+    ],
+    [
+     186,
+     833,
+     117,
+     160,
+     "fuel"
+    ],
+    [
+     5,
+     703,
+     180,
+     49,
+     "session"
+    ],
+    [
+     294,
+     79,
+     90,
+     139,
+     "pit"
+    ],
+    [
+     538,
+     9,
+     139,
+     160,
+     "safety"
+    ]
+   ],
+   "game": "iracing",
+   "version": "1.3.3",
+   "screen": {
+    "w": 2560,
+    "h": 1440
+   },
+   "resolution": {
+    "w": 2560,
+    "h": 1440
+   },
+   "preview": null,
+   "kinds": [
+    "relative",
+    "standings",
+    "trackmap",
+    "fuel",
+    "session",
+    "pit",
+    "safety"
+   ],
+   "count": 7,
+   "issue": "https://github.com/ShamzOut2/Apex_Overlays/issues/42",
+   "published": "2026-11-18T16:13:55.506Z",
+   "updated": "2026-11-18T16:13:55.506Z"
+  },
+  {
    "id": "36",
    "name": "fin :)",
    "description": "",

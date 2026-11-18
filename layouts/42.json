@@ -1,0 +1,455 @@
+{
+ "apexOverlays": "market",
+ "id": "42",
+ "name": "Fins HUD",
+ "description": "My Layout",
+ "author": "finleygunn13-del",
+ "version": "1.3.3",
+ "game": "iracing",
+ "screen": {
+  "w": 2560,
+  "h": 1440
+ },
+ "resolution": {
+  "w": 2560,
+  "h": 1440
+ },
+ "sessions": [],
+ "creator": "Fin",
+ "overlays": [
+  {
+   "kind": "relative",
+   "name": "",
+   "enabled": true,
+   "x": 13,
+   "y": 1083,
+   "width": 463,
+   "height": 278,
+   "settings": {
+    "autoHeight": false,
+    "bgOpacity": 80,
+    "columns": [
+     {
+      "id": "pos",
+      "on": true
+     },
+     {
+      "id": "overall",
+      "on": false
+     },
+     {
+      "id": "number",
+      "on": true
+     },
+     {
+      "id": "name",
+      "on": true
+     },
+     {
+      "id": "license",
+      "on": true
+     },
+     {
+      "id": "team",
+      "on": false
+     },
+     {
+      "id": "teamLogo",
+      "on": false
+     },
+     {
+      "id": "class2",
+      "on": false
+     },
+     {
+      "id": "make",
+      "on": false
+     },
+     {
+      "id": "class",
+      "on": false
+     },
+     {
+      "id": "car",
+      "on": false
+     },
+     {
+      "id": "irating",
+      "on": true
+     },
+     {
+      "id": "lastLap",
+      "on": false
+     },
+     {
+      "id": "srDelta",
+      "on": false
+     },
+     {
+      "id": "incidents",
+      "on": false
+     },
+     {
+      "id": "lap",
+      "on": false
+     },
+     {
+      "id": "stint",
+      "on": false
+     },
+     {
+      "id": "gap",
+      "on": true
+     },
+     {
+      "id": "bestLap",
+      "on": false
+     },
+     {
+      "id": "tire",
+      "on": false
+     },
+     {
+      "id": "points",
+      "on": false
+     },
+     {
+      "id": "fuelLeft",
+      "on": false
+     },
+     {
+      "id": "fuelAdded",
+      "on": false
+     },
+     {
+      "id": "fuelTotal",
+      "on": false
+     },
+     {
+      "id": "seasonPoints",
+      "on": false
+     },
+     {
+      "id": "flag",
+      "on": true
+     }
+    ],
+    "driverFlags": false,
+    "opacity": 100,
+    "penaltyBox": false,
+    "pitTag": true,
+    "scale": 100,
+    "textSize": 0
+   }
+  },
+  {
+   "kind": "standings",
+   "name": "",
+   "enabled": true,
+   "x": -3,
+   "y": 0,
+   "width": 669,
+   "height": 320,
+   "settings": {
+    "bgOpacity": 80,
+    "columns": [
+     {
+      "id": "pos",
+      "on": true
+     },
+     {
+      "id": "overall",
+      "on": false
+     },
+     {
+      "id": "number",
+      "on": true
+     },
+     {
+      "id": "name",
+      "on": true
+     },
+     {
+      "id": "team",
+      "on": false
+     },
+     {
+      "id": "teamLogo",
+      "on": false
+     },
+     {
+      "id": "class2",
+      "on": false
+     },
+     {
+      "id": "class",
+      "on": false
+     },
+     {
+      "id": "car",
+      "on": false
+     },
+     {
+      "id": "license",
+      "on": true
+     },
+     {
+      "id": "irating",
+      "on": true
+     },
+     {
+      "id": "srDelta",
+      "on": false
+     },
+     {
+      "id": "make",
+      "on": true
+     },
+     {
+      "id": "interval",
+      "on": true
+     },
+     {
+      "id": "bestLap",
+      "on": true
+     },
+     {
+      "id": "lastLap",
+      "on": true
+     },
+     {
+      "id": "flag",
+      "on": true
+     },
+     {
+      "id": "stint",
+      "on": false
+     },
+     {
+      "id": "tire",
+      "on": true
+     },
+     {
+      "id": "pitTime",
+      "on": true
+     },
+     {
+      "id": "gained",
+      "on": true
+     },
+     {
+      "id": "pits",
+      "on": false
+     },
+     {
+      "id": "incidents",
+      "on": false
+     },
+     {
+      "id": "gap",
+      "on": false
+     },
+     {
+      "id": "laps",
+      "on": false
+     },
+     {
+      "id": "lap",
+      "on": false
+     },
+     {
+      "id": "points",
+      "on": false
+     },
+     {
+      "id": "fuelLeft",
+      "on": false
+     },
+     {
+      "id": "fuelAdded",
+      "on": false
+     },
+     {
+      "id": "fuelTotal",
+      "on": false
+     },
+     {
+      "id": "seasonPoints",
+      "on": false
+     }
+    ],
+    "driverFlags": false,
+    "hideInPits": true,
+    "penaltyBox": false,
+    "scale": 100,
+    "markersAt": "end",
+    "markersSide": "right"
+   }
+  },
+  {
+   "kind": "trackmap",
+   "name": "",
+   "enabled": true,
+   "x": 1597,
+   "y": 0,
+   "width": 1239,
+   "height": 642,
+   "settings": {
+    "bgOpacity": 80,
+    "fallback": "round",
+    "playerScale": 1.5,
+    "playerThemeColor": true,
+    "scale": 150,
+    "showPanel": false,
+    "style": "full"
+   }
+  },
+  {
+   "kind": "fuel",
+   "name": "",
+   "enabled": true,
+   "x": 477,
+   "y": 1199,
+   "width": 300,
+   "height": 230,
+   "settings": {
+    "bgOpacity": 80,
+    "showGauge": false,
+    "showHeader": true,
+    "showHistory": false,
+    "show_atFinish": true,
+    "show_fuelToAdd": true,
+    "show_fuelToFinish": true,
+    "show_lapsPerTank": false,
+    "show_level": true,
+    "show_perLapAvg": true,
+    "show_perLapLast": true,
+    "show_race": true,
+    "show_savePerLap": true,
+    "show_stops": false,
+    "show_targetPerLap": false,
+    "show_usePerHour": false,
+    "show_window": true
+   }
+  },
+  {
+   "kind": "session",
+   "name": "",
+   "enabled": true,
+   "x": 13,
+   "y": 1012,
+   "width": 460,
+   "height": 71,
+   "settings": {
+    "bgOpacity": 80,
+    "fields": [
+     {
+      "id": "sessionType",
+      "on": false
+     },
+     {
+      "id": "session",
+      "on": true
+     },
+     {
+      "id": "track",
+      "on": false
+     },
+     {
+      "id": "time",
+      "on": true
+     },
+     {
+      "id": "lap",
+      "on": false
+     },
+     {
+      "id": "clock",
+      "on": true
+     },
+     {
+      "id": "trackTemp",
+      "on": true
+     },
+     {
+      "id": "airTemp",
+      "on": true
+     },
+     {
+      "id": "wetness",
+      "on": true
+     },
+     {
+      "id": "trackState",
+      "on": false
+     },
+     {
+      "id": "rain",
+      "on": true
+     },
+     {
+      "id": "declared",
+      "on": false
+     },
+     {
+      "id": "skies",
+      "on": false
+     },
+     {
+      "id": "wind",
+      "on": true
+     },
+     {
+      "id": "humidity",
+      "on": false
+     },
+     {
+      "id": "sof",
+      "on": false
+     },
+     {
+      "id": "cars",
+      "on": false
+     },
+     {
+      "id": "incidents",
+      "on": true
+     },
+     {
+      "id": "flags",
+      "on": false
+     },
+     {
+      "id": "league",
+      "on": false
+     }
+    ],
+    "scale": 95
+   }
+  },
+  {
+   "kind": "pit",
+   "name": "",
+   "enabled": true,
+   "x": 752,
+   "y": 114,
+   "width": 230,
+   "height": 200,
+   "settings": {
+    "bgOpacity": 80
+   }
+  },
+  {
+   "kind": "safety",
+   "name": "",
+   "enabled": true,
+   "x": 1378,
+   "y": 13,
+   "width": 357,
+   "height": 230,
+   "settings": {
+    "bgOpacity": 80
+   }
+  }
+ ]
+}
