@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.3.8
 
 ### Performance
 - Relative, modern look: the gap bar moves in 5% steps and is drawn without re-laying out the row, so the modern look costs the same as the classic one (measured with both overlays running: 13.5% vs 13.9% of a CPU core in the test browser; before this, the bar alone doubled the time spent restyling)
