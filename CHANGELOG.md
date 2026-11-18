@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.3.4
 
 ### Improvements
 - Licence (General page): your key is hidden once it's added, so it isn't on screen while you stream. Press Show to see it
