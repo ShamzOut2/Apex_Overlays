@@ -13,6 +13,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - Theme: session badge colour (RACE, QUALIFYING, PRACTICE in headers): the accent colour for every session (default), or a colour per session type as before
 
 ### Fixes
+- Track map: the built-in iRacing map no longer disappears after leaving a session, iRacing disconnecting or joining a new session (a test session, say) at the same track, which asked for a clean lap instead. It is kept for the track and sent again whenever you join it
 - Standings: flags and penalties set to show outside the table no longer disappear when the "next to drivers" switches were off
 - The PRACTICE and QUALIFYING badges in headers no longer take the Gaining / good and Fastest lap colours unless you choose that (they follow the accent colour)
 - Headers no longer show "Lap -1" when the leading car is in the garage

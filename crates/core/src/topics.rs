@@ -1416,6 +1416,32 @@ mod tests {
     use crate::engine::tests::{engine, place};
 
     #[test]
+    fn official_map_survives_a_disconnect_and_a_new_session() {
+        // The built-in map for track 1 arrives once (the downloader sends it once per track).
+        let mut e = engine(2, false);
+        let outline = crate::engine::trackmap::TrackMap {
+            track_id: 1,
+            name: "Test".into(),
+            points: vec![[0.5, 0.5]; crate::engine::trackmap::BINS],
+            source: "iracing".into(),
+            version: crate::engine::trackmap::MAP_VERSION,
+            pit: vec![],
+        };
+        e.map.set_official(outline);
+        assert_eq!(trackmap(&e).source, Some("iracing"));
+        // iRacing disconnects (leaving the session), then a test session at the same track.
+        e.reset();
+        assert!(trackmap(&e).points.is_none());
+        e.set_session(model::SessionInfo::parse(&crate::engine::tests::session_yaml(2, false)));
+        e.connected = true;
+        assert_eq!(trackmap(&e).source, Some("iracing"), "the map must still be there");
+        // Another track: not drawn there.
+        let other = crate::engine::tests::session_yaml(2, false).replace("TrackID: 1\n", "TrackID: 2\n");
+        e.set_session(model::SessionInfo::parse(&other));
+        assert!(trackmap(&e).points.is_none());
+    }
+
+    #[test]
     fn estimated_laps_in_timed_sessions() {
         // A 40-minute race, 10 minutes (600 s) left, laps of 100 s (the class estimate).
         let yaml = crate::engine::tests::session_yaml(2, true).replace("   SessionLaps: 20\n", "   SessionLaps: unlimited\n   SessionTime: 2400.0000 sec\n");

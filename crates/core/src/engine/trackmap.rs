@@ -108,9 +108,9 @@ impl Recorder {
             let lib = self.dir.as_ref()?.join("library").join(format!("{track_id}.json"));
             read(lib).filter(|m| m.track_id == track_id).map(|m| TrackMap { source: "library".into(), ..m }.upgraded())
         });
-        if self.official.as_ref().is_some_and(|m| m.track_id != track_id) {
-            self.official = None;
-        }
+        // The official outline is kept (it is only drawn for its own track): leaving a session,
+        // the game disconnecting or a new session at the same track must not lose it, as the
+        // map downloader sends it once per track.
         self.revision += 1;
     }
 
