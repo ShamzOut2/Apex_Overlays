@@ -4,6 +4,11 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### Fixes
+- Le Mans Ultimate "Private qualifying: hide other cars" is now also in the settings of the overlays it affects (Relative → Layout, Track map → Cars, Radar → View, Spotter → Behaviour, Battle box → Cars), not only under General → Display. It is the same switch everywhere: changing it in one place changes it for all
+
 ## 1.3.8
 
 ### Performance

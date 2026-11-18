@@ -1,3 +1,4 @@
+import { privateQualifyingSetting } from './common';
 import { fitCanvas, h, show, text } from '../lib/dom';
 import type { OverlayDef } from '../lib/overlay';
 import { trackValue } from '../lib/settings';
@@ -14,6 +15,7 @@ export const trackmap: OverlayDef = {
   topics: ['cars', 'trackmap'],
   size: [340, 340],
   settings: [
+    privateQualifyingSetting('Cars'),
     { key: 'style', label: 'Style', type: 'select', default: 'full', options: [['full', 'Full circuit'], ['flat', 'Flat (straight line)'], ['round', 'Round']], group: 'Style' },
     { key: 'fallback', when: (v) => v.style === 'full', label: 'Until the outline is recorded', type: 'select', default: 'round', options: [['round', 'Use round map'], ['flat', 'Use flat map']], group: 'Style' },
     { key: 'flatLanes', when: (v) => v.style === 'flat' || (v.style === 'full' && v.fallback === 'flat'), label: 'Flat map: one lane per class', type: 'bool', default: true, group: 'Style' },

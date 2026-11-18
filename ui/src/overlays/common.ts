@@ -616,3 +616,20 @@ export function applyLook(root: HTMLElement, s: Values) {
   root.style.setProperty('--close', (s.closeColor as string) || '#3dd6f5');
   root.style.setProperty('--gapbar', (s.gapBarColor as string) || '#ffffff');
 }
+
+/**
+ * Le Mans Ultimate private qualifying (each driver alone on track): leave the other cars off.
+ * App-wide (General → Display), shown in each overlay it affects so it is found there too.
+ */
+export function privateQualifyingSetting(group: string): SettingDef {
+  return {
+    key: 'lmuPrivateQualifying',
+    shared: 'lmuPrivateQualifying',
+    label: 'Private qualifying: hide other cars',
+    type: 'bool',
+    default: true,
+    lmu: true,
+    group,
+    help: 'In LMU’s online qualifying each driver is alone on track, so the other cars are left off the relative, track map, radar, spotter and battle box. One switch for all of them (also under General → Display); turn it off for open qualifying',
+  };
+}
