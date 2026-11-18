@@ -179,13 +179,34 @@ export const standings: OverlayDef = {
       return [...rows.slice(0, top), ...rows.slice(start, start + rest)];
     };
 
+    let myClass = '';
+    let emptySince = 0;
+    const report = (m: string) => ctx.log?.(m);
     return {
       update(topic, data) {
         if (topic === 'session') return header.update(data as Session);
         if (topic !== 'standings') return;
         const d = data as Standings;
+        // Your class, remembered for the moments the data has none (a reset, the camera on
+        // another car, between sessions), so "My class only" does not empty.
+        if (d.focusClass) myClass = d.focusClass;
+        const focusClass = d.focusClass || myClass;
         let classes: StandClass[] = d.classes;
-        if (s.mode === 'myClass') classes = classes.filter((c) => c.id === d.focusClass);
+        if (s.mode === 'myClass') classes = classes.filter((c) => c.id === focusClass);
+        // Nothing to show for a moment (no cars listed between sessions or while the game
+        // reloads): keep the table as it is rather than shrink the window to nothing, which
+        // looks as if the overlay was switched off. The game closing hides it as before.
+        if (!classes.some((c) => c.rows.length) && sections.length) {
+          if (!emptySince) {
+            emptySince = Date.now();
+            report('standings: no cars to show; keeping the last table (' + (d.classes.length ? `none in class ${focusClass || '?'}` : 'none listed') + ')');
+          }
+          return;
+        }
+        if (emptySince) {
+          report(`standings: cars to show again after ${((Date.now() - emptySince) / 1000).toFixed(1)}s`);
+          emptySince = 0;
+        }
         if (s.mode === 'overall') {
           const all = classes.flatMap((c) => c.rows).sort((a, b) => a.position - b.position);
           classes = [{ id: 'overall', name: 'Overall', color: 'transparent', count: all.length, sof: 0, bestLap: null, rows: all }];
@@ -209,7 +230,7 @@ export const standings: OverlayDef = {
           sec.logo.alt = c.name;
           sec.head.style.setProperty('--class', c.color);
           text(sec.meta, [c.sof ? `SOF ${f.sof(c.sof)}` : '', `${c.count} cars`, c.bestLap ? f.lapTime(c.bestLap) : ''].filter(Boolean).join('  ·  '));
-          const mine = c.id === d.focusClass || s.mode !== 'multiclass';
+          const mine = c.id === focusClass || s.mode !== 'multiclass';
           const rows = pick(c.rows, mine ? (s.maxRows as number) : (s.otherClassRows as number));
           show(sec.el, rows.length > 0);
           sec.table.render(

@@ -4,6 +4,15 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### Improvements
+- The log file (General → Open logs) now says what the overlays are doing, so a report can be looked into from the log alone: at start-up which overlays are on and any setting that hides one (hidden in pits, only in the car, races only…) or hotkey for one; each overlay being hidden and why (on pit road, not in the car, no game connected, all overlays hidden…) and shown again; overlays switched on or off, added or removed, and layouts applied; hotkeys pressed; edit mode; overlay windows opened and closed; an overlay's window fitted to almost nothing; an overlay losing its connection to the app; and every 10 minutes a line saying the app is still running and what it is reading
+
+### Fixes
+- Standings: no longer shrink to almost nothing (looking as if switched off) for the moments there are no cars to show, such as between sessions or while the game reloads; the last table stays until there are cars again
+- Standings, My class only: keeps showing your class while you are in the garage or the menus, or after a reset (it emptied when your car was not on track)
+
 ## 1.3.4
 
 ### Improvements

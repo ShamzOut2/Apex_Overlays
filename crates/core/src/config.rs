@@ -753,6 +753,96 @@ impl Config {
     }
 }
 
+/// One overlay for the log: its kind, and its id when that says more (a second one, say).
+fn overlay_name(o: &OverlayInstance) -> String {
+    if o.id == o.kind {
+        o.kind.clone()
+    } else {
+        format!("{} ({})", o.kind, o.id)
+    }
+}
+
+/// What changed in the overlays, for the log: switched on or off, added, removed, the layout
+/// or game set in use. Moves, sizes and settings are left out (they change all the time).
+fn log_overlay_changes(old: &[OverlayInstance], new: &[OverlayInstance], old_layout: &str, layout: &str, old_game: &str, game: &str) {
+    if old_game != game {
+        log::info!("overlays: now using the {game} set of overlays");
+    }
+    if old_layout != layout {
+        log::info!("overlays: layout {} in use", if layout.is_empty() { "(none)" } else { layout });
+    }
+    let mut lines = vec![];
+    for o in new {
+        match old.iter().find(|x| x.id == o.id) {
+            Some(x) if x.enabled != o.enabled => lines.push(format!("{} switched {}", overlay_name(o), if o.enabled { "on" } else { "off" })),
+            None => lines.push(format!("{} added ({})", overlay_name(o), if o.enabled { "on" } else { "off" })),
+            _ => {}
+        }
+    }
+    for o in old.iter().filter(|o| !new.iter().any(|n| n.id == o.id)) {
+        lines.push(format!("{} removed", overlay_name(o)));
+    }
+    // A whole layout arriving at once is one line, not one per overlay.
+    if lines.len() > 6 {
+        log::info!("overlays: {} changes ({}, ...)", lines.len(), lines[..4].join(", "));
+    } else if !lines.is_empty() {
+        log::info!("overlays: {}", lines.join(", "));
+    }
+}
+
+impl Config {
+    /// The overlays and how they are set up, for the log at start-up (and in reports): what is
+    /// on, and the settings that hide one or change its size by itself.
+    pub fn overlay_summary(&self) -> String {
+        let on: Vec<String> = self
+            .overlays
+            .iter()
+            .filter(|o| o.enabled)
+            .map(|o| {
+                let s = &o.settings;
+                let flag = |k: &str| s.get(k).and_then(|v| v.as_bool());
+                let mut notes = vec![];
+                if flag("hideWhenNotDriving") == Some(true) {
+                    notes.push("only in the car".to_string());
+                }
+                if flag("hideInPits") == Some(true) {
+                    notes.push("hidden in pits".to_string());
+                }
+                if flag("raceOnly") == Some(true) {
+                    notes.push("races only".to_string());
+                }
+                if flag("hideWhenDisconnected") == Some(false) {
+                    notes.push("shown without a game".to_string());
+                }
+                if let Some(m) = s.get("mode").and_then(|v| v.as_str()) {
+                    notes.push(format!("mode {m}"));
+                }
+                if flag("showHeader") == Some(false) {
+                    notes.push("no header".to_string());
+                }
+                if notes.is_empty() {
+                    overlay_name(o)
+                } else {
+                    format!("{} [{}]", overlay_name(o), notes.join(", "))
+                }
+            })
+            .collect();
+        let hk = self.hotkeys.overlays.iter().filter(|(_, k)| !k.trim().is_empty()).map(|(id, k)| format!("{id}={k}")).collect::<Vec<_>>();
+        format!(
+            "{} of {} on: {}{}{}",
+            on.len(),
+            self.overlays.len(),
+            on.join(", "),
+            if self.layouts.is_empty() {
+                String::new()
+            } else {
+                format!("; {} saved layouts, in use: {}", self.layouts.len(), if self.active_layout.is_empty() { "none" } else { &self.active_layout })
+            },
+            if hk.is_empty() { String::new() } else { format!("; overlay hotkeys: {}", hk.join(", ")) },
+        )
+    }
+}
+
 impl ConfigStore {
     pub fn load(dir: &Path) -> Self {
         let path = dir.join("config.json");
@@ -787,7 +877,12 @@ impl ConfigStore {
     }
 
     pub fn update(&self, f: impl FnOnce(&mut Config)) {
-        f(&mut self.inner.write().unwrap());
+        {
+            let mut c = self.inner.write().unwrap();
+            let before = (c.overlays.clone(), c.active_layout.clone(), c.layout_game.clone());
+            f(&mut c);
+            log_overlay_changes(&before.0, &c.overlays, &before.1, &c.active_layout, &before.2, &c.layout_game);
+        }
         self.save();
         self.tx.send_modify(|v| *v += 1);
     }
@@ -836,6 +931,18 @@ mod tests {
         c.migrate();
         assert_eq!(c.vr.mode, "openxr");
     }
+    #[test]
+    fn overlay_summary_names_what_hides_an_overlay() {
+        let mut c = Config { overlays: catalogue(), ..Default::default() };
+        let st = c.overlays.iter_mut().find(|o| o.kind == "standings").unwrap();
+        st.settings = serde_json::json!({ "hideInPits": true, "mode": "myClass" });
+        c.hotkeys.overlays.insert("standings".into(), "F5".into());
+        let s = c.overlay_summary();
+        assert!(s.contains("standings [hidden in pits, mode myClass]"), "{s}");
+        assert!(s.contains("overlay hotkeys: standings=F5"), "{s}");
+        assert!(s.starts_with(&format!("{} of {} on", c.overlays.iter().filter(|o| o.enabled).count(), c.overlays.len())), "{s}");
+    }
+
     #[test]
     fn update_postpone() {
         let later = UpdatePostpone { version: "0.6.0".into(), until: Some(1_000) };

@@ -198,13 +198,17 @@ impl Hub {
     }
 
     pub fn set_edit_mode(&self, v: bool) {
-        self.edit_mode.store(v, Ordering::Relaxed);
+        if self.edit_mode.swap(v, Ordering::Relaxed) != v {
+            log::info!("overlays: edit mode {}", if v { "on" } else { "off" });
+        }
         self.host(HostEvent::EditMode { value: v });
         self.publish_status();
     }
 
     pub fn set_visible(&self, v: bool) {
-        self.visible.store(v, Ordering::Relaxed);
+        if self.visible.swap(v, Ordering::Relaxed) != v {
+            log::info!("overlays: all {}", if v { "shown" } else { "hidden (show / hide overlays)" });
+        }
         self.host(HostEvent::Visible { value: v });
         self.publish_status();
     }

@@ -150,6 +150,9 @@ fn run(
     data_dir: PathBuf,
     mock: bool,
 ) {
+    log::info!("overlays: {}", config.read(|c| c.overlay_summary()));
+    // Now and then, a line saying what the app is doing, so a log shows it was running.
+    let mut heartbeat = std::time::Instant::now();
     let mut e = Engine::new(config.get(), Some(data_dir));
     e.source = source.active();
     if mock {
@@ -189,6 +192,17 @@ fn run(
                     }
                 }
             }
+        }
+        if heartbeat.elapsed() >= std::time::Duration::from_secs(600) {
+            heartbeat = std::time::Instant::now();
+            let session = e.session_def().map(|s| s.kind.clone()).unwrap_or_default();
+            log::info!(
+                "still running: {} {}, overlays {}, {} shown on screen",
+                if e.connected { e.source } else { "no game" },
+                if e.connected { format!("({session} at {})", e.info.track_display_name) } else { String::new() },
+                if hub.visible.load(Ordering::Relaxed) { "shown" } else { "hidden (show / hide)" },
+                config.read(|c| c.overlays.iter().filter(|o| o.enabled).count()),
+            );
         }
         let polled = source.poll(&mut e.tel);
         // A different game (switched by hand, or found running): start from a clean slate.

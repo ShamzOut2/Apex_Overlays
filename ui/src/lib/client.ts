@@ -74,9 +74,10 @@ export class Client {
     this.ws = ws;
     ws.onopen = () => {
       this.connected = true;
+      // Lines written while the connection was down go first, so the log keeps their order.
+      for (const m of this.outbox.splice(0)) ws.send(m);
       this.onConnection?.(true);
       if (this.topics.size) this.send({ op: 'sub', topics: [...this.topics] });
-      for (const m of this.outbox.splice(0)) ws.send(m);
     };
     ws.onmessage = (ev) => {
       // Messages are `{"t":"<topic>","d":<data>}`. Only the newest of each topic is used per
@@ -200,7 +201,7 @@ export class Client {
   }
 
   /** Writes an error or warning to the app's log file (apex.log). */
-  report(level: 'error' | 'warn', source: string, message: string) {
+  report(level: 'error' | 'warn' | 'info', source: string, message: string) {
     const m = JSON.stringify({ op: 'log', level, source, message });
     if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(m);
     else if (this.outbox.length < 20) this.outbox.push(m);

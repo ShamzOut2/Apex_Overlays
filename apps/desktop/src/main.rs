@@ -181,7 +181,10 @@ fn reconcile(app: &AppHandle) {
                     .inner_size(g.width.max(40) as f64, g.height.max(20) as f64)
                     .build()
                 {
-                    Ok(w) => w,
+                    Ok(w) => {
+                        log::info!("overlay window opened: {} ({}x{} at {},{})", o.id, g.width, g.height, g.x, g.y);
+                        w
+                    }
                     Err(e) => {
                         log::error!("could not open overlay {}: {e}", o.id);
                         continue;
@@ -199,6 +202,7 @@ fn reconcile(app: &AppHandle) {
     }
     for (label, w) in app.webview_windows() {
         if label.starts_with(PREFIX) && !wanted.contains(&label) {
+            log::info!("overlay window closed: {}", label.trim_start_matches(PREFIX));
             let _ = w.close();
         }
     }
@@ -523,6 +527,18 @@ fn register_hotkeys(app: &AppHandle) {
             if ev.state != ShortcutState::Pressed {
                 return;
             }
+            // A hotkey also used in the game would switch things on and off while driving.
+            log::info!(
+                "hotkey pressed: {}",
+                match &action {
+                    HotkeyAction::ToggleEdit => "edit mode".to_string(),
+                    HotkeyAction::ToggleVisible => "show / hide overlays".to_string(),
+                    HotkeyAction::NextLayout => "next layout".to_string(),
+                    HotkeyAction::Layout(id) => format!("layout {id}"),
+                    HotkeyAction::Overlay(id) => format!("show / hide overlay {id}"),
+                    HotkeyAction::VrRecenter => "VR recentre".to_string(),
+                }
+            );
             match &action {
                 HotkeyAction::ToggleEdit => hub.set_edit_mode(!hub.edit_mode.load(Ordering::Relaxed)),
                 HotkeyAction::ToggleVisible => hub.set_visible(!hub.visible.load(Ordering::Relaxed)),
