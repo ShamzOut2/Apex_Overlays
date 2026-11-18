@@ -626,6 +626,8 @@ export interface Config {
   /** Closing the settings window: ask, close everything, or keep the overlays running. */
   closeAction: 'ask' | 'quit' | 'keep';
   trayOnPitExit?: boolean;
+  /** Animations in the settings window (off: none). */
+  uiAnimations?: boolean;
 }
 
 export interface Penalty {
@@ -910,7 +912,22 @@ export interface TyreData {
   wheels: [WheelData, WheelData, WheelData, WheelData] | null;
 }
 
+/** A monitor (desktop app only): its place and size on the desktop in the logical pixels
+ *  overlay positions use, its resolution in pixels and its scaling (1.25 = 125%). */
+export interface ScreenMonitor {
+  index: number;
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  resolution: [number, number];
+  scale: number;
+  primary: boolean;
+}
+
 export interface TopicMap {
+  monitors: ScreenMonitor[];
   laptimes: LapTimes;
   energy: Energy;
   radar: Radar;

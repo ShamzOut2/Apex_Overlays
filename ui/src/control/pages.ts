@@ -3,7 +3,7 @@ import { h, text } from '../lib/dom';
 import * as f from '../lib/format';
 import { commonFor, merge, type SettingDef, SHOW_WHEN, showWhenOf, type TrackValues, trackValue } from '../lib/settings';
 import { applyUiTheme, PRESETS, THEME, themeValues } from '../lib/theme';
-import type { OverlayInstance, Player, SavedLayout } from '../lib/types';
+import type { OverlayInstance, Player, SavedLayout, ScreenMonitor } from '../lib/types';
 import { byKind, hiddenKind, OVERLAYS } from '../overlays/registry';
 import { CHOICES, field, form, relevance } from './form';
 import { hotkeyInput } from './hotkey';
@@ -397,7 +397,26 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
     return box;
   };
 
+  // The accent line under the open tab, which glides to the tab you pick.
+  const tabInd = h('span', 'tab-ind');
+  let tabIndPlaced = false;
+  const placeTabInd = () => {
+    const sel = tabBar.querySelector<HTMLElement>('.tab.sel');
+    tabInd.hidden = !sel;
+    if (!sel) return;
+    // The first time it is just put there; after that it slides.
+    if (!tabIndPlaced) tabInd.style.transition = 'none';
+    tabInd.style.left = `${sel.offsetLeft}px`;
+    tabInd.style.top = `${sel.offsetTop + sel.offsetHeight - 2}px`;
+    tabInd.style.width = `${sel.offsetWidth}px`;
+    if (!tabIndPlaced) {
+      void tabInd.offsetWidth;
+      tabInd.style.transition = '';
+      tabIndPlaced = true;
+    }
+  };
   const drawTabs = () => {
+    requestAnimationFrame(placeTabInd);
     tabBar.replaceChildren(
       ...tabs.map((t) => {
         const b = button(
@@ -456,14 +475,14 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
   drawPanel();
   // Search sits at the end of the tab row.
   const tabRow = h('div', 'tab-row');
-  tabRow.append(tabBar, search);
+  tabRow.append(tabBar, search, tabInd);
   wrap.append(head, preview, tabRow, panel);
   return wrap;
 }
 
 /** Where each kind of overlay goes by default on a 1920×1080 screen (as the app's catalogue). */
 const PLACES: Record<string, [number, number]> = {
-  relative: [40, 380], standings: [40, 40], trackmap: [1500, 40], inputs: [760, 860], inputGraph: [760, 740], fuel: [1540, 420],
+  relative: [40, 380], standings: [40, 40], trackmap: [1500, 40], inputs: [760, 860], shiftlights: [760, 790], inputGraph: [760, 740], fuel: [1540, 420],
   battle: [1200, 860], session: [510, 10], tyres: [1540, 680], flags: [860, 70], startLights: [760, 190], forecast: [1240, 520],
   laptimes: [40, 700], energy: [1540, 420], radar: [1220, 420], carsettings: [760, 770], tyredata: [1200, 600], spotter: [850, 520],
   pit: [845, 300], safety: [760, 160], delta: [760, 400], incidents: [40, 700], weather: [1240, 680], databox: [1240, 300], monitor: [1680, 40],
@@ -721,15 +740,26 @@ const overlaysPage: Page = {
       rerender();
     };
     const list = h('div', 'ov-list');
-    list.append(screenMap(cfg.overlays.filter(listed), selected, (id) => {
-      selected = id;
-      ui.query = '';
-      rerender();
-    }));
+    list.append(
+      screenMap(
+        cfg.overlays.filter(listed),
+        selected,
+        (id) => {
+          selected = id;
+          ui.query = '';
+          rerender();
+        },
+        rerender,
+      ),
+    );
     for (const o of cfg.overlays.filter(listed)) {
       const d = byKind(o.kind);
       const item = h('div', `ov-item${o.id === selected ? ' sel' : ''}${o.enabled ? '' : ' off'}`);
       item.tabIndex = 0;
+      item.dataset.id = o.id;
+      // Hovering an overlay lights it on the screen map (and the other way round).
+      item.onmouseenter = () => hot(o.id, true);
+      item.onmouseleave = () => hot(o.id, false);
       const names = h('span', 'ov-names');
       const oname = h('span', 'ov-name', o.name || d?.name || o.kind);
       oname.append(...overlayBadges(d));
@@ -1523,7 +1553,9 @@ function drawMonitor(record = false) {
   for (const s of STATS) {
     const el = monitorView.tiles.get(s.id);
     if (!el) continue;
-    el.textContent = s.value(m);
+    // The headline readings roll to their new value; the rest change in place.
+    if (monitorView.sparks.has(s.id)) roll(el, s.value(m));
+    else el.textContent = s.value(m);
     const lvl = s.level?.(m, 5) ?? '';
     el.classList.toggle('warn', lvl === 'warn');
     el.classList.toggle('bad', lvl === 'bad');
@@ -1830,6 +1862,7 @@ const generalPage: Page = {
       closeAction: cfg.closeAction ?? 'ask',
       trayOnPitExit: cfg.trayOnPitExit ?? true,
       lmuPrivateQualifying: cfg.lmuPrivateQualifying ?? true,
+      uiAnimations: cfg.uiAnimations ?? true,
     };
     const SCHEMA: SettingDef[] = [
             { key: 'units', label: 'Units', type: 'select', default: 'auto', options: [['auto', 'Same as the game'], ['metric', 'Metric'], ['imperial', 'Imperial']], group: 'Display' },
@@ -1884,6 +1917,14 @@ const generalPage: Page = {
               group: 'Display',
             },
             {
+              key: 'uiAnimations',
+              label: 'Animations in this window',
+              type: 'bool',
+              default: true,
+              help: 'The lights as the game connects, pages settling in, the “saved” board. Each plays once and stops; Windows’ “Animation effects: off” turns them off too',
+              group: 'Display',
+            },
+            {
               key: 'trayOnPitExit',
               label: 'Minimise to the tray when I leave the pits',
               type: 'bool',
@@ -1903,6 +1944,10 @@ const generalPage: Page = {
       if (k === 'updateRate') cfg.updateRate = v as 'fast' | 'balanced' | 'full';
       if (k === 'closeAction') cfg.closeAction = v as 'ask' | 'quit' | 'keep';
       if (k === 'trayOnPitExit') cfg.trayOnPitExit = v as boolean;
+      if (k === 'uiAnimations') {
+        cfg.uiAnimations = v as boolean;
+        document.body.classList.toggle('no-motion', v === false);
+      }
       if (k === 'lmuPrivateQualifying') cfg.lmuPrivateQualifying = v as boolean;
       save();
     };
@@ -1912,7 +1957,7 @@ const generalPage: Page = {
       f.classList.add('plain');
       return f;
     };
-    const display = card('Display', fields(['units', 'ratingsOfficialOnly', 'shortClassNames', 'lmuPrivateQualifying', 'closeAction']));
+    const display = card('Display', fields(['units', 'ratingsOfficialOnly', 'shortClassNames', 'lmuPrivateQualifying', 'closeAction', 'uiAnimations']));
     const server = card('Server', h('p', 'dim small', 'Restart Apex Overlays after changing these.'), fields(['port', 'lanAccess']));
     // The update rate as three cards to pick from, then the tray when leaving the pits.
     const rateDef = SCHEMA.find((x) => x.key === 'updateRate')!;
@@ -2026,25 +2071,123 @@ function editButton(editing: boolean) {
   return b;
 }
 
-/** Where each overlay sits on the screen, small; click one to open its settings. Off ones are
- *  dashed, the selected one in the accent. Static (redrawn with the page), so it costs nothing. */
-function screenMap(overlays: OverlayInstance[], selected: string, pick: (id: string) => void) {
-  const sw = Math.max(window.screen?.width || 1920, ...overlays.map((o) => o.x + o.width));
-  const sh = Math.max(window.screen?.height || 1080, ...overlays.map((o) => o.y + o.height));
+/** The monitor an overlay is on: the one holding its centre, else the nearest. */
+function monitorOf(o: { x: number; y: number; width: number; height: number }, mons: ScreenMonitor[]): ScreenMonitor | undefined {
+  const cx = o.x + o.width / 2, cy = o.y + o.height / 2;
+  const inside = mons.find((m) => cx >= m.x && cx < m.x + m.width && cy >= m.y && cy < m.y + m.height);
+  if (inside) return inside;
+  const dist = (m: ScreenMonitor) => Math.hypot(Math.max(m.x - cx, 0, cx - (m.x + m.width)), Math.max(m.y - cy, 0, cy - (m.y + m.height)));
+  return [...mons].sort((a, b) => dist(a) - dist(b))[0];
+}
+
+/** How a monitor reads in the picker: "Monitor 2 (main) · 2560 × 1440 · 125%". */
+const monitorLabel = (m: ScreenMonitor) => `Monitor ${m.index}${m.primary ? ' (main)' : ''} · ${m.resolution[0]} × ${m.resolution[1]}${Math.abs(m.scale - 1) > 0.01 ? ` · ${Math.round(m.scale * 100)}%` : ''}`;
+
+/**
+ * Where each overlay sits on the screen, small; click one to open its settings. Off ones are
+ * dashed, the selected one in the accent. In the desktop app, the monitor the overlays are on
+ * (with its resolution) can be changed here: every overlay moves to it, keeping its place.
+ */
+function screenMap(overlays: OverlayInstance[], selected: string, pick: (id: string) => void, rerender: () => void) {
+  const mons = state.monitors ?? [];
+  // The monitor most of the overlays are on (the main one when there are none).
+  const counts = new Map<number, number>();
+  for (const o of overlays.filter((x) => x.enabled)) {
+    const m = monitorOf(o, mons);
+    if (m) counts.set(m.index, (counts.get(m.index) ?? 0) + 1);
+  }
+  const best = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0];
+  const current = mons.find((m) => m.index === best) ?? mons.find((m) => m.primary) ?? mons[0];
+  const bounds = current ?? { x: 0, y: 0, width: Math.max(window.screen?.width || 1920, ...overlays.map((o) => o.x + o.width)), height: Math.max(window.screen?.height || 1080, ...overlays.map((o) => o.y + o.height)) };
   const wrap = h('div', 'screen-map');
   const head = h('div', 'screen-map-head');
-  head.append(h('span', '', 'Your screen'), h('span', '', `${sw} × ${sh}`));
+  if (current) {
+    const label = h('label', 'screen-map-pick');
+    label.append(h('span', '', 'Monitor'));
+    const sel = h('select') as HTMLSelectElement;
+    sel.setAttribute('aria-label', 'Monitor the overlays are on');
+    for (const m of mons) {
+      const opt = h('option', '', monitorLabel(m)) as HTMLOptionElement;
+      opt.value = String(m.index);
+      opt.title = m.name;
+      opt.selected = m.index === current.index;
+      sel.append(opt);
+    }
+    sel.onchange = () => {
+      const target = mons.find((m) => String(m.index) === sel.value);
+      if (target) moveToMonitor(target, mons, current);
+      rerender();
+    };
+    label.append(sel);
+    head.append(label);
+  } else head.append(h('span', '', 'Your screen'), h('span', '', `${bounds.width} × ${bounds.height}`));
   const box = h('div', 'screen-map-box');
-  box.style.aspectRatio = `${sw} / ${sh}`;
+  box.style.aspectRatio = `${bounds.width} / ${bounds.height}`;
+  let elsewhere = 0;
   for (const o of overlays) {
+    if (current && monitorOf(o, mons)?.index !== current.index) {
+      elsewhere++;
+      continue;
+    }
     const name = o.name || byKind(o.kind)?.name || o.kind;
     const b = button('', () => pick(o.id), `${o.enabled ? '' : 'off '}${o.id === selected ? 'sel' : ''}`.trim());
     b.title = `${name}${o.enabled ? '' : ' (off)'}`;
     b.setAttribute('aria-label', b.title);
+    b.dataset.id = o.id;
+    b.onmouseenter = () => hot(o.id, true);
+    b.onmouseleave = () => hot(o.id, false);
     const pct = (v: number, of: number) => `${Math.max(0, Math.min(100, (v / of) * 100)).toFixed(2)}%`;
-    Object.assign(b.style, { left: pct(o.x, sw), top: pct(o.y, sh), width: pct(Math.max(o.width, 8), sw), height: pct(Math.max(o.height, 8), sh) });
+    Object.assign(b.style, { left: pct(o.x - bounds.x, bounds.width), top: pct(o.y - bounds.y, bounds.height), width: pct(Math.max(o.width, 8), bounds.width), height: pct(Math.max(o.height, 8), bounds.height) });
     box.append(b);
   }
   wrap.append(head, box);
+  if (elsewhere) wrap.append(h('p', 'dim small screen-map-note', `${elsewhere} more on ${elsewhere === 1 ? 'another monitor' : 'other monitors'}: pick a monitor to bring them all here`));
   return wrap;
+}
+
+/** Every overlay to `target`, each at the same place relative to its monitor's corner, kept
+ *  inside the new monitor (a smaller one pulls overlays in from its edges). */
+function moveToMonitor(target: ScreenMonitor, mons: ScreenMonitor[], fallback: ScreenMonitor) {
+  const cfg = state.config!;
+  for (const o of cfg.overlays) {
+    const from = monitorOf(o, mons) ?? fallback;
+    const rx = Math.max(0, Math.min(o.x - from.x, target.width - o.width));
+    const ry = Math.max(0, Math.min(o.y - from.y, target.height - o.height));
+    o.x = Math.round(target.x + rx);
+    o.y = Math.round(target.y + ry);
+  }
+  save(true);
+}
+
+/** Lights an overlay in both the list and the screen map (hover), or puts it out. */
+function hot(id: string, on: boolean) {
+  for (const el of document.querySelectorAll(`.ov-item[data-id="${CSS.escape(id)}"], .screen-map-box button[data-id="${CSS.escape(id)}"]`)) el.classList.toggle('hot', on);
+}
+
+/** One digit as a column of 0-9, shown at `ch` (it rolls when moved to another digit). */
+function digitColumn(ch: string): HTMLElement {
+  const box = h('span', 'roll-d');
+  const col = h('span', 'roll-col');
+  col.append(...'0123456789'.split('').map((d) => h('span', '', d)));
+  col.style.transform = `translateY(${-Number(ch) * 1.1}em)`;
+  box.append(col);
+  return box;
+}
+
+/** A reading that rolls to its new value digit by digit, like a timing board. When the shape
+ *  changes (99 to 100, say) it is drawn again instead. */
+function roll(el: HTMLElement, value: string) {
+  const prev = el.dataset.v;
+  if (prev === value) return;
+  el.dataset.v = value;
+  el.setAttribute('aria-label', value);
+  const shape = (t: string) => t.replace(/\d/g, '0');
+  if (prev === undefined || shape(prev) !== shape(value) || el.children.length !== value.length) {
+    el.replaceChildren(...[...value].map((ch) => (/\d/.test(ch) ? digitColumn(ch) : h('span', 'roll-ch', ch))));
+    for (const c of el.children) c.setAttribute('aria-hidden', 'true');
+    return;
+  }
+  [...value].forEach((ch, i) => {
+    if (/\d/.test(ch)) (el.children[i].firstElementChild as HTMLElement).style.transform = `translateY(${-Number(ch) * 1.1}em)`;
+  });
 }

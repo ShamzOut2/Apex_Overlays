@@ -205,6 +205,12 @@ body.preview { background: #2a2f38 repeating-conic-gradient(#323843 0 25%, #2a2f
 .shift-lights .led { width: var(--led, 0.9em); height: var(--led, 0.9em); border-radius: 50%; background: var(--track); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45); }
 .shift-lights .led.on { background: var(--c); box-shadow: 0 0 0.45em var(--c); }
 .shift-lights .led.blank { opacity: 0.35; }
+/* Shift lights overlay: the lights, with the RPM under, over or beside them. */
+.panel.shiftlights { align-items: center; justify-content: center; padding: 0.5em 0.7em; }
+.shiftlights .sl-row { display: flex; flex-direction: column; align-items: center; gap: 0.35em; }
+.shiftlights.rpm-left .sl-row, .shiftlights.rpm-right .sl-row { flex-direction: row; gap: 0.7em; }
+.shiftlights .rpm { margin: 0; }
+.shiftlights .sl-wait { font-size: 0.85em; text-align: center; }
 .panel.input-graph { padding: 0.35em; }
 .input-graph .trace { width: 100%; height: 100%; display: block; background: rgba(0, 0, 0, 0.25); border-radius: calc(var(--radius) - 2px); }
 .input-graph.plain .trace { background: none; }
@@ -230,9 +236,9 @@ body.preview { background: #2a2f38 repeating-conic-gradient(#323843 0 25%, #2a2f
 .inputs .corner-speed { font-size: 0.8em; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .inputs .corner-speed.stale { opacity: 0.45; }
 /* RPM: its own line under the shift lights, bold on a dark pill so it reads over anything. */
-.inputs .rpm { flex: none; align-self: center; margin: -0.1em 0; padding: 0.02em 0.65em; border-radius: 999px; background: rgba(0, 0, 0, 0.45); font-size: 1.15em; font-weight: 800; line-height: 1.2; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
-.inputs .rpm::after { content: ' RPM'; font-size: 0.62em; font-weight: 700; color: var(--dim); letter-spacing: 0.06em; }
-.inputs .rpm.shift { color: var(--rpm-shift); text-shadow: 0 0 0.5em var(--rpm-shift); }
+.inputs .rpm, .shiftlights .rpm { flex: none; align-self: center; margin: -0.1em 0; padding: 0.02em 0.65em; border-radius: 999px; background: rgba(0, 0, 0, 0.45); font-size: 1.15em; font-weight: 800; line-height: 1.2; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+.inputs .rpm::after, .shiftlights .rpm::after { content: ' RPM'; font-size: 0.62em; font-weight: 700; color: var(--dim); letter-spacing: 0.06em; }
+.inputs .rpm.shift, .shiftlights .rpm.shift { color: var(--rpm-shift); text-shadow: 0 0 0.5em var(--rpm-shift); }
 .inputs .steer-angle { font-size: 0.8em; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* Battle box */

@@ -384,6 +384,35 @@ fn handle_host_event(app: &AppHandle, ev: HostEvent) {
     }
 }
 
+/// The monitors, for picking the one the overlays go on: each one's place and size on the
+/// desktop in the logical pixels overlay positions use, its resolution and scaling, and which
+/// is the main one. Published as the `monitors` topic (sent only when it changes).
+fn publish_monitors(app: &AppHandle) {
+    let Ok(list) = app.available_monitors() else { return };
+    let primary = app.primary_monitor().ok().flatten().map(|m| (*m.position(), *m.size()));
+    let monitors: Vec<serde_json::Value> = list
+        .iter()
+        .enumerate()
+        .map(|(i, m)| {
+            let (pos, size, scale) = (m.position(), m.size(), m.scale_factor().max(0.1));
+            // Windows names monitors like \\.\DISPLAY1: the plain part reads better.
+            let name = m.name().map(|n| n.trim_start_matches(r"\\.\").to_string()).unwrap_or_default();
+            serde_json::json!({
+                "index": i + 1,
+                "name": name,
+                "x": (pos.x as f64 / scale).round(),
+                "y": (pos.y as f64 / scale).round(),
+                "width": (size.width as f64 / scale).round(),
+                "height": (size.height as f64 / scale).round(),
+                "resolution": [size.width, size.height],
+                "scale": (scale * 100.0).round() / 100.0,
+                "primary": primary.is_some_and(|(p, s)| p == *pos && s == *size),
+            })
+        })
+        .collect();
+    app.state::<Core>().hub.publish("monitors", &serde_json::Value::Array(monitors).to_string());
+}
+
 fn publish_update(app: &AppHandle, v: serde_json::Value) {
     let mut v = v;
     v["current"] = env!("CARGO_PKG_VERSION").into();
@@ -675,6 +704,9 @@ fn main() {
                 let mut host = hub.host_events();
                 let mut cfg = config.subscribe();
                 let mut tick = tokio_interval();
+                // The monitors now, then every few seconds (one plugged in or rearranged).
+                publish_monitors(&h);
+                let mut ticks = 0u32;
                 // Hotkeys are re-registered only when their bindings change.
                 let binding_key = |c: &Config| format!("{:?}", hotkey_bindings(c));
                 let mut bound = config.read(binding_key);
@@ -694,7 +726,13 @@ fn main() {
                                 register_hotkeys(&h);
                             }
                         }
-                        _ = tick.tick() => flush_geometry(&h),
+                        _ = tick.tick() => {
+                            flush_geometry(&h);
+                            ticks += 1;
+                            if ticks.is_multiple_of(12) {
+                                publish_monitors(&h);
+                            }
+                        }
                     }
                 }
             });

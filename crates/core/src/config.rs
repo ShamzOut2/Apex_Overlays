@@ -79,6 +79,8 @@ pub struct Config {
     /// Close the settings window to the tray when you drive out of the pits (it frees the
     /// CPU and memory its window uses; the overlays keep running).
     pub tray_on_pit_exit: bool,
+    /// Animations in the settings window (the lights at connecting, pages settling in...).
+    pub ui_animations: bool,
     /// "Remind me later" / "skip this version" for the update pop-up.
     pub update_postpone: Option<UpdatePostpone>,
 }
@@ -135,6 +137,7 @@ pub fn catalogue() -> Vec<OverlayInstance> {
         o("standings", "standings", 40, 40, 560, 320),
         o("trackmap", "trackmap", 1500, 40, 340, 340),
         o("inputs", "inputs", 760, 860, 420, 120),
+        OverlayInstance { enabled: false, ..o("shiftlights", "shiftlights", 760, 790, 420, 70) },
         OverlayInstance { enabled: false, ..o("inputGraph", "inputGraph", 760, 740, 360, 110) },
         o("fuel", "fuel", 1540, 420, 300, 230),
         o("battle", "battle", 1200, 860, 360, 150),
@@ -195,6 +198,7 @@ impl Default for Config {
             game: "auto".into(),
             close_action: "ask".into(),
             tray_on_pit_exit: true,
+            ui_animations: true,
             lmu_private_qualifying: true,
         }
     }
@@ -714,7 +718,7 @@ impl Config {
     /// they appear in the overlay list and the hotkeys straight away.
     pub fn add_new_kinds(&mut self) {
         let defaults = catalogue();
-        for kind in ["safety", "delta", "inputGraph", "startLights", "forecast", "laptimes", "energy", "radar", "carsettings", "tyredata"] {
+        for kind in ["safety", "delta", "inputGraph", "startLights", "forecast", "laptimes", "energy", "radar", "carsettings", "tyredata", "shiftlights"] {
             if self.known_kinds.iter().any(|k| k == kind) {
                 continue;
             }
@@ -1095,10 +1099,11 @@ mod tests {
                 ("energy", "energy", false),
                 ("radar", "radar", false),
                 ("carsettings", "carsettings", false),
-                ("tyredata", "tyredata", false)
+                ("tyredata", "tyredata", false),
+                ("shiftlights", "shiftlights", false)
             ]
         );
         c.add_new_kinds();
-        assert_eq!(c.overlays.len(), 11);
+        assert_eq!(c.overlays.len(), 12);
     }
 }

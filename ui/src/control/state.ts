@@ -3,7 +3,7 @@
 
 import { Client } from '../lib/client';
 import { reportErrors } from '../lib/errors';
-import type { Config, Garage61, Monitor, Player, Session, Standings, Status, TopicName, TrackMap, UpdateState, VrState } from '../lib/types';
+import type { Config, Garage61, Monitor, Player, ScreenMonitor, Session, Standings, Status, TopicName, TrackMap, UpdateState, VrState } from '../lib/types';
 
 export const state = {
   config: null as Config | null,
@@ -15,6 +15,7 @@ export const state = {
   player: null as Player | null,
   update: null as UpdateState | null,
   monitor: null as Monitor | null,
+  monitors: null as ScreenMonitor[] | null,
   vr: null as VrState | null,
 };
 
@@ -50,7 +51,7 @@ export const client = new Client((t, d) => {
   listeners.forEach((l) => l(t));
 });
 reportErrors(client, () => 'settings');
-client.subscribe('config', 'status', 'session', 'update', 'vr');
+client.subscribe('config', 'status', 'session', 'update', 'vr', 'monitors');
 
 /** Live data only some pages show: received only while one of them is open. */
 const PAGE_TOPICS: Record<string, TopicName[]> = { leagues: ['standings'], racecontrol: ['standings'], general: ['trackmap', 'monitor'] };
@@ -85,13 +86,21 @@ export function pageTopics(page: string) {
   client.subscribe(...want);
 }
 
+/** Called after settings are sent to be saved (e.g. the "saved" pit board). */
+const savedListeners: (() => void)[] = [];
+export const onSaved = (fn: () => void) => savedListeners.push(fn);
+
 export function save(immediate = false) {
   clearTimeout(timer);
   const send = () => {
     timer = 0;
     if (!state.config) return;
-    lastSent = canon(state.config);
+    const json = canon(state.config);
+    // Nothing changed (a redraw saving what is already saved): no "saved".
+    const changed = json !== lastSent;
+    lastSent = json;
     client.send({ op: 'setConfig', config: state.config });
+    if (changed) savedListeners.forEach((f) => f());
   };
   if (immediate) send();
   else timer = window.setTimeout(send, 250);
