@@ -81,6 +81,9 @@ pub fn neighbours(e: &Engine, focus: usize, mode: Mode) -> (Option<usize>, Optio
         let rows: Vec<usize> = e.order.iter().map(|r| r.idx).filter(|&i| i == focus || eligible(i)).collect();
         let Some(p) = rows.iter().position(|&i| i == focus) else { return (None, None) };
         (p.checked_sub(1).map(|i| rows[i]), rows.get(p + 1).copied())
+    } else if e.alone_on_track() {
+        // LMU private qualifying: the others are in sessions of their own, not around you.
+        (None, None)
     } else {
         // On-track neighbours (always used outside races).
         let mut best: [Option<(usize, f32)>; 2] = [None, None];

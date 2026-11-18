@@ -556,7 +556,8 @@ pub fn spotter(e: &Engine) -> SpotterOut {
         6 => "right2",
         _ => "",
     };
-    if state.is_empty() || !t.driving() {
+    // LMU private qualifying: nobody is really beside you (their cars are in other sessions).
+    if state.is_empty() || !t.driving() || e.alone_on_track() {
         return SpotterOut::default();
     }
     let near = crate::engine::incidents::near_player(t, e.info.track_length_km * 1000.0, 12.0);
@@ -629,6 +630,9 @@ pub struct SectorTimesOut<'a> {
 
 pub fn cars(e: &Engine) -> CarsOut<'_> {
     let t = &e.tel;
+    // LMU private qualifying: the others drive in sessions of their own, so the map shows you.
+    let alone = e.alone_on_track();
+    let me = t.focus_idx().or(usize::try_from(t.player_idx).ok());
     CarsOut {
         focus: t.focus_idx(),
         player: usize::try_from(t.player_idx).ok(),
@@ -642,7 +646,7 @@ pub fn cars(e: &Engine) -> CarsOut<'_> {
         cars: e
             .order
             .iter()
-            .filter(|r| t.cars[r.idx].in_world())
+            .filter(|r| t.cars[r.idx].in_world() && (!alone || Some(r.idx) == me))
             .filter_map(|r| {
                 let s = e.static_of(r.idx)?;
                 let c = &t.cars[r.idx];

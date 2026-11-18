@@ -1888,7 +1888,7 @@ const generalPage: Page = {
               type: 'bool',
               default: true,
               lmu: true,
-              help: 'In LMU’s online qualifying each driver is alone on track, so other cars are not really near you. Turn off for open qualifying.',
+              help: 'In LMU’s online qualifying each driver is alone on track, so the other cars are left off the relative, track map, radar, spotter and battle box. Turn off for open qualifying.',
               group: 'Display',
             },
             {

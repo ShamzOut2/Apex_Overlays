@@ -1062,7 +1062,7 @@ pub mod tests {
     }
 
     #[test]
-    fn private_qualifying_leaves_other_cars_off_the_relative_and_radar() {
+    fn private_qualifying_leaves_other_cars_off_the_relative_radar_map_spotter_and_battle() {
         let mut e = crate::engine::Engine::new(crate::config::Config::default(), None);
         e.source = "lmu";
         let (mut st, mut snap) = (State::default(), snapshot());
@@ -1071,10 +1071,23 @@ pub mod tests {
         let rel = crate::topics::relative(&e);
         assert_eq!(rel.rows.len(), 1, "only you");
         assert!(crate::engine::radar::build(&e).cars.is_empty());
+        // The track map shows only your car, the spotter calls nothing, no one to battle.
+        let map = crate::topics::cars(&e);
+        assert_eq!(map.cars.len(), 1, "only you on the map");
+        assert_eq!(Some(map.cars[0].i), e.tel.focus_idx());
+        e.tel.car_left_right = 3;
+        assert_eq!(crate::topics::spotter(&e).state, "", "no one is beside you");
+        let focus = e.tel.focus_idx().unwrap();
+        for mode in crate::engine::battle::Mode::ALL {
+            assert_eq!(crate::engine::battle::neighbours(&e, focus, mode), (None, None));
+        }
         // Open qualifying: everyone is on track together.
         e.cfg.lmu_private_qualifying = false;
         assert!(crate::topics::relative(&e).rows.len() > 1);
         assert!(!crate::engine::radar::build(&e).cars.is_empty(), "the Ferrari alongside");
+        assert!(crate::topics::cars(&e).cars.len() > 1, "everyone on the map");
+        assert_eq!(crate::topics::spotter(&e).state, "right");
+        assert!(crate::engine::battle::neighbours(&e, focus, crate::engine::battle::Mode::Track) != (None, None));
         // Races are never private.
         e.cfg.lmu_private_qualifying = true;
         snap.info.mSession = 10;

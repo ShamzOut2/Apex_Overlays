@@ -22,6 +22,9 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - The settings window uses far less CPU while open: a pulsing "connected" dot redrew the window 60 times a second, and the General page received your car's data 60 times a second for one button. Measured with a game connected: about 15% of a CPU core down to 1.4% on most pages, General 19% to about 3.5%, Overlays 22% to 12–14% (its live preview). The time left in the sidebar changes once a minute, so it does not redraw the window every second. Blur and gradient effects are gone too
 - Minimising to the tray now closes the settings window rather than hiding it: hidden, it still used about 5% of a core and 180 MB of memory; closed, nothing
 
+### Fixes
+- Le Mans Ultimate private qualifying: the other drivers (each in their own session) are now also left off the track map, the spotter and the battle box, as they already were off the relative and radar (General → Private qualifying: hide other cars)
+
 ## 1.3.6
 
 ### New features
