@@ -1,6 +1,6 @@
 import { h, text, toggle } from '../lib/dom';
 import type { OverlayDef } from '../lib/overlay';
-import { FIELD_LABELS, fieldValue, flagKind, headerFields } from '../lib/sessionFields';
+import { FIELD_LABELS, fieldValue, flagKind, headerFields, lapSettings, type TimedLaps } from '../lib/sessionFields';
 import { enabledColumns } from '../lib/settings';
 import type { Session } from '../lib/types';
 
@@ -15,17 +15,7 @@ export const session: OverlayDef = {
     { key: 'layout', label: 'Layout', type: 'select', default: 'bar', options: [['bar', 'Horizontal bar'], ['stack', 'Vertical list']], group: 'Layout' },
     { key: 'showLabels', label: 'Show labels', type: 'bool', default: true, group: 'Layout' },
     { key: 'clock24', label: '24-hour clock', type: 'bool', default: true, group: 'Format' },
-    {
-      key: 'timedLaps',
-      label: 'Lap count in timed races',
-      type: 'select',
-      default: 'infinity',
-      options: [
-        ['infinity', '12/∞'],
-        ['count', '12'],
-      ],
-      group: 'Format',
-    },
+    ...lapSettings('Format', undefined, 'fields'),
     { key: 'showTempTrend', label: 'Track temperature trend arrow', type: 'bool', default: true, group: 'Format' },
   ],
   create(root, ctx) {
@@ -45,7 +35,7 @@ export const session: OverlayDef = {
         if (topic !== 'session') return;
         const d = data as Session;
         const u = ctx.units;
-        for (const [id, el] of Object.entries(cells)) text(el, fieldValue(id, d, u, { clock24: s.clock24 as boolean, tempTrend: s.showTempTrend as boolean, timedLaps: s.timedLaps as 'infinity' | 'count' }) || '–');
+        for (const [id, el] of Object.entries(cells)) text(el, fieldValue(id, d, u, { clock24: s.clock24 as boolean, tempTrend: s.showTempTrend as boolean, timedLaps: s.timedLaps as TimedLaps, estDecimals: s.estDecimals as number }) || '–');
         if (cells.wetness) {
           toggle(cells.wetness, 'wet', d.wetness >= 4);
           toggle(cells.wetness, 'damp', d.wetness === 2 || d.wetness === 3);

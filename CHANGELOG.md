@@ -6,7 +6,16 @@ Each version groups its changes under `### New features`, `### Improvements` and
 
 ## Unreleased
 
+### New features
+- Estimated laps for timed sessions: a new header detail, Estimated laps left (~31.7 laps: the time left over your lap time), for the session details, standings and relative, and in the fuel calculator (Extra details) and the virtual energy calculator. Its decimals can be set (1 by default)
+- Lap count in timed races can show the estimated length: Lap 12/~43 (the lap the clock runs out on, which the leader finishes), as well as Lap 12/∞ and Lap 12
+- Flags & penalties (standings and relative) are set with two choices: where to show them (next to the driver's name, outside the overlay as an extension of it on the standings, or not at all) and on which side (left or right of the name, or the overlay's left or right side). These replace the separate "Flags next to drivers" and "Penalties next to drivers" switches
+- Theme: session badge colour (RACE, QUALIFYING, PRACTICE in headers): the accent colour for every session (default), or a colour per session type as before
+
 ### Fixes
+- Standings: flags and penalties set to show outside the table no longer disappear when the "next to drivers" switches were off
+- The PRACTICE and QUALIFYING badges in headers no longer take the Gaining / good and Fastest lap colours unless you choose that (they follow the accent colour)
+- Headers no longer show "Lap -1" when the leading car is in the garage
 - Monitoring: on Windows, the first CPU reading after opening the Monitoring section or the performance widget showed the app at close to 0%. It now shows the real use from the first reading
 
 ## 1.3.2

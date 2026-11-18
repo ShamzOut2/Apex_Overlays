@@ -65,6 +65,17 @@ export const THEME: SettingDef[] = [
   { key: 'pitColor', label: 'Car in pits', type: 'color', default: '#7d8593', group: 'Colours' },
   { key: 'bestColor', label: 'Fastest lap', type: 'color', default: '#c27bff', group: 'Colours' },
   { key: 'goodColor', label: 'Gaining / good', type: 'color', default: '#3ddc84', group: 'Colours' },
+  {
+    key: 'sessionBadge',
+    label: 'Session badge in headers (RACE, PRACTICE…)',
+    type: 'select',
+    default: 'accent',
+    options: [
+      ['accent', 'Accent colour for every session'],
+      ['type', 'By session: race accent, qualifying fastest lap, practice gaining / good'],
+    ],
+    group: 'Colours',
+  },
   { key: 'badColor', label: 'Losing / warning', type: 'color', default: '#ff5c5c', group: 'Colours' },
   { key: 'warnColor', label: 'Caution', type: 'color', default: '#ffb020', group: 'Colours' },
   { key: 'backgroundOpacity', label: 'Background opacity (all overlays)', type: 'number', default: 80, min: 0, max: 100, unit: '%', group: 'Transparency' },
@@ -309,6 +320,14 @@ export function applyTheme(stored: Values | undefined, el: HTMLElement, override
   s.setProperty('--good', t.goodColor as string);
   s.setProperty('--bad', t.badColor as string);
   s.setProperty('--warn', t.warnColor as string);
+  // The session badge in headers: the accent for every session, or a colour per session type.
+  const byType = t.sessionBadge === 'type';
+  const qual = (byType ? t.bestColor : t.accent) as string;
+  const practice = (byType ? t.goodColor : t.accent) as string;
+  s.setProperty('--sess-qual', qual);
+  s.setProperty('--sess-practice', practice);
+  s.setProperty('--on-sess-qual', onColor(qual));
+  s.setProperty('--on-sess-practice', onColor(practice));
   // Text drawn on top of theme colours (badges, banners) stays readable with bright accents.
   for (const [v, key] of [['accent', 'accent'], ['best', 'bestColor'], ['good', 'goodColor'], ['bad', 'badColor'], ['warn', 'warnColor'], ['player', 'playerColor']]) {
     s.setProperty(`--on-${v}`, onColor(t[key] as string));

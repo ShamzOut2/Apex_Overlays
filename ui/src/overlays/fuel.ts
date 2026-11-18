@@ -2,7 +2,7 @@ import { h, show, style, text, toggle } from '../lib/dom';
 import * as f from '../lib/format';
 import type { OverlayDef } from '../lib/overlay';
 import { onColor } from '../lib/theme';
-import type { Fuel } from '../lib/types';
+import type { Fuel, Session } from '../lib/types';
 
 /** Extra details, shown under the main figures in the same style: key, label, on by default. */
 const EXTRAS: [string, string, string, boolean][] = [
@@ -17,6 +17,7 @@ const EXTRAS: [string, string, string, boolean][] = [
   ['savePerLap', 'Save per lap to skip a stop', 'SAVE / LAP', false],
   ['lapsPerTank', 'Laps per full tank', 'LAPS / TANK', false],
   ['usePerHour', 'Use per hour', 'PER HOUR', false],
+  ['estLaps', 'Estimated laps left (time left ÷ your lap time)', 'EST. LAPS', false],
 ];
 
 const full = (v: Record<string, unknown>) => v.mode !== 'compact';
@@ -67,6 +68,7 @@ export const fuel: OverlayDef = {
     },
     { key: 'raceLaps', when: (v) => v.show_race !== false, label: 'Or in laps', type: 'number', default: 0, min: 0, max: 2000, unit: 'laps', group: 'Race estimate', shared: 'fuel.raceLaps' },
     ...EXTRAS.map(([key, label, , on]) => ({ key: `show_${key}`, when: details, label, type: 'bool' as const, default: on, group: 'Extra details' })),
+    { key: 'estDecimals', when: (v) => details(v) && !!v.show_estLaps, label: 'Estimated laps: decimals', type: 'number', default: 1, min: 0, max: 3, group: 'Extra details' },
     { key: 'showHistory', when: full, label: 'Per-lap history bars', type: 'bool', default: false, group: 'Extra details' },
     { key: 'marginalLaps', label: 'Amber when the spare is under', type: 'number', default: 0.5, min: 0, max: 5, step: 0.1, unit: 'laps', group: 'Status', help: 'Fuel left at the finish, in laps, below which it shows as marginal' },
     { key: 'warnLaps', label: 'Outside races, red when fuel is under', type: 'number', default: 2, min: 0, max: 10, step: 0.5, unit: 'laps', group: 'Status', help: 'Practice and sessions without a set length' },
@@ -190,6 +192,12 @@ export const fuel: OverlayDef = {
 
     return {
       update(topic, data) {
+        if (topic === 'session') {
+          // Timed sessions: the time left over your lap time.
+          const est = (data as Session).estLapsLeft;
+          if (extras.estLaps) text(extras.estLaps.v, est == null ? '–' : `~${est.toFixed(s.estDecimals as number)}`);
+          return;
+        }
         if (topic !== 'fuel') return;
         const d = data as Fuel;
         const perLap = d.perLapAvg;

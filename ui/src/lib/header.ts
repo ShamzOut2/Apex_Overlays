@@ -2,7 +2,7 @@
 
 import { h, show, text } from './dom';
 import type { Units } from './format';
-import { fieldValue, flagKind, headerFields, sessionType } from './sessionFields';
+import { fieldValue, flagKind, headerFields, lapSettings, sessionType, type TimedLaps } from './sessionFields';
 import { enabledColumns, type SettingDef, type Values } from './settings';
 import type { Session } from './types';
 
@@ -28,17 +28,7 @@ export function headerSettings(on: string[]): SettingDef[] {
     { key: 'sessionBadge', when: (v) => v.showHeader !== false, label: 'Session type badge', type: 'bool', default: true, group: 'Header' },
     { key: 'headerFields', when: (v) => v.showHeader !== false, label: 'Session details in the header', type: 'columns', ...headerFields(on), group: 'Header' },
     { key: 'headerSeparator', when: (v) => v.showHeader !== false, label: 'Separator', type: 'text', default: '  ·  ', group: 'Header' },
-    {
-      key: 'timedLaps', when: (v) => v.showHeader !== false,
-      label: 'Lap count in timed races',
-      type: 'select',
-      default: 'infinity',
-      options: [
-        ['infinity', 'Lap 12/∞'],
-        ['count', 'Lap 12'],
-      ],
-      group: 'Header',
-    },
+    ...lapSettings('Header', (v) => v.showHeader !== false),
   ];
 }
 
@@ -64,7 +54,7 @@ export function sessionHeader(s: Values, fallbackTitle: string, units: () => Uni
       text(badge, type);
       badge.dataset.type = type.toLowerCase();
       show(badge, (s.sessionBadge as boolean) && !!type);
-      const parts = fields.map((id) => fieldValue(id, d, units(), { compact: true, timedLaps: s.timedLaps as 'infinity' | 'count' })).filter(Boolean);
+      const parts = fields.map((id) => fieldValue(id, d, units(), { compact: true, timedLaps: s.timedLaps as TimedLaps, estDecimals: s.estDecimals as number })).filter(Boolean);
       text(info, parts.join(s.headerSeparator as string));
       info.dataset.flag = fields.includes('flags') ? flagKind(d) : '';
     },
