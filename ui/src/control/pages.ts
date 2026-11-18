@@ -1887,8 +1887,7 @@ const generalPage: Page = {
               label: 'Private qualifying: hide other cars',
               type: 'bool',
               default: true,
-              lmu: true,
-              help: 'In LMU’s online qualifying each driver is alone on track, so the other cars are left off the relative, track map, radar, spotter and battle box. Turn off for open qualifying.',
+              help: 'Le Mans Ultimate’s online qualifying and iRacing’s Lone Qualify put each driver alone on track, so the other cars are left off the relative, track map, radar, spotter and battle box. Open qualifying (everyone out together) is not affected',
               group: 'Display',
             },
             {
