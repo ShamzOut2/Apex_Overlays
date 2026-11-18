@@ -4,6 +4,16 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 1.4.0
+
+### New features
+- Driver inputs, new layout: the steering wheel on its own with its angle above it, your speed in a box between the top speed into the last corner and the lowest speed through it, and a big gear, side by side next to the pedals (as on a wheel-and-dash setup). The wheel is sized to the room it has
+- Driver inputs: choose the layout under Layout: side by side or stacked, the order of the wheel, speeds and gear, and whether they sit right or left of the pedals
+- Driver inputs: the steering wheel is now a formula-style sim wheel (a photo on a see-through background, turning with your steering). Wheel style also offers a drawn round wheel (rim with textured grips, three spokes, a hub with buttons, a top marker) and the old simple outline
+- Input trace (Driver inputs and Input graph): faint lines across at 25%, 50% and 75% of input (Trace → Lines at 25%, 50% and 75%)
+- Input trace: the steering line now fills the graph at the car's own steering lock rather than your wheel's full range (in iRacing that was often 900°, so the line barely moved). The lock is learned as you drive: the furthest you have turned in this car, at least 90° each way, growing if you turn further and starting again in another car. Or pick your wheel's full range, or a set angle (Trace → Steering fills the graph at)
+- Driver inputs: colours for the wheel's top marker, the gear, the speed box and the two corner-speed boxes. The steering angle and corner speeds are now on by default
+
 ## 1.3.9
 
 ### New features
