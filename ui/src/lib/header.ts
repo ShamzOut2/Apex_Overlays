@@ -26,6 +26,29 @@ export function headerSettings(on: string[]): SettingDef[] {
     },
     { key: 'headerCustomTitle', when: (v) => v.showHeader !== false && v.headerTitle === 'custom', label: 'Custom title', type: 'text', default: '', placeholder: 'My League · Round 3', group: 'Header' },
     { key: 'sessionBadge', when: (v) => v.showHeader !== false, label: 'Session type badge', type: 'bool', default: true, group: 'Header' },
+    {
+      key: 'headerTextSize', when: (v) => v.showHeader !== false,
+      label: 'Header text size',
+      type: 'number',
+      default: 100,
+      min: 50,
+      max: 250,
+      step: 5,
+      unit: '%',
+      group: 'Header',
+      help: 'The title, session badge and details, compared with the rest of the overlay',
+    },
+    {
+      key: 'headerHeight', when: (v) => v.showHeader !== false,
+      label: 'Header height',
+      type: 'number',
+      default: 0,
+      min: 0,
+      max: 160,
+      unit: 'px',
+      group: 'Header',
+      help: '0: just tall enough for its text. Taller keeps the text centred',
+    },
     { key: 'headerFields', when: (v) => v.showHeader !== false, label: 'Session details in the header', type: 'columns', ...headerFields(on), group: 'Header' },
     { key: 'headerSeparator', when: (v) => v.showHeader !== false, label: 'Separator', type: 'text', default: '  ·  ', group: 'Header' },
     ...lapSettings('Header', (v) => v.showHeader !== false),
@@ -42,6 +65,15 @@ export function sessionHeader(s: Values, fallbackTitle: string, units: () => Uni
   const info = h('span', 'info');
   el.append(left, info);
   show(el, s.showHeader as boolean);
+  // Its own text size and height.
+  const size = (s.headerTextSize as number) ?? 100;
+  if (size !== 100) el.style.fontSize = `${size}%`;
+  const height = (s.headerHeight as number) ?? 0;
+  if (height > 0) {
+    el.style.minHeight = `${height}px`;
+    el.style.boxSizing = 'border-box';
+    el.style.alignItems = 'center';
+  }
   show(title, s.headerTitle !== 'none');
   const fields = enabledColumns(s.headerFields);
   return {
