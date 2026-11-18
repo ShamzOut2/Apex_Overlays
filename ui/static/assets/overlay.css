@@ -215,6 +215,8 @@ body.preview { background: #2a2f38 repeating-conic-gradient(#323843 0 25%, #2a2f
 .panel.input-graph { padding: 0.35em; }
 .input-graph .trace { width: 100%; height: 100%; display: block; background: rgba(0, 0, 0, 0.25); border-radius: calc(var(--radius) - 2px); }
 .input-graph.plain .trace { background: none; }
+/* Lines at 25%, 50% and 75% of the input (where the trace draws them, 2px in from each edge). */
+canvas.trace.grid { background-image: linear-gradient(var(--trace-grid), var(--trace-grid)), linear-gradient(var(--trace-grid-mid), var(--trace-grid-mid)), linear-gradient(var(--trace-grid), var(--trace-grid)); background-size: 100% 1px; background-repeat: no-repeat; background-position: 0 calc(2px + (100% - 4px) * 0.25), 0 calc(2px + (100% - 4px) * 0.5), 0 calc(2px + (100% - 4px) * 0.75); --trace-grid: rgba(255, 255, 255, 0.09); --trace-grid-mid: rgba(255, 255, 255, 0.15); }
 .inputs .trace { flex: 1; min-width: 0; height: 100%; background: rgba(0, 0, 0, 0.25); border-radius: calc(var(--radius) - 2px); }
 .inputs .bars { display: flex; gap: 0.3em; }
 .inputs .barcol { display: flex; flex-direction: column; align-items: center; gap: 0.15em; }

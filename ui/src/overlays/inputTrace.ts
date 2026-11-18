@@ -9,7 +9,22 @@ import type { Player } from '../lib/types';
 export const TRACE_SETTINGS: SettingDef[] = [
   { key: 'traceSeconds', when: (v) => v.showTrace !== false, label: 'Trace length', type: 'number', default: 6, min: 1, max: 30, unit: 's', group: 'Trace' },
   { key: 'traceWidth', when: (v) => v.showTrace !== false, label: 'Trace line width', type: 'number', default: 2, min: 0.5, max: 6, step: 0.5, unit: 'px', group: 'Trace' },
+  { key: 'traceGrid', when: (v) => v.showTrace !== false, label: 'Lines at 25%, 50% and 75%', type: 'bool', default: true, group: 'Trace' },
   { key: 'traceSteering', when: (v) => v.showTrace !== false, label: 'Show steering in trace', type: 'bool', default: false, group: 'Trace' },
+  {
+    key: 'traceSteerRange', when: (v) => v.showTrace !== false && v.traceSteering === true,
+    label: 'Steering fills the graph at',
+    type: 'select',
+    default: 'car',
+    options: [
+      ['car', 'The car’s steering lock (learned as you drive)'],
+      ['wheel', 'The full range of your wheel'],
+      ['fixed', 'A set angle'],
+    ],
+    group: 'Trace',
+    help: 'The car’s lock: the furthest you have turned in this car, at least 90° each way, so your steering uses the whole height. It grows if you turn further, and starts again in another car',
+  },
+  { key: 'traceSteerDegrees', when: (v) => v.showTrace !== false && v.traceSteering === true && v.traceSteerRange === 'fixed', label: 'Set angle (lock to lock)', type: 'number', default: 540, min: 90, max: 1440, step: 10, unit: '°', group: 'Trace' },
   { key: 'traceFill', when: (v) => v.showTrace !== false, label: 'Fill under throttle/brake', type: 'bool', default: true, group: 'Trace' },
   { key: 'absHighlight', label: 'Colour the brake while ABS is working', type: 'bool', default: true, group: 'Trace' },
 ];
@@ -24,6 +39,17 @@ export function inputTrace(canvas: HTMLCanvasElement, s: Values, clutch: () => b
   const abs = new Uint8Array(n);
   let head = 0;
   const g = canvas.getContext('2d')!;
+  canvas.classList.toggle('grid', s.traceGrid !== false);
+
+  // Steering is stored as an angle (radians, left positive) and drawn against `steerHalf`,
+  // the angle each way that fills the graph: the car's lock learned as you drive (the
+  // furthest you have turned, at least 90°, in 10% steps so the picture is not redrawn
+  // all the time), your wheel's full range, or a set angle.
+  const steerMode = (s.traceSteerRange as string) ?? 'car';
+  const FLOOR = Math.PI / 2;
+  let steerHalf = steerMode === 'fixed' ? (((s.traceSteerDegrees as number) || 540) * Math.PI) / 360 : FLOOR;
+  let wheelMax = 0;
+  const steerY = (a: number) => Math.max(0, Math.min(1, 0.5 + a / steerHalf / 2));
 
   const series = (arr: Float32Array, color: string, fill: boolean, absArr?: Uint8Array) => {
     const w = canvas.width;
@@ -81,9 +107,15 @@ export function inputTrace(canvas: HTMLCanvasElement, s: Values, clutch: () => b
     }
   };
 
+  /** The steering as heights (0..1) for drawing, worked out from the stored angles. */
+  const steH = new Float32Array(n);
+  const steerHeights = () => {
+    for (let i = 0; i < n; i++) steH[i] = steerY(ste[i]);
+    return steH;
+  };
   const traces = () => {
     const list: [Float32Array, string, boolean, Uint8Array?][] = [];
-    if (s.traceSteering) list.push([ste, s.steeringColor as string, false]);
+    if (s.traceSteering) list.push([steH, s.steeringColor as string, false]);
     if (clutch()) list.push([clt, s.clutchColor as string, false]);
     list.push([thr, s.throttleColor as string, s.traceFill as boolean]);
     list.push([brk, s.brakeColor as string, s.traceFill as boolean, abs]);
@@ -99,6 +131,7 @@ export function inputTrace(canvas: HTMLCanvasElement, s: Values, clutch: () => b
 
   /** Everything, from the stored history (first time, and when the canvas is resized). */
   const redraw = () => {
+    if (s.traceSteering) steerHeights();
     g.clearRect(0, 0, canvas.width, canvas.height);
     for (const [arr, color, fill, absArr] of traces()) series(arr, color, fill, absArr);
     lastX = canvas.width;
@@ -174,11 +207,34 @@ export function inputTrace(canvas: HTMLCanvasElement, s: Values, clutch: () => b
       thr[head] = p.throttle;
       brk[head] = p.brake;
       clt[head] = p.clutch;
-      ste[head] = p.steeringMax ? 0.5 - p.steering / p.steeringMax / 2 : 0.5;
+      // Drawn with right up (as the wheel turns): iRacing's angle is positive to the left.
+      ste[head] = -p.steering;
       abs[head] = p.abs ? 1 : 0;
+      let rescaled = false;
+      if (s.traceSteering) {
+        if (steerMode === 'wheel') {
+          if (p.steeringMax > 0 && p.steeringMax !== steerHalf) {
+            steerHalf = p.steeringMax;
+            rescaled = true;
+          }
+        } else if (steerMode === 'car') {
+          // Another car (its wheel range changes): learn its lock afresh.
+          if (p.steeringMax !== wheelMax) {
+            wheelMax = p.steeringMax;
+            steerHalf = FLOOR;
+            rescaled = true;
+          }
+          const a = Math.abs(p.steering);
+          if (a > steerHalf) {
+            steerHalf = Math.min(a * 1.1, p.steeringMax > 0 ? Math.max(p.steeringMax, a) : a * 1.1);
+            rescaled = true;
+          }
+        }
+        steH[head] = steerY(ste[head]);
+      }
       head = (head + 1) % n;
       filled = Math.min(n, filled + 1);
-      if (fitCanvas(canvas) || lastX < 0 || filled < 2) redraw();
+      if (fitCanvas(canvas) || lastX < 0 || filled < 2 || rescaled) redraw();
       else step();
     },
     /** Draws the whole trace again from its history. */
