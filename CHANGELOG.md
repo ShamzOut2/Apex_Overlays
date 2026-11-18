@@ -4,6 +4,14 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### Improvements
+- Licence (General page): your key is hidden once it's added, so it isn't on screen while you stream. Press Show to see it
+
+### Fixes
+- Licence: Get your key opens the Apex Labs website's key page again (it went to an old address that no longer works)
+
 ## 1.3.3
 
 ### New features
