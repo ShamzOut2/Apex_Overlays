@@ -4,6 +4,14 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### New features
+- Driver inputs, new layout: the steering wheel on its own with its angle above it, your speed in a box between the top speed into the last corner and the lowest speed through it, and a big gear, side by side next to the pedals (as on a wheel-and-dash setup). The wheel is sized to the room it has
+- Driver inputs: choose the layout under Layout: side by side or stacked, the order of the wheel, speeds and gear, and whether they sit right or left of the pedals
+- Driver inputs: a new detailed steering wheel (rim with textured grips, three spokes, a hub with a small screen and buttons, a top marker); the old outline is still there as Wheel style: Simple
+- Driver inputs: colours for the wheel's top marker, the gear, the speed box and the two corner-speed boxes. The steering angle and corner speeds are now on by default
+
 ## 1.3.9
 
 ### New features
