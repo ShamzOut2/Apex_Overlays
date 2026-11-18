@@ -53,7 +53,30 @@ reportErrors(client, () => 'settings');
 client.subscribe('config', 'status', 'session', 'update', 'vr');
 
 /** Live data only some pages show: received only while one of them is open. */
-const PAGE_TOPICS: Record<string, TopicName[]> = { leagues: ['standings'], racecontrol: ['standings'], general: ['trackmap', 'player', 'monitor'] };
+const PAGE_TOPICS: Record<string, TopicName[]> = { leagues: ['standings'], racecontrol: ['standings'], general: ['trackmap', 'monitor'] };
+
+/** The newest data of a topic this page does not otherwise watch, fetched once (the app sends
+ *  the latest on subscribing): e.g. your car's position for a button, without receiving it 60
+ *  times a second all the time. Null if nothing comes within `ms`. */
+export function fetchOnce<T>(topic: TopicName, ms = 1500): Promise<T | null> {
+  const watched = new Set(Object.values(PAGE_TOPICS).flat());
+  return new Promise((resolve) => {
+    let done = false;
+    const on: Listener = (t) => {
+      if (t === topic) finish((state as Record<string, unknown>)[t] as T);
+    };
+    const finish = (v: T | null) => {
+      if (done) return;
+      done = true;
+      listeners.splice(listeners.indexOf(on), 1);
+      if (!watched.has(topic)) client.unsubscribe(topic);
+      resolve(v);
+    };
+    listen(on);
+    client.subscribe(topic);
+    setTimeout(() => finish(null), ms);
+  });
+}
 
 export function pageTopics(page: string) {
   const want = new Set(PAGE_TOPICS[page] ?? []);

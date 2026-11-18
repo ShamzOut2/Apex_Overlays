@@ -3,13 +3,13 @@ import { h, text } from '../lib/dom';
 import * as f from '../lib/format';
 import { commonFor, merge, type SettingDef, type TrackValues, trackValue } from '../lib/settings';
 import { applyUiTheme, PRESETS, THEME, themeValues } from '../lib/theme';
-import type { OverlayInstance, SavedLayout } from '../lib/types';
+import type { OverlayInstance, Player, SavedLayout } from '../lib/types';
 import { byKind, hiddenKind, OVERLAYS } from '../overlays/registry';
 import { CHOICES, field, form, relevance } from './form';
 import { hotkeyInput } from './hotkey';
 import { releaseHistory } from './releaseNotes';
 import { STATS } from '../lib/monitorStats';
-import { client, download, listen, save, state, uid, upload } from './state';
+import { client, download, fetchOnce, listen, save, state, uid, upload } from './state';
 
 export type Page = { id: string; title: string; render(el: HTMLElement): void };
 
@@ -686,7 +686,7 @@ const overlaysPage: Page = {
 
     const bar = h('div', 'toolbar');
     bar.append(
-      button(editing ? 'Done moving' : 'Edit mode (move & resize)', () => client.send({ op: 'setEditMode', value: !editing }), editing ? 'primary active' : 'primary'),
+      editButton(editing),
       button(visible ? 'Hide all overlays' : 'Show all overlays', () => client.send({ op: 'setVisible', value: !visible })),
       h('span', 'spacer'),
       layoutsMenu,
@@ -704,6 +704,11 @@ const overlaysPage: Page = {
       rerender();
     };
     const list = h('div', 'ov-list');
+    list.append(screenMap(cfg.overlays.filter(listed), selected, (id) => {
+      selected = id;
+      ui.query = '';
+      rerender();
+    }));
     list.append(button('＋ Add overlay', () => addOverlayDialog(addOverlay), 'add-btn'));
     for (const o of cfg.overlays.filter(listed)) {
       const d = byKind(o.kind);
@@ -714,6 +719,14 @@ const overlaysPage: Page = {
       oname.append(...overlayBadges(d));
       names.append(oname);
       if (o.name && d) names.append(h('span', 'ov-kind', d.name));
+      // Why it may not be on screen: its own visibility settings, in the list.
+      const st = o.settings as Record<string, unknown>;
+      const tags = [st.hideInPits === true && 'Hidden in pits', st.hideWhenNotDriving === true && 'In the car only', st.raceOnly === true && 'Races only'].filter(Boolean) as string[];
+      if (tags.length) {
+        const t = h('span', 'ov-tags');
+        t.append(...tags.map((x) => h('span', 'ov-tag', x)));
+        names.append(t);
+      }
       const sw = h('input');
       sw.type = 'checkbox';
       sw.className = 'switch small';
@@ -1312,8 +1325,9 @@ function cornersCard(rerender: () => void): HTMLElement {
     bar.append(
       button(
         'Add corner at my car’s position',
-        () => {
-          const p = state.player?.lapPct ?? 0;
+        async () => {
+          // Your car's position, fetched now (the page does not stream it, to save CPU).
+          const p = (await fetchOnce<Player>('player'))?.lapPct ?? state.player?.lapPct ?? 0;
           custom.push({ name: '', number: (custom.reduce((m, x) => Math.max(m, x.number), 0) || 0) + 1, start: Math.max(0, p - 0.005), end: Math.min(1, p + 0.005) });
           custom.sort((a, b) => a.start - b.start);
           save();
@@ -1761,6 +1775,7 @@ const generalPage: Page = {
       shortClassNames: cfg.shortClassNames,
       updateRate: cfg.updateRate ?? 'balanced',
       closeAction: cfg.closeAction ?? 'ask',
+      trayOnPitExit: cfg.trayOnPitExit ?? true,
       lmuPrivateQualifying: cfg.lmuPrivateQualifying ?? true,
     };
     el.replaceChildren(
@@ -1819,6 +1834,14 @@ const generalPage: Page = {
               ],
               group: 'Display',
             },
+            {
+              key: 'trayOnPitExit',
+              label: 'Minimise to the tray when I leave the pits',
+              type: 'bool',
+              default: true,
+              help: 'This window closes to the tray as you drive out, freeing its CPU and memory for the game. Opened again from the tray while on track, it stays open',
+              group: 'Performance',
+            },
             { key: 'port', label: 'Port', type: 'number', default: 8182, min: 1024, max: 65535, group: 'Server (restart to apply)' },
             { key: 'lanAccess', label: 'Allow other PCs on my network', type: 'bool', default: false, group: 'Server (restart to apply)' },
           ],
@@ -1831,6 +1854,7 @@ const generalPage: Page = {
             if (k === 'shortClassNames') cfg.shortClassNames = v as boolean;
             if (k === 'updateRate') cfg.updateRate = v as 'fast' | 'balanced' | 'full';
             if (k === 'closeAction') cfg.closeAction = v as 'ask' | 'quit' | 'keep';
+            if (k === 'trayOnPitExit') cfg.trayOnPitExit = v as boolean;
             if (k === 'lmuPrivateQualifying') cfg.lmuPrivateQualifying = v as boolean;
             save();
           },
@@ -1899,3 +1923,36 @@ const streamingPage: Page = {
 // Garage 61 (garage61Page) is held back until the integration is ready.
 export const PAGES: Page[] = [overlaysPage, themePage, strategyPage, generalPage, streamingPage];
 void garage61Page;
+
+
+/** The edit-mode button with its hotkey ("Move & resize", or "Done moving" while moving). */
+function editButton(editing: boolean) {
+  const key = (state.config?.hotkeys?.toggleEdit ?? '').replace('CmdOrCtrl', 'Ctrl').replace('Shift', '⇧').split('+').join(' ');
+  const b = button(editing ? 'Done moving' : 'Move & resize', () => client.send({ op: 'setEditMode', value: !editing }), editing ? 'primary active' : 'primary');
+  if (key) b.append(' ', h('kbd', '', key));
+  b.title = 'Drag overlays to move them, their corner to resize';
+  return b;
+}
+
+/** Where each overlay sits on the screen, small; click one to open its settings. Off ones are
+ *  dashed, the selected one in the accent. Static (redrawn with the page), so it costs nothing. */
+function screenMap(overlays: OverlayInstance[], selected: string, pick: (id: string) => void) {
+  const sw = Math.max(window.screen?.width || 1920, ...overlays.map((o) => o.x + o.width));
+  const sh = Math.max(window.screen?.height || 1080, ...overlays.map((o) => o.y + o.height));
+  const wrap = h('div', 'screen-map');
+  const head = h('div', 'screen-map-head');
+  head.append(h('span', '', 'Your screen'), h('span', '', `${sw} × ${sh}`));
+  const box = h('div', 'screen-map-box');
+  box.style.aspectRatio = `${sw} / ${sh}`;
+  for (const o of overlays) {
+    const name = o.name || byKind(o.kind)?.name || o.kind;
+    const b = button('', () => pick(o.id), `${o.enabled ? '' : 'off '}${o.id === selected ? 'sel' : ''}`.trim());
+    b.title = `${name}${o.enabled ? '' : ' (off)'}`;
+    b.setAttribute('aria-label', b.title);
+    const pct = (v: number, of: number) => `${Math.max(0, Math.min(100, (v / of) * 100)).toFixed(2)}%`;
+    Object.assign(b.style, { left: pct(o.x, sw), top: pct(o.y, sh), width: pct(Math.max(o.width, 8), sw), height: pct(Math.max(o.height, 8), sh) });
+    box.append(b);
+  }
+  wrap.append(head, box);
+  return wrap;
+}

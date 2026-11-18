@@ -8,7 +8,7 @@ import { marketPage } from './control/market';
 import { renderUpdatePrompt } from './control/updatePrompt';
 import { renderClosePrompt } from './control/closePrompt';
 import { gameName, PAGES, type Page } from './control/pages';
-import { listen, pageTopics, save, state } from './control/state';
+import { client, listen, pageTopics, save, state } from './control/state';
 import { applyUiTheme } from './lib/theme';
 import { labsLogo } from './control/brand';
 
@@ -26,7 +26,10 @@ mark.alt = '';
 brand.append(mark, logo);
 const conn = h('div', 'conn');
 const main = h('main');
-nav.append(brand);
+// The connection card sits under the name: what the app is reading, at a glance.
+nav.append(brand, conn);
+// Pages in groups (General first); a heading before the first page of each group.
+const GROUPS: Record<string, string> = { overlays: 'On screen', strategy: 'Race weekend', streaming: 'Broadcast' };
 const links = new Map<string, HTMLAnchorElement>();
 // Line icons for the sidebar (24×24, drawn with the current text colour).
 const ICONS: Record<string, string> = {
@@ -41,6 +44,7 @@ const ICONS: Record<string, string> = {
   streaming: '<rect x="2" y="5" width="15" height="14" rx="2"/><path d="m17 10 5-3v10l-5-3"/>',
 };
 for (const p of pages) {
+  if (GROUPS[p.id]) nav.append(h('div', 'nav-label', GROUPS[p.id]));
   const a = h('a');
   if (ICONS[p.id]) a.insertAdjacentHTML('beforeend', `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[p.id]}</svg>`);
   a.append(h('span', '', p.title));
@@ -79,7 +83,23 @@ function drawGameSwitch() {
 }
 const navFoot = h('div', 'nav-foot');
 navFoot.append(labsLogo('nav-labs'), gameSwitch);
-nav.append(navFoot, conn);
+// Show / hide every overlay, with its hotkey.
+const visRow = h('label', 'nav-visible');
+const visText = h('span', '', 'Overlays on screen');
+const visHint = h('small');
+visText.append(visHint);
+const visSwitch = h('input') as HTMLInputElement;
+visSwitch.type = 'checkbox';
+visSwitch.className = 'switch small';
+visSwitch.onchange = () => state.status && client.send({ op: 'setVisible', value: visSwitch.checked });
+visRow.append(visText, visSwitch);
+function drawVisible() {
+  visSwitch.checked = state.status?.visible ?? true;
+  const key = (state.config?.hotkeys?.toggleVisibility ?? '').replace('CmdOrCtrl', 'Ctrl').replace('Shift', '⇧').split('+').join(' ');
+  text(visHint, key ? `Hotkey ${key}` : 'Show or hide all');
+}
+const navSpacer = h('div', 'nav-spacer');
+nav.append(navSpacer, visRow, navFoot);
 document.body.append(nav, main);
 // The desktop app opens this page as a small "update available" or "close?" window.
 const promptKind = new URLSearchParams(location.search).get('prompt');
@@ -150,8 +170,13 @@ let leagueKey = '';
 let wasInVr = false;
 let lastGame = '';
 listen((t) => {
-  if (t === 'config' || t === 'status') drawGameSwitch();
+  if (t === 'config' || t === 'status') {
+    drawGameSwitch();
+    drawVisible();
+  }
   if (t === 'config') render();
+  // The close pop-up says more when you are in a session.
+  if (t === 'status' && promptKind === 'close') render();
   if (t === 'status') {
     renderStatus();
     // The Game card on General says which game is being read.

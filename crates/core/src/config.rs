@@ -76,6 +76,9 @@ pub struct Config {
     /// Closing the settings window: "ask", "quit" (overlays close too) or "keep" (overlays
     /// keep running, the app stays in the tray).
     pub close_action: String,
+    /// Close the settings window to the tray when you drive out of the pits (it frees the
+    /// CPU and memory its window uses; the overlays keep running).
+    pub tray_on_pit_exit: bool,
     /// "Remind me later" / "skip this version" for the update pop-up.
     pub update_postpone: Option<UpdatePostpone>,
 }
@@ -191,6 +194,7 @@ impl Default for Config {
             update_rate: "balanced".into(),
             game: "auto".into(),
             close_action: "ask".into(),
+            tray_on_pit_exit: true,
             lmu_private_qualifying: true,
         }
     }

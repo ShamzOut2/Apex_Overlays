@@ -625,6 +625,7 @@ export interface Config {
   lmuPrivateQualifying?: boolean;
   /** Closing the settings window: ask, close everything, or keep the overlays running. */
   closeAction: 'ask' | 'quit' | 'keep';
+  trayOnPitExit?: boolean;
 }
 
 export interface Penalty {

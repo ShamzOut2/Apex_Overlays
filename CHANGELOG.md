@@ -4,6 +4,18 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### New features
+- A new look for the settings window: the app's own Inter for everything you read and Barlow Condensed for titles, labels and readings, flatter panels, one accent colour and cyan for what is live. The sidebar has a connection card at the top, the pages in groups (On screen, Race weekend, Broadcast) and a switch at the bottom to show or hide every overlay, with its hotkey
+- Overlays page: a small map of your screen shows where every overlay sits (click one to open it; switched-off ones are dashed), the list says why an overlay may not be on screen (Hidden in pits, In the car only, Races only), and Move & resize shows its hotkey
+- The settings window goes to the tray when you drive out of the pits (General → Performance, on by default), so it uses no CPU or memory while you race; your overlays keep running. Opened again from the tray while on track, it stays open until you next leave the pits
+- Closing the settings window during a session asks whether to minimise it to the tray instead, as that keeps your overlays and frees what the window uses
+
+### Performance
+- The settings window uses far less CPU while open: a pulsing "connected" dot redrew the window 60 times a second, and the General page received your car's data 60 times a second for one button. Measured with a game connected: about 15% of a CPU core down to 1.4% on most pages, General 19% to about 3%, Overlays 22% to 12% (its live preview). Blur and gradient effects are gone too
+- Minimising to the tray now closes the settings window rather than hiding it: hidden, it still used about 5% of a core and 180 MB of memory; closed, nothing
+
 ## 1.3.6
 
 ### New features
