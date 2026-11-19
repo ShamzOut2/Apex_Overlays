@@ -12,6 +12,7 @@ export const inputGraph: OverlayDef = {
     'The scrolling throttle, brake and clutch trace on its own, so it can sit anywhere on screen. Switch the graph off in Driver inputs if you use this instead.',
   topics: ['player'],
   size: [360, 110],
+  regions: [['.trace', 'traceSeconds']],
   settings: [
     ...TRACE_SETTINGS,
     { key: 'showClutch', label: 'Clutch', type: 'bool', default: true, group: 'Trace' },

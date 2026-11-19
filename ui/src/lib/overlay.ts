@@ -47,6 +47,10 @@ export interface OverlayDef {
   fitsWidth?: boolean;
   /** Drawn to fill its window (track map, radar, graphs...): the window is not fitted to it. */
   fill?: boolean;
+  /** Parts of the overlay that open their settings when clicked in the editor's preview:
+   *  [CSS selector, key of a setting in the section to open]. The header, class headers and
+   *  table rows are covered for every overlay. */
+  regions?: [string, string][];
   create(root: HTMLElement, ctx: Ctx): View;
 }
 

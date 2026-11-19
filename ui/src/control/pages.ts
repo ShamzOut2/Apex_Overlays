@@ -2,10 +2,11 @@ import { otherGameOnly, overlayBadges, withLmuBadge } from '../lib/badges';
 import { h, text } from '../lib/dom';
 import * as f from '../lib/format';
 import { commonFor, merge, type SettingDef, SHOW_WHEN, showWhenOf, type TrackValues, trackValue } from '../lib/settings';
+import { essentials, isFolded, masterOf, type SettingNode, sectionOf, setFolded, type Tab, TABS, tabOf, tree } from './sections';
 import { applyUiTheme, PRESETS, THEME, themeValues } from '../lib/theme';
 import type { OverlayInstance, Player, SavedLayout, ScreenMonitor } from '../lib/types';
 import { byKind, hiddenKind, OVERLAYS } from '../overlays/registry';
-import { CHOICES, field, form, relevance } from './form';
+import { CHOICES, field, form } from './form';
 import { hotkeyInput } from './hotkey';
 import { releaseHistory } from './releaseNotes';
 import { STATS } from '../lib/monitorStats';
@@ -155,21 +156,11 @@ document.addEventListener('click', (e) => {
   for (const d of document.querySelectorAll<HTMLDetailsElement>('details.menu[open]')) if (!d.contains(e.target as Node)) d.open = false;
 });
 
-/** Overlays name their groups differently; the editor shows them as tabs with common names. */
-const TAB_ALIAS: Record<string, string> = { Elements: 'What to show', Fields: 'What to show', Readouts: 'What to show', Style: 'Look', Format: 'Look', Warnings: 'Alerts', Options: 'Settings' };
-const SIZE_TAB = 'Size & visibility';
-const ADVANCED_TAB = 'Advanced';
-const VR_TAB = 'VR';
-const tabOf = (s: SettingDef, common: boolean) =>
-  common ? (s.group === 'Advanced' ? ADVANCED_TAB : s.group === 'VR' ? VR_TAB : SIZE_TAB) : (TAB_ALIAS[s.group ?? 'Options'] ?? s.group ?? 'Settings');
-
-/** What to show and how it is laid out first; looks and behaviour after; window options last. */
-const FIRST = ['Reference lap', 'What to show', 'Layout', 'Columns', 'Column style', 'Header'];
-const LAST = ['Look', 'Colours', 'Alerts', 'Behaviour', SIZE_TAB, VR_TAB, ADVANCED_TAB];
-const tabRank = (t: string) => (FIRST.includes(t) ? FIRST.indexOf(t) - 100 : LAST.includes(t) ? LAST.indexOf(t) + 100 : 0);
-
 /** Editor state that survives the page being redrawn. */
-const ui = { tab: new Map<string, string>(), query: '' };
+const ui = { tab: new Map<string, string>(), query: '', changedOnly: false, focus: '' };
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+/** Parts of every overlay that open their settings from the preview (see OverlayDef.regions). */
+const GENERIC_REGIONS: [string, string][] = [['.header', 'showHeader'], ['.class-head', 'showClassHeader'], ['.row.head', 'showColumnTitles'], ['.table .row', 'columns']];
 
 function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
   const def = byKind(o.kind)!;
@@ -284,7 +275,7 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
 
   const common = commonFor(def.commonDefaults, def.fitsWidth, def.fill);
   const values = merge([...common, ...def.settings], o.settings);
-  values.showWhen = showWhenOf(values);
+  values.visibleWhen = showWhenOf(values);
   // App-wide settings shown in this overlay's settings: their value lives in the config.
   const sharedPath = (k: string) => def.settings.find((s) => s.key === k)?.shared;
   const sharedAt = (path: string): [Record<string, unknown>, string] => {
@@ -309,39 +300,63 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
     const note = track ? `Saved for ${track.trackName || 'this track'} only` : 'Saved per track: join a session to set it for that track. This is used on tracks without their own';
     return { ...s, help: s.help ? `${s.help}. ${note}` : note };
   });
-  const entries = [...shown.map((s) => ({ s, tab: tabOf(s, false) })), ...common.map((s) => ({ s, tab: tabOf(s, true) }))];
-  const tabs = [...new Set(entries.map((e) => e.tab))].sort((a, b) => tabRank(a) - tabRank(b));
-  let tab = ui.tab.get(o.id) ?? tabs[0];
+  // Every setting with its tab and section; Essentials repeats the hand-picked ones.
+  type Entry = { s: SettingDef; tab: Tab; section: string };
+  const all: Entry[] = [...shown, ...common].map((s) => ({ s, tab: tabOf(s), section: sectionOf(s) }));
+  const ess = essentials(def.kind)
+    .map((k) => all.find((e) => e.s.key === k))
+    .filter((e): e is Entry => !!e)
+    .map((e) => ({ ...e, tab: 'Essentials' as Tab, section: 'The essentials' }));
+  const entries: Entry[] = [...ess, ...all];
+  const tabs = TABS.filter((t) => entries.some((e) => e.tab === t));
+  let tab = (ui.tab.get(o.id) as Tab | undefined) ?? tabs[0];
   if (!tabs.includes(tab)) tab = tabs[0];
+  const defOf = (k: string) => all.find((e) => e.s.key === k)?.s;
+  const applies = (s: SettingDef) => !s.when || s.when(values);
+  /** Differs from its default, and applies with the other choices. */
+  const isChanged = (s: SettingDef) => applies(s) && !same(values[s.key], s.default);
+  const changedIn = (list: Entry[]) => new Set(list.filter((e) => isChanged(e.s)).map((e) => e.s.key)).size;
 
-  const changed = (t: string) => entries.some((e) => e.tab === t && e.s.key in o.settings && JSON.stringify(o.settings[e.s.key]) !== JSON.stringify(e.s.default));
-  // Settings that only apply with other choices are shown or hidden as those change.
-  let relevant = () => {};
-  const onChange = (k: string, v: unknown) => {
+  // After a change the markers and counts update; a switch or a choice can add or remove
+  // other settings, so the panel is drawn again for those.
+  let refresh = () => {};
+  /** Stores a value where it lives (this overlay, the app's config, or this track). */
+  const store = (k: string, v: unknown) => {
     values[k] = v;
     const path = sharedPath(k);
     if (path) {
       const [obj, key] = sharedAt(path);
       obj[key] = v;
-    } else if (k === 'showWhen') {
+    } else if (k === 'visibleWhen') {
       // One choice, stored as the three switches the overlays read.
       const sw = SHOW_WHEN.find(([id]) => id === v)?.[2];
       if (sw) {
         Object.assign(values, sw);
         o.settings = { ...o.settings, ...sw };
-        save();
-        // The overlay list's tags (Hidden in pits…) follow.
-        rerender();
-        return;
       }
     } else if (isPerTrack(k)) {
       const tracks = { ...((o.settings.tracks as TrackValues | undefined) ?? {}) };
       tracks[String(track!.trackId)] = { ...trackOwn(), [k]: v };
       o.settings = { ...o.settings, tracks };
     } else o.settings = { ...o.settings, [k]: v };
+  };
+  const onChange = (k: string, v: unknown) => {
+    store(k, v);
     save();
+    // The overlay list's tags (Hidden in pits…) follow "Show".
+    if (k === 'visibleWhen') return rerender();
     drawTabs();
-    relevant();
+    const t = defOf(k)?.type;
+    if (t === 'bool' || t === 'select') drawPanel();
+    else refresh();
+  };
+  /** Puts settings back to their defaults, saved once. */
+  const resetAll = (list: SettingDef[]) => {
+    for (const s of list) if (isChanged(s)) store(s.key, structuredClone(s.default));
+    save();
+    if (list.some((s) => s.key === 'visibleWhen')) return rerender();
+    drawTabs();
+    drawPanel();
   };
 
   const search = h('input', 'search');
@@ -425,58 +440,265 @@ function overlayEditor(o: OverlayInstance, rerender: () => void): HTMLElement {
             tab = t;
             ui.tab.set(o.id, t);
             ui.query = '';
+            ui.changedOnly = false;
+            ui.focus = '';
             search.value = '';
             drawTabs();
             drawPanel();
           },
-          `tab${t === tab && !ui.query ? ' sel' : ''}`,
+          `tab${t === tab && !ui.query && !ui.changedOnly ? ' sel' : ''}`,
         );
-        if (changed(t)) {
-          b.append(h('span', 'tab-dot'));
-          b.title = 'Some settings here differ from the default';
+        // How many settings here differ from the default.
+        const n = changedIn(entries.filter((e) => e.tab === t));
+        if (n) {
+          const c = h('span', 'tab-count', String(n));
+          c.title = n === 1 ? 'One setting here differs from the default' : `${n} settings here differ from the default`;
+          b.append(c);
         }
         return b;
       }),
     );
+    onlyChanged.classList.toggle('on', ui.changedOnly);
+    onlyChanged.setAttribute('aria-pressed', String(ui.changedOnly));
+  };
+
+  /** A setting's row: its marker dot, indented by how deep it is nested. */
+  const rowFor = (s: SettingDef, depth: number) => {
+    const el = field(s, values, onChange);
+    el.classList.add('sec-row');
+    if (depth) {
+      el.classList.add('nested');
+      el.style.setProperty('--depth', String(depth));
+    }
+    const dot = h('span', 'chg-dot');
+    dot.title = 'Changed from the default';
+    el.prepend(dot);
+    return el;
+  };
+
+  interface Sec {
+    el: HTMLElement;
+    title: string;
+    list: SettingDef[];
+    rows: [SettingDef, HTMLElement][];
+    master: SettingDef | null;
+    count: HTMLElement;
+    reset: HTMLElement;
+    chevron: HTMLButtonElement | null;
+    hiddenNote: HTMLElement;
+  }
+
+  /**
+   * A section: its title, how many of its settings are changed, Reset section, the switch that
+   * turns it on and off (when it has one), a chevron folding its options away, and its
+   * settings with options nested under the switch they depend on.
+   */
+  const sectionEl = (title: string, list: SettingDef[], opts: { nest: boolean; fold: boolean }): Sec => {
+    const el = h('section', 'sec');
+    const head = h('div', 'sec-head');
+    const titles = h('div', 'sec-titles');
+    const name = h('div', 'sec-title-row');
+    name.append(h('span', 'sec-title', title));
+    if (opts.fold && ui.focus === title) {
+      el.classList.add('focus');
+      name.append(h('span', 'sec-from', 'Opened from the preview'));
+    }
+    titles.append(name);
+    const count = h('span', 'sec-count');
+    const hiddenNote = h('span', 'sec-hidden dim');
+    const reset = button('Reset section', () => resetAll(list), 'subtle sec-reset');
+    head.append(h('span', 'chg-dot'), titles, count, hiddenNote, reset);
+    const body = h('div', 'sec-body');
+    const rows: [SettingDef, HTMLElement][] = [];
+    let master: SettingDef | null = null;
+    const add = (nodes: SettingNode[], depth: number) => {
+      for (const n of nodes) {
+        rows.push([n.s, rowFor(n.s, depth)]);
+        add(n.kids, depth + 1);
+      }
+    };
+    if (opts.nest) {
+      const roots = tree(list, values);
+      master = masterOf(roots, list.length);
+      if (master) {
+        // The section's own switch, in its header.
+        const ctl = field(master, values, onChange).querySelector('.field-end > :first-child');
+        if (master.help) titles.append(h('small', 'help', master.help));
+        if (ctl) head.append(ctl);
+        el.classList.add('has-master');
+        add(roots[0].kids, 0);
+      } else add(roots, 0);
+    } else for (const s of list) rows.push([s, rowFor(s, 0)]);
+    body.append(...rows.map((r) => r[1]));
+    let chevron: HTMLButtonElement | null = null;
+    if (opts.fold) {
+      chevron = button(
+        '',
+        () => {
+          const folded = !el.classList.contains('folded');
+          setFolded(def.kind, title, folded);
+          el.classList.toggle('folded', folded);
+          refresh();
+        },
+        'sec-fold',
+      );
+      chevron.innerHTML = '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      head.append(chevron);
+      // Opened from the preview: shown even if folded.
+      if (isFolded(def.kind, title) && ui.focus !== title) el.classList.add('folded');
+    }
+    el.append(head, body);
+    return { el, title, list, rows, master, count, reset, chevron, hiddenNote };
+  };
+
+  /** Brings each section's rows, markers, counts and fold up to date with the values. */
+  const refreshSections = (secs: Sec[], filter: boolean) => {
+    for (const sec of secs) {
+      if (filter) for (const [s, el] of sec.rows) el.hidden = !applies(s);
+      for (const [s, el] of sec.rows) el.classList.toggle('changed', isChanged(s));
+      const masterOn = !sec.master || (values[sec.master.key] as boolean);
+      const masterShown = !!sec.master && applies(sec.master);
+      const visible = sec.rows.filter(([, el]) => !el.hidden).length;
+      sec.el.hidden = filter && !masterShown && visible === 0;
+      sec.el.classList.toggle('off', !!sec.master && !masterOn);
+      sec.el.classList.toggle('changed', !!sec.master && isChanged(sec.master));
+      sec.el.classList.toggle('empty', visible === 0);
+      const n = new Set(sec.list.filter(isChanged).map((s) => s.key)).size;
+      text(sec.count, n ? `${n} changed` : '');
+      sec.count.hidden = !n;
+      sec.reset.hidden = !n;
+      const folded = sec.el.classList.contains('folded');
+      if (sec.chevron) {
+        sec.chevron.hidden = visible === 0 || !masterOn;
+        sec.chevron.title = folded ? `Show the ${sec.title} settings` : `Hide the ${sec.title} settings (they stay on)`;
+        sec.chevron.setAttribute('aria-expanded', String(!folded));
+      }
+      text(sec.hiddenNote, folded && masterOn && visible ? (visible === 1 ? '1 setting hidden' : `${visible} settings hidden`) : '');
+    }
   };
 
   const drawPanel = () => {
     const q = ui.query.trim().toLowerCase();
-    if (q) {
-      const hits = entries.filter(({ s, tab: t }) => `${s.label} ${s.help ?? ''} ${t}`.toLowerCase().includes(q));
-      const parts: HTMLElement[] = [];
-      for (const t of tabs) {
-        const inTab = hits.filter((e) => e.tab === t);
-        if (!inTab.length) continue;
-        // Searching finds every setting, including ones that only apply with other choices.
-        parts.push(h('h3', '', t), ...inTab.map((e) => field(e.s, values, onChange)));
+    // Search and "Changed only" list settings from every tab, under "Tab › Section".
+    if (q || ui.changedOnly) {
+      const hits = all.filter((e) => (q ? `${e.s.label} ${e.s.help ?? ''} ${e.section} ${e.tab}`.toLowerCase().includes(q) : isChanged(e.s)));
+      const groups = new Map<string, SettingDef[]>();
+      for (const e of hits) {
+        const k = `${e.tab} › ${e.section}`;
+        groups.set(k, [...(groups.get(k) ?? []), e.s]);
       }
-      relevant = () => {};
-      panel.replaceChildren(...(parts.length ? parts : [h('p', 'dim', `No setting matches “${ui.query}”.`)]));
+      const secs = [...groups].map(([title, list]) => sectionEl(title, list, { nest: false, fold: false }));
+      // Searching finds every setting, including ones that only apply with other choices.
+      refresh = () => refreshSections(secs, !q);
+      refresh();
+      const empty = q ? `No setting matches “${ui.query}”.` : 'Nothing changed: every setting here is at its default.';
+      const note = q ? 'Results from every tab.' : 'Everything you have changed on this overlay, from every tab. ↺ puts one back.';
+      panel.replaceChildren(...(secs.length ? [h('p', 'dim small sec-note', note), ...secs.map((x) => x.el)] : [h('p', 'dim', empty)]));
       return;
     }
-    const rows: [SettingDef, HTMLElement][] = entries.filter((e) => e.tab === tab).map((e) => [e.s, field(e.s, values, onChange)]);
+    const groups = new Map<string, SettingDef[]>();
+    for (const e of entries.filter((x) => x.tab === tab)) groups.set(e.section, [...(groups.get(e.section) ?? []), e.s]);
+    const essentialsTab = tab === 'Essentials';
+    const secs = [...groups].map(([title, list]) => sectionEl(title, list, { nest: !essentialsTab, fold: !essentialsTab }));
     const none = h('p', 'dim', 'Nothing here applies with your current choices (for example the columns shown, or a feature switched off).');
-    const apply = relevance(rows, values);
-    relevant = () => {
-      apply();
-      none.hidden = rows.some((r) => !r[1].hidden);
+    refresh = () => {
+      refreshSections(secs, true);
+      none.hidden = secs.some((x) => !x.el.hidden);
     };
-    relevant();
-    panel.replaceChildren(...rows.map((r) => r[1]), none, ...(tab === SIZE_TAB ? [sizeExtras()] : []));
+    refresh();
+    const lead = essentialsTab ? [h('p', 'dim small sec-note', 'The settings most people change. Everything else is in the other tabs, the same on every overlay.')] : [];
+    panel.replaceChildren(...lead, ...secs.map((x) => x.el), none, ...(tab === 'Window' ? [sizeExtras()] : []));
+    // Opened from the preview: brought into view.
+    const focused = panel.querySelector<HTMLElement>('.sec.focus');
+    if (focused) requestAnimationFrame(() => focused.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
   };
+
+  /** Opens the settings of a part of the overlay clicked in the preview. */
+  const jumpTo = (key: string) => {
+    const e = all.find((x) => x.s.key === key);
+    if (!e) return;
+    tab = e.tab;
+    ui.tab.set(o.id, tab);
+    ui.focus = e.section;
+    ui.query = '';
+    ui.changedOnly = false;
+    search.value = '';
+    drawTabs();
+    drawPanel();
+  };
+
+  // The preview: hovering a part outlines it, clicking it opens its settings.
+  const regions = [...(def.regions ?? []), ...GENERIC_REGIONS].filter(([, k]) => all.some((e) => e.s.key === k));
+  const idleHint = 'Click a part of the preview to open its settings.';
+  const hint = h('p', 'dim small preview-hint', regions.length ? idleHint : '');
+  hint.hidden = !regions.length;
+  const wirePreview = () => {
+    const doc = frame.contentDocument;
+    if (!doc || !regions.length || doc.documentElement.dataset.apexEdit) return;
+    doc.documentElement.dataset.apexEdit = '1';
+    const css = doc.createElement('style');
+    css.textContent = '.apex-hot { outline: 1px dashed var(--accent, #ff3d57) !important; outline-offset: 2px; cursor: pointer; }';
+    doc.head.append(css);
+    const find = (t: EventTarget | null): [Element, string] | null => {
+      const el = t as Element | null;
+      if (!el || typeof el.closest !== 'function') return null;
+      for (const [sel, k] of regions) {
+        const m = el.closest(sel);
+        if (m) return [m, k];
+      }
+      return null;
+    };
+    let hot: Element | null = null;
+    const mark = (r: [Element, string] | null) => {
+      const m = r?.[0] ?? null;
+      if (m !== hot) {
+        hot?.classList.remove('apex-hot');
+        m?.classList.add('apex-hot');
+        hot = m;
+      }
+      const e = r && all.find((x) => x.s.key === r[1]);
+      text(hint, e ? `Click to open: ${e.section} (${e.tab})` : idleHint);
+    };
+    doc.addEventListener('mouseover', (ev) => mark(find(ev.target)));
+    doc.documentElement.addEventListener('mouseleave', () => mark(null));
+    doc.addEventListener('click', (ev) => {
+      const r = find(ev.target);
+      if (!r) return;
+      ev.preventDefault();
+      jumpTo(r[1]);
+    });
+  };
+  frame.addEventListener('load', () => setTimeout(wirePreview, 200));
+
+  const onlyChanged = button(
+    'Changed only',
+    () => {
+      ui.changedOnly = !ui.changedOnly;
+      ui.query = '';
+      ui.focus = '';
+      search.value = '';
+      drawTabs();
+      drawPanel();
+    },
+    'subtle chg-only',
+  );
+  onlyChanged.title = 'Every setting you have changed on this overlay, from every tab';
 
   search.oninput = () => {
     ui.query = search.value;
+    ui.focus = '';
+    if (ui.query) ui.changedOnly = false;
     drawTabs();
     drawPanel();
   };
   drawTabs();
   drawPanel();
-  // Search sits at the end of the tab row.
   const tabRow = h('div', 'tab-row');
-  tabRow.append(tabBar, search, tabInd);
-  wrap.append(head, preview, tabRow, panel);
+  tabRow.append(tabBar, tabInd);
+  // The search and "Changed only" on a row of their own under the tabs.
+  const tools = h('div', 'tab-tools');
+  tools.append(search, onlyChanged);
+  wrap.append(head, preview, hint, tabRow, tools, panel);
   return wrap;
 }
 

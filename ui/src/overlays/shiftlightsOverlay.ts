@@ -9,6 +9,7 @@ export const shiftlights: OverlayDef = {
   description: 'The car’s rev lights on their own, with the RPM if you like. The same lights as in Driver inputs: the car’s own pattern and per-gear shift points where known.',
   topics: ['player', 'car'],
   size: [420, 70],
+  regions: [['.shift-lights', 'shiftLayout'], ['.rpm', 'showRpm']],
   commonDefaults: { autoHeight: true },
   settings: [
     { key: 'showRpm', label: 'RPM', type: 'bool', default: false, group: 'Layout', help: 'The engine RPM with the lights. It turns the “shift now” colour at the car’s shift point' },
