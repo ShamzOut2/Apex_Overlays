@@ -438,7 +438,7 @@ export function extraCols<R extends Driver & Extras>(s: Values, units: () => Uni
 /** The colour of the bar by each driver (relative and standings). */
 export const STRIPE_COLOR_SETTING = {
   key: 'stripeColor',
-  label: 'Colour bar by each driver',
+  label: 'Bar colour from',
   type: 'select' as const,
   default: 'class',
   options: [

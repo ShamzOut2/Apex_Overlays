@@ -603,3 +603,70 @@ body.no-motion .conn-lights { display: none !important; }
 /* The hotkey on a main (accent) button: in the button's text colour on a light tint of it,
    not the dark panel colour, so it reads on the accent. */
 button.primary kbd { background: color-mix(in srgb, var(--accent-text) 16%, transparent); border-color: color-mix(in srgb, var(--accent-text) 38%, transparent); color: var(--accent-text); font-weight: 600; }
+
+/* Overlay settings: the same six tabs everywhere, each made of sections. A section's own
+   switch sits in its header, options nest under the switch they depend on, a dot marks a
+   setting changed from its default, and the chevron folds a section's options away. */
+.tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; margin-left: 6px; padding: 0 4px; border-radius: 999px; background: var(--accent); color: var(--accent-text); font-size: 10px; font-weight: 700; line-height: 1; vertical-align: 1px; }
+.tab-tools { display: flex; align-items: center; gap: 8px; margin: 10px 0 12px; }
+.tab-tools > input.search { flex: 1 1 auto; max-width: 340px; margin: 0; padding-top: 6px; padding-bottom: 6px; }
+.tab-tools > button.chg-only { margin-left: auto; min-height: 32px; padding: 4px 12px; font-size: 12px; font-weight: 600; }
+.tab-tools > button.chg-only.on { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.tab-panel { display: flex; flex-direction: column; gap: 12px; }
+.tab-panel > .sec-note { margin: 4px 0 0; }
+.preview-hint { margin: 0 0 4px; }
+.sec { border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--panel-2) 45%, transparent); overflow: hidden; }
+.sec[hidden] { display: none; }
+.sec.focus { border-color: var(--accent); animation: sec-flash 0.9s ease-out 2; }
+@keyframes sec-flash { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+.sec-head { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
+.sec:not(.off):not(.folded):not(.empty) > .sec-head { border-bottom: 1px solid var(--line); }
+.sec-titles { display: flex; flex-direction: column; min-width: 0; margin-right: auto; }
+.sec-title-row { display: flex; align-items: center; gap: 10px; }
+.sec-title { font-family: var(--display); font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.sec.off .sec-title { color: var(--dim); }
+.sec-from { font-size: 11px; font-weight: 600; color: var(--accent); }
+.sec-count { padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.sec-count[hidden], .sec-reset[hidden], .sec-fold[hidden] { display: none; }
+.sec-hidden { font-size: 11px; white-space: nowrap; }
+.sec-hidden:empty { display: none; }
+button.sec-reset { min-height: 0; padding: 2px 6px; font-size: 12px; color: var(--dim); }
+button.sec-fold { display: inline-flex; align-items: center; justify-content: center; width: 28px; min-height: 28px; height: 28px; padding: 0; border-radius: 7px; color: var(--dim); transition: transform 0.2s; }
+.sec.folded button.sec-fold { transform: rotate(-90deg); }
+.sec.off > .sec-body, .sec.folded > .sec-body { display: none; }
+.sec-body { padding: 0 14px; }
+.sec-row { position: relative; padding-left: calc(var(--depth, 0) * 22px + 12px); }
+/* Nested options: indented, with a line down from the switch they belong to. */
+.sec-row.nested::before { content: ''; position: absolute; left: calc(var(--depth) * 22px - 6px); top: 0; bottom: 0; width: 2px; background: var(--line); }
+.chg-dot { position: absolute; left: calc(var(--depth, 0) * 22px); top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--accent); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.sec-row.changed > .chg-dot { opacity: 1; }
+.sec-row.wide > .chg-dot { top: 20px; }
+.sec-head > .chg-dot { left: 4px; }
+.sec.changed > .sec-head > .chg-dot { opacity: 1; }
+
+/* General: the same tabs and sections as an overlay's settings. */
+.gen-page { display: flex; flex-direction: column; gap: 12px; max-width: 980px; }
+.gen-page > .tab-tools { margin: 0; }
+.gen-page > .sec-note { margin: 0; }
+.gen-tabs { margin: 0; }
+.gen-tabs button.tab.sel { box-shadow: inset 0 -2px 0 var(--accent); }
+.gen-page .gen-filtered { display: none !important; }
+.gen-page button.chg-only[hidden] { display: none; }
+.gen-page .tab-tools > button.chg-only + button.chg-only { margin-left: 0; }
+.gen-page .tab-tools > button.chg-only:first-of-type { margin-left: auto; }
+.gen-page .tab-tools > button.chg-only.on { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.gen-body { padding: 4px 14px 14px; }
+.gen-body > p:first-child { margin-top: 8px; }
+.gen-body > button { margin: 6px 6px 0 0; }
+.gen-filtering .sec.folded > .sec-body { display: block; }
+.sec-tab { margin-right: 2px; font-size: 12px; font-weight: 600; }
+.sec-tab[hidden] { display: none; }
+.gen-clash[hidden], .gen-page > .gen-tiles[hidden] { display: none; }
+.gen-clash { margin: 0; }
+.gen-pill { padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, var(--live, #3dd6f5) 12%, transparent); color: var(--live, #3dd6f5); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.gen-pill.good { background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); }
+.rate-row .rate-cards { margin: 0; }
+/* Actions that cannot be undone: set apart, at the end of their section. */
+.danger-zone { margin-top: 14px; padding-top: 10px; border-top: 1px dashed color-mix(in srgb, var(--bad) 45%, transparent); }
+.danger-zone > p { margin: 0 0 8px; }
+.gen-page .help.bad { color: var(--bad); }

@@ -149,7 +149,9 @@ export const COMMON: SettingDef[] = [
     group: 'General',
   },
   {
-    key: 'showWhen',
+    // Not stored: worked out from the three switches below (named so it never clashes with an
+    // overlay's own setting).
+    key: 'visibleWhen',
     label: 'Show',
     type: 'select',
     default: 'game',

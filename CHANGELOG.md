@@ -4,6 +4,29 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 1.5.0
+
+### New features
+- Overlay settings, reorganised (every setting and what it does stays the same, and saved layouts keep working):
+  - The same tabs on every overlay, always in this order: Essentials, Content, Layout, Style, Behaviour and Window (a tab with nothing in it for that overlay is left out). The settings that used to be spread over 45 differently named tabs are now sections inside these
+  - Essentials: the handful of settings most people change for that overlay, plus Show and Text size, on one page
+  - Options sit under the switch that turns them on, indented with a line, instead of appearing elsewhere in the list
+  - A section that one switch turns on and off (Shift lights, Corner speeds…) has that switch in its header; switched off, it folds down to the header
+  - A chevron on each section folds its options away to save space while leaving it on ("3 settings hidden"); folded sections are remembered per overlay type
+  - What you have changed is easy to see: a dot by each changed setting, "1 changed" and Reset section on each section, a count on each tab, and Changed only to list every change on the overlay
+  - Search covers every tab of the overlay, with results under "Tab › Section"
+  - Click a part of the preview (the gear, the wheel, the speed boxes, a row of the relative, a header…) to open its settings; hovering outlines what you can click
+- General, reorganised the same way (every setting and button is still there):
+  - Tabs instead of one long page: Essentials (game, units, update rate, the show/hide hotkey, and how updates and your licence stand), Racing data (units, short class names, ratings, private qualifying, game, track map & corners), Performance (the live readings, update rate, this window, monitoring), Hotkeys, VR and App (licence, updates, server, backup, logs)
+  - Sections fold away, change dots, counts on tabs and sections, Reset section, Changed only, and a search across every tab that finds buttons too (e.g. "export")
+  - Hotkeys: "Set only" shows just the hotkeys you use, and a hotkey used twice is named in a banner at the top
+  - VR: "Show overlays in VR" is in the section header; off, the whole tab is one line
+  - The live readings are on the Performance tab, so the other tabs are not redrawing graphs; Reset everything sits apart, at the end of Backup
+
+### Fixes
+- Incident tracker: "Lap and session time" could not be changed (it shared its name with the Show setting)
+- Relative: the colour choice under "Colour bar by each driver" is now called "Bar colour from" instead of repeating the same name
+
 ## 1.4.0
 
 ### New features

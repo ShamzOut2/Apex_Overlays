@@ -42,6 +42,7 @@ export const inputs: OverlayDef = {
   description: 'Throttle, brake and clutch bars with a scrolling input trace, steering wheel, gear, speed and RPM. Updates every telemetry tick.',
   topics: ['player', 'session', 'car'],
   size: [420, 140],
+  regions: [['.shift-lights', 'showShiftLights'], ['.rpm', 'showRpm'], ['.trace', 'traceSeconds'], ['.bars', 'showBars'], ['.wheel-block', 'wheelStyle'], ['.speeds', 'showCornerSpeeds'], ['.gear', 'gearColor']],
   settings: [
     {
       key: 'sideLayout',
