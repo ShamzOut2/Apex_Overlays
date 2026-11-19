@@ -1,7 +1,7 @@
 import { otherGameOnly, overlayBadges, withLmuBadge } from '../lib/badges';
 import { h, text } from '../lib/dom';
 import * as f from '../lib/format';
-import { commonFor, merge, type SettingDef, SHOW_WHEN, showWhenOf, type TrackValues, trackValue } from '../lib/settings';
+import { commonFor, merge, type SettingDef, SHOW_WHEN, type Values, showWhenOf, type TrackValues, trackValue } from '../lib/settings';
 import { essentials, isFolded, masterOf, type SettingNode, sectionOf, setFolded, type Tab, TABS, tabOf, tree } from './sections';
 import { applyUiTheme, PRESETS, THEME, themeValues } from '../lib/theme';
 import type { OverlayInstance, Player, SavedLayout, ScreenMonitor } from '../lib/types';
@@ -158,6 +158,8 @@ document.addEventListener('click', (e) => {
 
 /** Editor state that survives the page being redrawn. */
 const ui = { tab: new Map<string, string>(), query: '', changedOnly: false, focus: '' };
+/** The General page's tab, search and filters, kept while it is drawn again. */
+const gen = { tab: 'Essentials', query: '', changedOnly: false, setOnly: false };
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 /** Parts of every overlay that open their settings from the preview (see OverlayDef.regions). */
 const GENERIC_REGIONS: [string, string][] = [['.header', 'showHeader'], ['.class-head', 'showClassHeader'], ['.row.head', 'showColumnTitles'], ['.table .row', 'columns']];
@@ -1636,92 +1638,6 @@ export function applyLayout(id: string) {
   save(true);
 }
 
-/** Every hotkey: editing, layouts, and one per overlay. All but the first two start blank. */
-function hotkeysCard(): HTMLElement {
-  const cfg = state.config!;
-  const hk = cfg.hotkeys;
-  hk.layouts ??= {};
-  hk.overlays ??= {};
-  const c = card('Hotkeys');
-  c.append(h('p', 'dim', 'Click a box and press the keys (Ctrl, Alt or Shift plus a key, or an F-key). Backspace clears it.'));
-  const all = (): string[] => [hk.toggleEdit, hk.toggleVisibility, hk.nextLayout, ...Object.values(hk.layouts), ...Object.values(hk.overlays)].filter((k) => k?.trim());
-  const rows: { warn: HTMLElement; get: () => string }[] = [];
-  const checkClashes = () => {
-    const used = all().map((k) => k.toLowerCase());
-    for (const r of rows) {
-      const k = r.get().toLowerCase();
-      const clash = !!k && used.filter((u) => u === k).length > 1;
-      r.warn.hidden = !clash;
-    }
-  };
-  const row = (label: string, get: () => string, set: (v: string) => void, sub = '') => {
-    const el = h('div', 'field hotkey-row');
-    const lab = h('span', 'field-label');
-    lab.append(h('span', 'field-name', label));
-    if (sub) lab.append(h('small', 'help', sub));
-    const warn = h('small', 'help bad', 'Also used by another hotkey');
-    warn.hidden = true;
-    lab.append(warn);
-    rows.push({ warn, get });
-    el.append(
-      lab,
-      hotkeyInput(get() ?? '', (v) => {
-        set(v);
-        save(true);
-        checkClashes();
-      }),
-    );
-    return el;
-  };
-  const group = (title: string, ...children: (Node | string)[]) => {
-    const fs = h('fieldset');
-    fs.append(h('legend', '', title), ...children);
-    return fs;
-  };
-  const layouts = cfg.layouts ?? [];
-  const grid = h('div', 'form hotkeys');
-  grid.append(
-    group(
-      'Overlays',
-      row('Edit mode (move & resize)', () => hk.toggleEdit, (v) => (hk.toggleEdit = v)),
-      row('Show / hide all overlays', () => hk.toggleVisibility, (v) => (hk.toggleVisibility = v)),
-    ),
-    group(
-      'Layouts',
-      row('Next layout', () => hk.nextLayout ?? '', (v) => (hk.nextLayout = v), 'Cycles through your saved layouts'),
-      row('Recentre VR', () => hk.vrRecenter ?? '', (v) => (hk.vrRecenter = v), 'Resets SteamVR’s seated position, which the overlays fixed in the car are placed from'),
-      ...layouts.map((l) =>
-        row(
-          `Switch to “${l.name}”`,
-          () => hk.layouts[l.id] ?? '',
-          (v) => {
-            if (v) hk.layouts[l.id] = v;
-            else delete hk.layouts[l.id];
-          },
-        ),
-      ),
-      ...(layouts.length ? [] : [h('p', 'dim small', 'Save layouts under Overlays → Layouts, then give each one a hotkey here.')]),
-    ),
-    group(
-      'Show / hide one overlay',
-      ...cfg.overlays.filter(listed).map((o) =>
-        row(
-          o.name || byKind(o.kind)?.name || o.kind,
-          () => hk.overlays[o.id] ?? '',
-          (v) => {
-            if (v) hk.overlays[o.id] = v;
-            else delete hk.overlays[o.id];
-          },
-          o.name ? byKind(o.kind)?.name : '',
-        ),
-      ),
-    ),
-  );
-  c.append(grid);
-  checkClashes();
-  return c;
-}
-
 /** Live readings of what Apex Overlays uses, updated in place once a second. */
 const monitorView = {
   tiles: new Map<string, HTMLElement>(),
@@ -2156,6 +2072,10 @@ const generalPage: Page = {
             { key: 'port', label: 'Port', type: 'number', default: 8182, min: 1024, max: 65535, group: 'Server (restart to apply)' },
             { key: 'lanAccess', label: 'Allow other PCs on my network', type: 'bool', default: false, group: 'Server (restart to apply)' },
           ];
+    const rerender = () => this.render(el);
+    let refresh = () => {};
+    /** Settings shown in Essentials and in their own tab: the page is drawn again so both agree. */
+    const TWICE = new Set(['units', 'updateRate']);
     const onChange = (k: string, v: unknown) => {
       if (k === 'units') cfg.units = v as typeof cfg.units;
       if (k === 'port') cfg.server.port = v as number;
@@ -2171,81 +2091,526 @@ const generalPage: Page = {
       }
       if (k === 'lmuPrivateQualifying') cfg.lmuPrivateQualifying = v as boolean;
       save();
+      if (TWICE.has(k)) rerender();
+      else refresh();
     };
-    /** Some of the settings above, as a plain list in a card. */
-    const fields = (keys: string[]) => {
-      const f = form(SCHEMA.filter((x) => keys.includes(x.key)), opts, onChange);
-      f.classList.add('plain');
-      return f;
+
+    /** A row the page can mark as changed and put back to its default. */
+    interface Item {
+      el: HTMLElement;
+      changed: () => boolean;
+      reset: () => void;
+      hot?: { get: () => string };
+    }
+    const dotted = (row: HTMLElement) => {
+      row.classList.add('sec-row');
+      const d = h('span', 'chg-dot');
+      d.title = 'Changed from the default';
+      row.prepend(d);
+      return row;
     };
-    const display = card('Display', fields(['units', 'ratingsOfficialOnly', 'shortClassNames', 'lmuPrivateQualifying', 'closeAction', 'uiAnimations']));
-    const server = card('Server', h('p', 'dim small', 'Restart Apex Overlays after changing these.'), fields(['port', 'lanAccess']));
-    // The update rate as three cards to pick from, then the tray when leaving the pits.
-    const rateDef = SCHEMA.find((x) => x.key === 'updateRate')!;
-    const rates = h('div', 'rate-cards');
-    rates.setAttribute('role', 'radiogroup');
-    rates.setAttribute('aria-label', 'Overlay update rate');
-    const RATE_TEXT: Record<string, [string, string]> = { fast: ['Light', 'Least CPU and FPS impact'], balanced: ['Balanced', 'Recommended'], full: ['Every tick', '60 times a second'] };
-    const rateButtons = (rateDef.type === 'select' ? rateDef.options : []).map(([id]) => {
-      const b = h('button', 'rate-card');
-      b.setAttribute('role', 'radio');
-      b.append(h('span', 'rate-name', RATE_TEXT[id]?.[0] ?? id), h('span', 'rate-help', RATE_TEXT[id]?.[1] ?? ''));
-      b.onclick = () => {
-        opts.updateRate = id as typeof opts.updateRate;
-        onChange('updateRate', id);
-        drawRates();
+    const values = opts as unknown as Values;
+    const settingRow = (key: string): Item => {
+      const s = SCHEMA.find((x) => x.key === key)!;
+      return {
+        el: dotted(field(s, values, onChange)),
+        changed: () => !same(values[key], s.default),
+        reset: () => {
+          values[key] = structuredClone(s.default);
+          onChange(key, values[key]);
+        },
       };
-      return { id, b };
-    });
-    const drawRates = () => {
-      for (const { id, b } of rateButtons) {
-        b.classList.toggle('sel', opts.updateRate === id);
-        b.setAttribute('aria-checked', String(opts.updateRate === id));
-      }
     };
-    drawRates();
-    rates.append(...rateButtons.map((r) => r.b));
-    const rate = card('Overlay update rate', h('p', 'dim', 'How often overlays redraw. Lower uses less CPU and leaves more frames for the game.'), rates, fields(['trayOnPitExit']));
-    // The headline readings, the rest under Monitoring further down.
+    const GAME: SettingDef = {
+      key: 'game',
+      label: 'Game',
+      type: 'select',
+      default: 'auto',
+      options: [
+        ['auto', 'Automatic'],
+        ['iracing', 'iRacing'],
+        ['lmu', 'Le Mans Ultimate'],
+      ],
+      help: 'Automatic: whichever game is running',
+    };
+    const gameRow = (): Item => ({
+      el: dotted(
+        field(GAME, { game: cfg.game ?? 'auto' }, (_k, v) => {
+          cfg.game = v as 'auto' | 'iracing' | 'lmu';
+          save();
+          rerender();
+        }),
+      ),
+      changed: () => (cfg.game ?? 'auto') !== 'auto',
+      reset: () => {
+        cfg.game = 'auto';
+        save();
+        rerender();
+      },
+    });
+    // The update rate as three cards to pick from.
+    const rateDef = SCHEMA.find((x) => x.key === 'updateRate')!;
+    const RATE_TEXT: Record<string, [string, string]> = { fast: ['Light', 'Least CPU and FPS impact'], balanced: ['Balanced', 'Recommended'], full: ['Every tick', '60 times a second'] };
+    const rateRow = (): Item => {
+      const rates = h('div', 'rate-cards');
+      rates.setAttribute('role', 'radiogroup');
+      rates.setAttribute('aria-label', 'Overlay update rate');
+      for (const [id] of rateDef.type === 'select' ? rateDef.options : []) {
+        const b = h('button', `rate-card${opts.updateRate === id ? ' sel' : ''}`);
+        b.setAttribute('role', 'radio');
+        b.setAttribute('aria-checked', String(opts.updateRate === id));
+        b.append(h('span', 'rate-name', RATE_TEXT[id]?.[0] ?? id), h('span', 'rate-help', RATE_TEXT[id]?.[1] ?? ''));
+        b.onclick = () => {
+          opts.updateRate = id as typeof opts.updateRate;
+          onChange('updateRate', id);
+        };
+        rates.append(b);
+      }
+      const row = h('div', 'field wide rate-row');
+      row.dataset.key = 'updateRate';
+      const lab = h('span', 'field-label');
+      lab.append(h('span', 'field-name', 'Overlay update rate'), h('small', 'help', 'How often overlays redraw. Lower uses less CPU and leaves more frames for the game.'));
+      row.append(lab, rates);
+      return {
+        el: dotted(row),
+        changed: () => opts.updateRate !== 'balanced',
+        reset: () => {
+          opts.updateRate = 'balanced';
+          onChange('updateRate', 'balanced');
+        },
+      };
+    };
+
+    // Hotkeys: each row with its clash warning; all of them checked for clashes.
+    const hk = cfg.hotkeys;
+    const keyName = (k: string) => k.replace('CmdOrCtrl', 'Ctrl').replace('Shift', '⇧').split('+').join(' ');
+    // One entry per hotkey setting (Show / hide all appears on two tabs but is one hotkey).
+    const hots = new Map<string, { label: string; get: () => string }>();
+    const warns: [HTMLElement, () => string][] = [];
+    const hotRow = (id: string, label: string, get: () => string, set: (v: string) => void, def = '', sub = '', twice = false): Item => {
+      hots.set(id, { label, get });
+      const row = h('div', 'field hotkey-row');
+      const lab = h('span', 'field-label');
+      lab.append(h('span', 'field-name', label));
+      if (sub) lab.append(h('small', 'help', sub));
+      const warn = h('small', 'help bad', 'Also used by another hotkey');
+      warn.hidden = true;
+      lab.append(warn);
+      warns.push([warn, get]);
+      row.append(
+        lab,
+        hotkeyInput(get() ?? '', (v) => {
+          set(v);
+          save(true);
+          if (twice) rerender();
+          else refresh();
+        }),
+      );
+      return {
+        el: dotted(row),
+        hot: { get },
+        changed: () => (get() ?? '') !== def,
+        reset: () => {
+          set(def);
+          save(true);
+          rerender();
+        },
+      };
+    };
+    const editHot = () => hotRow('edit', 'Edit mode (move & resize)', () => hk.toggleEdit, (v) => (hk.toggleEdit = v), 'CmdOrCtrl+Shift+E');
+    const visHot = () => hotRow('visibility', 'Show / hide all overlays', () => hk.toggleVisibility, (v) => (hk.toggleVisibility = v), 'CmdOrCtrl+Shift+H', '', true);
+    const clashBanner = h('div', 'notice bad gen-clash');
+    const clashCheck = () => {
+      const list = [...hots.values()];
+      const used = list.map((x) => (x.get() ?? '').trim().toLowerCase()).filter(Boolean);
+      const dup = new Set(used.filter((k, i) => used.indexOf(k) !== i));
+      for (const [w, get] of warns) w.hidden = !dup.has((get() ?? '').trim().toLowerCase());
+      const first = [...dup][0];
+      const who = list.filter((x) => (x.get() ?? '').trim().toLowerCase() === first).map((x) => `“${x.label}”`);
+      const combo = first ? keyName(list.find((x) => (x.get() ?? '').trim().toLowerCase() === first)!.get()) : '';
+      text(clashBanner, first ? `${combo} is used by ${who.join(' and ')}. Change one of them, or clear one with its ×.` : '');
+      return !!first;
+    };
+
+    // Sections: the same look as an overlay's settings.
+    interface Sec {
+      tab: string;
+      id: string;
+      title: string;
+      el: HTMLElement;
+      body: HTMLElement;
+      items: Item[];
+      master?: { item: Item; on: () => boolean };
+      count: HTMLElement;
+      reset: HTMLElement;
+      chevron: HTMLButtonElement | null;
+      hiddenNote: HTMLElement;
+      tabName: HTMLElement;
+    }
+    const secs: Sec[] = [];
+    const masterSwitch = (get: () => boolean, set: (v: boolean) => void, def: boolean, help: string) => {
+      const input = h('input');
+      input.type = 'checkbox';
+      input.className = 'switch';
+      input.checked = get();
+      input.onchange = () => {
+        set(input.checked);
+        save();
+        refresh();
+      };
+      const item: Item = {
+        el: input,
+        changed: () => get() !== def,
+        reset: () => {
+          set(def);
+          save();
+          rerender();
+        },
+      };
+      return { input, item, on: get, help };
+    };
+    const section = (tab: string, id: string, title: string, items: Item[], extra: Node[] = [], o: { master?: ReturnType<typeof masterSwitch>; fold?: boolean } = {}) => {
+      const sec = h('section', 'sec gen-sec');
+      const head = h('div', 'sec-head');
+      const titles = h('div', 'sec-titles');
+      const name = h('div', 'sec-title-row');
+      const tabName = h('span', 'sec-tab dim', `${tab} ›`);
+      name.append(tabName, h('span', 'sec-title', title));
+      titles.append(name);
+      if (o.master?.help) titles.append(h('small', 'help', o.master.help));
+      const count = h('span', 'sec-count');
+      const hiddenNote = h('span', 'sec-hidden dim');
+      const all = [...(o.master ? [o.master.item] : []), ...items];
+      const reset = button(
+        'Reset section',
+        () => {
+          for (const it of all) if (it.changed()) it.reset();
+          rerender();
+        },
+        'subtle sec-reset',
+      );
+      head.append(h('span', 'chg-dot'), titles, count, hiddenNote, reset);
+      if (o.master) {
+        head.append(o.master.input);
+        sec.classList.add('has-master');
+      }
+      const body = h('div', 'sec-body gen-body');
+      body.append(...items.map((i) => i.el), ...extra);
+      let chevron: HTMLButtonElement | null = null;
+      if (o.fold !== false) {
+        chevron = button(
+          '',
+          () => {
+            const f = !sec.classList.contains('folded');
+            setFolded('general', id, f);
+            sec.classList.toggle('folded', f);
+            refresh();
+          },
+          'sec-fold',
+        );
+        chevron.innerHTML = '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        head.append(chevron);
+        if (isFolded('general', id)) sec.classList.add('folded');
+      }
+      sec.append(head, body);
+      secs.push({ tab, id, title, el: sec, body, items, master: o.master, count, reset, chevron, hiddenNote, tabName });
+    };
+    /** A card's content without its title, to sit in a section. */
+    const cardBody = (c: HTMLElement, drop: (x: Element) => boolean = () => false) => [...c.children].filter((x) => x.tagName !== 'H2' && !drop(x));
+    const info = (label: string, value: HTMLElement, help = '') => {
+      const row = h('div', 'field sec-row info-row');
+      const lab = h('span', 'field-label');
+      lab.append(h('span', 'field-name', label));
+      if (help) lab.append(h('small', 'help', help));
+      row.append(lab, value);
+      return row;
+    };
+
+    // Essentials: what most people set once, plus how the app stands.
+    const u = state.update;
+    const updPill = h('span', `gen-pill${u?.status === 'none' ? ' good' : ''}`, u?.status === 'available' ? `Version ${u.version} available` : u?.status === 'none' ? `Up to date · ${u.current}` : u?.current ? `Version ${u.current}` : 'In the desktop app');
+    const licPill = h('span', 'gen-pill', '…');
+    fetch('/api/licence')
+      .then((r) => r.json())
+      .then((l: LicenceStatus) => {
+        text(licPill, l.valid ? l.tierName : l.hasKey ? 'Key not confirmed yet' : 'Free early access');
+        licPill.classList.toggle('good', l.valid);
+      })
+      .catch(() => text(licPill, 'Unavailable'));
+    section('Essentials', 'ess', 'The essentials', [gameRow(), settingRow('units'), rateRow(), visHot()], [info('Updates', updPill, 'More under App'), info('Licence', licPill, 'More under App')], { fold: false });
+
+    // Racing data: what changes what the overlays show.
+    section('Racing data', 'names', 'Units, names & ratings', [settingRow('units'), settingRow('shortClassNames'), settingRow('ratingsOfficialOnly')]);
+    const pqDef = SCHEMA.find((x) => x.key === 'lmuPrivateQualifying')!;
+    section('Racing data', 'pq', 'Private qualifying: hide other cars', [], [], {
+      master: masterSwitch(() => opts.lmuPrivateQualifying, (v) => (opts.lmuPrivateQualifying = cfg.lmuPrivateQualifying = v), true, pqDef.help ?? ''),
+      fold: false,
+    });
+    section('Racing data', 'game', 'Game', [gameRow()], cardBody(gameCard(), (x) => x.classList.contains('form')));
+    section('Racing data', 'corners', 'Track map & corners', [], cardBody(cornersCard(rerender)));
+
+    // Performance: the live readings, then everything that sets how much the app uses.
     monitorView.tiles.clear();
     monitorView.sparks.clear();
     const tiles = headlineTiles();
-    const cols = h('div', 'gen-cols');
-    const left = h('div', 'gen-col');
-    const right = h('div', 'gen-col');
-    left.append(display, server);
-    right.append(rate, licenceCard(), updatesCard());
-    cols.append(left, right);
-    el.replaceChildren(
-      tiles,
-      cols,
-      gameCard(),
-      hotkeysCard(),
-      vrCard(),
-      monitoringCard(),
-      logsCard(),
-      cornersCard(() => this.render(el)),
-      card(
-        'Backup',
-        h('p', 'dim', 'Export everything (overlays, theme, leagues) to a file, or import a file shared by someone else.'),
-        button('Export settings', backup),
-        button('Import settings', async () => {
-          const data = (await upload()) as typeof cfg;
-          if (!data || !Array.isArray(data.overlays)) return alert('That file is not an Apex Overlays export.');
-          state.config = { ...data, garage61: { ...data.garage61, token: cfg.garage61.token } };
-          save(true);
-          this.render(el);
-        }),
-        button(
-          'Reset everything',
-          () => {
-            if (!confirm('Reset all settings to defaults?')) return;
-            fetch('/api/config', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: '{}' }).then(() => location.reload());
+    section('Performance', 'rate', 'Overlay update rate', [rateRow()]);
+    section('Performance', 'window', 'This window', [settingRow('trayOnPitExit'), settingRow('closeAction'), settingRow('uiAnimations')]);
+    section('Performance', 'monitoring', 'Monitoring', [], cardBody(monitoringCard()));
+
+    // Hotkeys.
+    const layouts = cfg.layouts ?? [];
+    section('Hotkeys', 'hk-overlays', 'Overlays', [editHot(), visHot()]);
+    section(
+      'Hotkeys',
+      'hk-layouts',
+      'Layouts',
+      [
+        hotRow('next', 'Next layout', () => hk.nextLayout ?? '', (v) => (hk.nextLayout = v), '', 'Cycles through your saved layouts'),
+        hotRow('recentre', 'Recentre VR', () => hk.vrRecenter ?? '', (v) => (hk.vrRecenter = v), '', 'Resets SteamVR’s seated position, which the overlays fixed in the car are placed from'),
+        ...layouts.map((l) =>
+          hotRow(
+            `layout-${l.id}`,
+            `Switch to “${l.name}”`,
+            () => hk.layouts[l.id] ?? '',
+            (v) => {
+              if (v) hk.layouts[l.id] = v;
+              else delete hk.layouts[l.id];
+            },
+          ),
+        ),
+      ],
+      layouts.length ? [] : [h('p', 'dim small', 'Save layouts under Overlays → Layouts, then give each one a hotkey here.')],
+    );
+    section(
+      'Hotkeys',
+      'hk-each',
+      'Show / hide one overlay',
+      cfg.overlays.filter(listed).map((o) =>
+        hotRow(
+          `overlay-${o.id}`,
+          o.name || byKind(o.kind)?.name || o.kind,
+          () => hk.overlays[o.id] ?? '',
+          (v) => {
+            if (v) hk.overlays[o.id] = v;
+            else delete hk.overlays[o.id];
           },
-          'danger',
+          '',
+          o.name ? (byKind(o.kind)?.name ?? '') : '',
         ),
       ),
     );
+
+    // VR: everything under its switch.
+    cfg.vr ??= { enabled: false, mode: 'auto', distance: 0.9, width: 1.2, height: -0.05, offset: 0 };
+    cfg.vr.mode ??= 'auto';
+    const VR_DEFS: SettingDef[] = [
+      {
+        key: 'mode',
+        label: 'How',
+        type: 'select',
+        default: 'auto',
+        options: [
+          ['auto', 'Automatic (recommended)'],
+          ['openxr', 'OpenXR only (no SteamVR needed)'],
+          ['steamvr', 'SteamVR overlays only'],
+        ],
+        help: 'Automatic: drawn inside the game with OpenXR (Virtual Desktop, Quest Link, Pimax…), otherwise SteamVR overlays',
+      },
+      { key: 'distance', label: 'Screen layout: distance in front', type: 'number', default: 0.9, min: 0.2, max: 5, step: 0.05, unit: 'm', help: 'Overlays placed “as on my screen” sit on an imaginary screen this far away' },
+      { key: 'width', label: 'Screen layout: width', type: 'number', default: 1.2, min: 0.2, max: 6, step: 0.05, unit: 'm' },
+      { key: 'height', label: 'Screen layout: raise / lower', type: 'number', default: -0.05, min: -2, max: 2, step: 0.01, unit: 'm' },
+      { key: 'offset', label: 'Screen layout: move left / right', type: 'number', default: 0, min: -2, max: 2, step: 0.01, unit: 'm', help: '+ moves every overlay placed “as on my screen” to the right' },
+    ];
+    const vrVals = cfg.vr as unknown as Values;
+    const vrRows = VR_DEFS.map(
+      (s): Item => ({
+        el: dotted(
+          field(s, vrVals, () => {
+            save();
+            refresh();
+          }),
+        ),
+        changed: () => !same(vrVals[s.key], s.default),
+        reset: () => {
+          vrVals[s.key] = s.default;
+          save();
+          rerender();
+        },
+      }),
+    );
+    section('VR', 'vr', 'Show overlays in VR', vrRows, cardBody(vrCard(), (x) => x.classList.contains('form')), {
+      master: masterSwitch(() => !!cfg.vr.enabled, (v) => (cfg.vr.enabled = v), false, 'Shows your overlays in the headset, as on your screen. Each overlay’s Window tab sets where it goes'),
+      fold: false,
+    });
+
+    // App: the app itself.
+    section('App', 'licence', 'Licence', [], cardBody(licenceCard()));
+    section('App', 'updates', 'Updates', [], cardBody(updatesCard()));
+    section('App', 'server', 'Server', [settingRow('port'), settingRow('lanAccess')], [h('p', 'dim small', 'Restart Apex Overlays after changing these.')]);
+    const danger = h('div', 'danger-zone');
+    danger.append(
+      h('p', 'dim small', 'Start again: every setting, overlay and layout back to how a new install has them.'),
+      button(
+        'Reset everything',
+        () => {
+          if (!confirm('Reset all settings to defaults?')) return;
+          fetch('/api/config', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: '{}' }).then(() => location.reload());
+        },
+        'danger',
+      ),
+    );
+    section('App', 'backup', 'Backup', [], [
+      h('p', 'dim', 'Export everything (overlays, theme, leagues, hotkeys) to a file, or import a file shared by someone else.'),
+      button('Export settings', backup),
+      button('Import settings', async () => {
+        const data = (await upload()) as typeof cfg;
+        if (!data || !Array.isArray(data.overlays)) return alert('That file is not an Apex Overlays export.');
+        state.config = { ...data, garage61: { ...data.garage61, token: cfg.garage61.token } };
+        save(true);
+        rerender();
+      }),
+      danger,
+    ]);
+    section('App', 'logs', 'Logs', [], cardBody(logsCard()));
+
+    // Tabs, search, "Set only" (hotkeys) and "Changed only".
+    const TABS_GEN = ['Essentials', 'Racing data', 'Performance', 'Hotkeys', 'VR', 'App'];
+    if (!TABS_GEN.includes(gen.tab)) gen.tab = 'Essentials';
+    const tabBar = h('div', 'tabs gen-tabs');
+    tabBar.setAttribute('role', 'tablist');
+    const search = h('input', 'search');
+    search.type = 'search';
+    search.placeholder = 'Search General settings and hotkeys…';
+    search.value = gen.query;
+    const setOnly = button('Set only', () => {
+      gen.setOnly = !gen.setOnly;
+      applyView();
+    }, 'subtle chg-only');
+    setOnly.title = 'Only the hotkeys you have set';
+    const onlyChanged = button('Changed only', () => {
+      gen.changedOnly = !gen.changedOnly;
+      gen.query = '';
+      search.value = '';
+      applyView();
+    }, 'subtle chg-only');
+    onlyChanged.title = 'Everything you have changed on this page, from every tab';
+    search.oninput = () => {
+      gen.query = search.value;
+      if (gen.query) gen.changedOnly = false;
+      applyView();
+    };
+    const tools = h('div', 'tab-tools');
+    tools.append(search, setOnly, onlyChanged);
+    const note = h('p', 'dim small sec-note');
+    const empty = h('p', 'dim');
+    const changedCount = (tab: string) => secs.filter((s) => s.tab === tab).flatMap((s) => [...(s.master ? [s.master.item] : []), ...s.items]).filter((i) => i.changed()).length;
+    const drawTabs = () => {
+      const filtering = !!gen.query.trim() || gen.changedOnly;
+      tabBar.replaceChildren(
+        ...TABS_GEN.map((t) => {
+          const b = button(
+            t,
+            () => {
+              gen.tab = t;
+              gen.query = '';
+              gen.changedOnly = false;
+              search.value = '';
+              applyView();
+            },
+            `tab${t === gen.tab && !filtering ? ' sel' : ''}`,
+          );
+          b.setAttribute('role', 'tab');
+          b.setAttribute('aria-selected', String(t === gen.tab && !filtering));
+          const n = changedCount(t);
+          if (n) b.append(h('span', 'tab-count', String(n)));
+          return b;
+        }),
+      );
+    };
+    const page = h('div', 'gen-page');
+    const applyView = () => {
+      const q = gen.query.trim().toLowerCase();
+      const filtering = !!q || gen.changedOnly;
+      page.classList.toggle('gen-filtering', filtering);
+      tiles.hidden = filtering || gen.tab !== 'Performance';
+      clashBanner.hidden = filtering || !['Hotkeys', 'Essentials'].includes(gen.tab) || !clashBanner.textContent;
+      const hotkeys = !filtering && gen.tab === 'Hotkeys';
+      setOnly.hidden = !hotkeys;
+      setOnly.classList.toggle('on', gen.setOnly);
+      setOnly.setAttribute('aria-pressed', String(gen.setOnly));
+      onlyChanged.classList.toggle('on', gen.changedOnly);
+      onlyChanged.setAttribute('aria-pressed', String(gen.changedOnly));
+      let any = false;
+      for (const s of secs) {
+        const rows = [...s.body.children] as HTMLElement[];
+        for (const r of rows) r.classList.remove('gen-filtered');
+        let show: boolean;
+        if (q) {
+          const titleHit = `${s.tab} ${s.title}`.toLowerCase().includes(q);
+          const hits = rows.filter((r) => (r.textContent ?? '').toLowerCase().includes(q));
+          show = s.tab !== 'Essentials' && (titleHit || hits.length > 0);
+          if (!titleHit) for (const r of rows) r.classList.toggle('gen-filtered', !hits.includes(r));
+        } else if (gen.changedOnly) {
+          const ch = s.items.filter((i) => i.changed());
+          show = s.tab !== 'Essentials' && (ch.length > 0 || !!s.master?.item.changed());
+          for (const r of rows) r.classList.toggle('gen-filtered', !ch.some((i) => i.el === r));
+        } else {
+          show = s.tab === gen.tab;
+          if (hotkeys && gen.setOnly) {
+            for (const i of s.items) if (i.hot && !i.hot.get()) i.el.classList.add('gen-filtered');
+            for (const r of rows) if (!r.classList.contains('field')) r.classList.add('gen-filtered');
+            show = show && rows.some((r) => !r.classList.contains('gen-filtered'));
+          }
+        }
+        s.el.hidden = !show;
+        s.tabName.hidden = !filtering;
+        if (show) any = true;
+      }
+      text(
+        note,
+        q
+          ? 'Results from every tab, buttons included.'
+          : gen.changedOnly
+            ? 'Everything you have changed on this page, from every tab. ↺ puts one back.'
+            : gen.tab === 'Essentials'
+              ? 'What most people set once. Everything else is in the other tabs.'
+              : hotkeys
+                ? gen.setOnly
+                  ? 'Only the hotkeys you have set. Turn off Set only to add more.'
+                  : 'Click a box and press the keys (Ctrl, Alt or Shift plus a key, or an F-key). Backspace clears it.'
+                : '',
+      );
+      note.hidden = !note.textContent;
+      text(empty, q ? `No setting matches “${gen.query}”.` : gen.changedOnly ? 'Nothing changed: every setting here is at its default.' : hotkeys && gen.setOnly ? 'No hotkeys set yet. Turn off Set only to add some.' : '');
+      empty.hidden = any || !empty.textContent;
+      drawTabs();
+    };
+    refresh = () => {
+      for (const s of secs) {
+        for (const i of s.items) i.el.classList.toggle('changed', i.changed());
+        const n = [...(s.master ? [s.master.item] : []), ...s.items].filter((i) => i.changed()).length;
+        text(s.count, n ? `${n} changed` : '');
+        s.count.hidden = !n;
+        s.reset.hidden = !n;
+        const off = !!s.master && !s.master.on();
+        s.el.classList.toggle('off', off);
+        s.el.classList.toggle('changed', !!s.master?.item.changed());
+        const kids = s.body.children.length;
+        s.el.classList.toggle('empty', kids === 0);
+        const folded = s.el.classList.contains('folded');
+        if (s.chevron) {
+          s.chevron.hidden = off || kids === 0;
+          s.chevron.title = folded ? `Show ${s.title}` : `Hide ${s.title} (it stays on)`;
+          s.chevron.setAttribute('aria-expanded', String(!folded));
+        }
+        text(s.hiddenNote, folded && !off && kids ? (s.items.length > 1 ? `${s.items.length} settings hidden` : 'Hidden') : '');
+      }
+      clashCheck();
+      applyView();
+    };
+    page.append(tabBar, tools, note, clashBanner, tiles, ...secs.map((s) => s.el), empty);
+    el.replaceChildren(page);
+    refresh();
     drawMonitor();
   },
 };

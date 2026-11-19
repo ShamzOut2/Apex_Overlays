@@ -16,6 +16,12 @@ Each version groups its changes under `### New features`, `### Improvements` and
   - What you have changed is easy to see: a dot by each changed setting, "1 changed" and Reset section on each section, a count on each tab, and Changed only to list every change on the overlay
   - Search covers every tab of the overlay, with results under "Tab › Section"
   - Click a part of the preview (the gear, the wheel, the speed boxes, a row of the relative, a header…) to open its settings; hovering outlines what you can click
+- General, reorganised the same way (every setting and button is still there):
+  - Tabs instead of one long page: Essentials (game, units, update rate, the show/hide hotkey, and how updates and your licence stand), Racing data (units, short class names, ratings, private qualifying, game, track map & corners), Performance (the live readings, update rate, this window, monitoring), Hotkeys, VR and App (licence, updates, server, backup, logs)
+  - Sections fold away, change dots, counts on tabs and sections, Reset section, Changed only, and a search across every tab that finds buttons too (e.g. "export")
+  - Hotkeys: "Set only" shows just the hotkeys you use, and a hotkey used twice is named in a banner at the top
+  - VR: "Show overlays in VR" is in the section header; off, the whole tab is one line
+  - The live readings are on the Performance tab, so the other tabs are not redrawing graphs; Reset everything sits apart, at the end of Backup
 
 ### Fixes
 - Incident tracker: "Lap and session time" could not be changed (it shared its name with the Show setting)

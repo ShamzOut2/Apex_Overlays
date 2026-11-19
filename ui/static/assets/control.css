@@ -643,3 +643,30 @@ button.sec-fold { display: inline-flex; align-items: center; justify-content: ce
 .sec-row.wide > .chg-dot { top: 20px; }
 .sec-head > .chg-dot { left: 4px; }
 .sec.changed > .sec-head > .chg-dot { opacity: 1; }
+
+/* General: the same tabs and sections as an overlay's settings. */
+.gen-page { display: flex; flex-direction: column; gap: 12px; max-width: 980px; }
+.gen-page > .tab-tools { margin: 0; }
+.gen-page > .sec-note { margin: 0; }
+.gen-tabs { margin: 0; }
+.gen-tabs button.tab.sel { box-shadow: inset 0 -2px 0 var(--accent); }
+.gen-page .gen-filtered { display: none !important; }
+.gen-page button.chg-only[hidden] { display: none; }
+.gen-page .tab-tools > button.chg-only + button.chg-only { margin-left: 0; }
+.gen-page .tab-tools > button.chg-only:first-of-type { margin-left: auto; }
+.gen-page .tab-tools > button.chg-only.on { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.gen-body { padding: 4px 14px 14px; }
+.gen-body > p:first-child { margin-top: 8px; }
+.gen-body > button { margin: 6px 6px 0 0; }
+.gen-filtering .sec.folded > .sec-body { display: block; }
+.sec-tab { margin-right: 2px; font-size: 12px; font-weight: 600; }
+.sec-tab[hidden] { display: none; }
+.gen-clash[hidden], .gen-page > .gen-tiles[hidden] { display: none; }
+.gen-clash { margin: 0; }
+.gen-pill { padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, var(--live, #3dd6f5) 12%, transparent); color: var(--live, #3dd6f5); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.gen-pill.good { background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); }
+.rate-row .rate-cards { margin: 0; }
+/* Actions that cannot be undone: set apart, at the end of their section. */
+.danger-zone { margin-top: 14px; padding-top: 10px; border-top: 1px dashed color-mix(in srgb, var(--bad) 45%, transparent); }
+.danger-zone > p { margin: 0 0 8px; }
+.gen-page .help.bad { color: var(--bad); }
