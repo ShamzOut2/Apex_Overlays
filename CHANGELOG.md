@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.5.0
 
 ### New features
 - Overlay settings, reorganised (every setting and what it does stays the same, and saved layouts keep working):
