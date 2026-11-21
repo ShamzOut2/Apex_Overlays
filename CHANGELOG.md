@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.5.4
 
 ### New features
 - In-Car Setup: every setting you choose shows, in your order, even when the car does not have it or the game gives no value for it: those show a dimmed dash (—) and keep their place. "Settings your car does not have" can hide them again
