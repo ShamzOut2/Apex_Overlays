@@ -4,6 +4,11 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### Fixes
+- Standings and Relative: the Pit time of most other cars showed a second or two instead of their 35–40 s stop. A stop was only counted while iRacing said the car was in its stall and its speed (worked out from its position) was nil; other cars' positions wobble a little while they are serviced, which read as moving and stopped the clock. A car now counts as standing in its box while it stays within 2 m of where it stopped on pit road, the whole stop. Each finished stop is written to the log (car, time stood, time serving a penalty)
+
 ## 1.5.4
 
 ### New features

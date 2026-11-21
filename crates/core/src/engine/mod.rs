@@ -122,7 +122,18 @@ pub struct CarHist {
     pit_now: PitStop,
     /// The last stop's times (once the car has left the pit lane).
     pub pit_last: Option<PitStop>,
+    /// Where and since when the car has stood still on pit road (within `STILL_M` of this
+    /// lap fraction), and up to when that has been counted as pit time.
+    still_pct: f32,
+    still_at: f64,
+    still_counted: Option<f64>,
 }
+
+/// A car on pit road that stays within this many metres of one spot counts as standing in its
+/// box. Generous, as other cars' positions wobble a little while they are jacked up and serviced.
+const STILL_M: f32 = 2.0;
+/// ...for at least this long (seconds), so a car only easing to a halt in a queue does not count.
+const STILL_FOR: f64 = 1.0;
 
 /// Seconds a car stood in its pit box on one stop, split into the part spent serving a
 /// penalty and the part being serviced.
@@ -167,12 +178,16 @@ impl CarHist {
         }
     }
 
-    /// Left the pit lane (or the car went to its garage): the stop, if it stopped, is done.
-    fn end_pit_stop(&mut self) {
-        if self.pit_now.any() {
-            self.pit_last = Some(self.pit_now);
+    /// Left the pit lane (or the car went to its garage): the stop, if it stopped, is done
+    /// (and returned, the moment it is).
+    fn end_pit_stop(&mut self) -> Option<PitStop> {
+        self.still_counted = None;
+        let done = self.pit_now.any().then_some(self.pit_now);
+        if done.is_some() {
+            self.pit_last = done;
         }
         self.pit_now = PitStop::default();
+        done
     }
 
     /// Fuel put in at the last stop (or so far at this one) and over the session.
@@ -973,9 +988,21 @@ impl Engine {
             h.pen_stopped = 0.0;
         }
         h.black = black;
-        // Standing in the pit box (the game says the car is in its stall, and it is not moving).
-        let in_box = c.on_pit_road && c.surface == surface::IN_PIT_STALL && h.speed < 0.5;
-        h.track_pit_time(in_box, black, tick_dt);
+        // Standing in the pit box: on pit road and still (within STILL_M of one spot) for at
+        // least STILL_FOR, counted from when it stopped. Not from the game's "in stall" flag
+        // with the speed estimate: other cars' positions wobble while they are serviced, which
+        // read as moving and cut their stops to a second or two.
+        let mut moved = (c.pct - h.still_pct).abs();
+        moved = moved.min(1.0 - moved) * track_km.max(1.0) * 1000.0;
+        if !c.on_pit_road || moved > STILL_M {
+            h.still_pct = c.pct;
+            h.still_at = now;
+            h.still_counted = None;
+        } else if now - h.still_at >= STILL_FOR {
+            let from = h.still_counted.unwrap_or(h.still_at);
+            h.track_pit_time(true, black, now - from);
+            h.still_counted = Some(now);
+        }
     }
 
     /// Slow-down penalties: how long each has been out and the time given up so far (time
@@ -1071,7 +1098,10 @@ impl Engine {
             };
             h.track_fuel(fuel, c.on_pit_road && c.in_world());
             if !(c.on_pit_road && c.in_world()) {
-                h.end_pit_stop();
+                if let Some(p) = h.end_pit_stop() {
+                    let number = self.statics[i].as_ref().map_or("?", |s| s.number.as_str());
+                    log::info!("pit: car #{number} stood {:.1} s in its box ({:.1} s serving a penalty)", p.service + p.penalty, p.penalty);
+                }
             }
             if !c.in_world() {
                 continue;
@@ -1717,16 +1747,25 @@ pub(crate) mod tests {
         };
         let mut t = 0.0;
         // Drives down the pit lane (not counted), stands in the box for 20 s, drives out.
-        let stop = |e: &mut Engine, t: &mut f64, secs: f64, black_for: f64| {
+        let stop = |e: &mut Engine, t: &mut f64, secs: f64, black_for: f64, wobble: bool| {
             for k in 0..20 {
                 *t += 0.1;
                 step(e, *t, 0.95 + k as f32 * 0.002, surface::APPROACHING_PITS, true, if black_for > 0.0 { flags::BLACK } else { 0 });
             }
             let start = *t;
+            let mut k = 0;
             while *t < start + secs {
                 *t += 0.1;
+                k += 1;
                 let f = if *t - start < black_for { flags::BLACK } else { 0 };
-                step(e, *t, 0.01, surface::IN_PIT_STALL, true, f);
+                // Another car's stop as the game reports it: its position wobbling a few
+                // centimetres as it is jacked up, and the "in stall" flag coming and going.
+                let (pct, surf) = if wobble {
+                    (0.01 + if k % 2 == 0 { 0.00001 } else { -0.00001 }, if k % 3 == 0 { surface::APPROACHING_PITS } else { surface::IN_PIT_STALL })
+                } else {
+                    (0.01, surface::IN_PIT_STALL)
+                };
+                step(e, *t, pct, surf, true, f);
             }
             // Live while the stop goes on.
             assert!(e.hist[1].pit_time().unwrap().1);
@@ -1740,7 +1779,7 @@ pub(crate) mod tests {
         };
         assert!(e.hist[1].pit_time().is_none());
         // A service stop.
-        let (p, live) = stop(&mut e, &mut t, 20.0, 0.0);
+        let (p, live) = stop(&mut e, &mut t, 20.0, 0.0, false);
         assert!(!live);
         assert!((p.service - 20.0).abs() < 0.5 && p.penalty == 0.0, "{p:?}");
         // The lap it came in on is kept for the Pit lap column.
@@ -1750,12 +1789,16 @@ pub(crate) mod tests {
         assert!(!x.live && (x.service - 20.0).abs() < 0.5);
         // A stop-and-go: black-flagged the whole time it stands there.
         t += 60.0;
-        let (p, _) = stop(&mut e, &mut t, 10.0, 99.0);
+        let (p, _) = stop(&mut e, &mut t, 10.0, 99.0, false);
         assert!((p.penalty - 10.0).abs() < 0.5 && p.service == 0.0, "{p:?}");
         // The penalty served first, then serviced in the same stop.
         t += 60.0;
-        let (p, _) = stop(&mut e, &mut t, 40.0, 10.0);
+        let (p, _) = stop(&mut e, &mut t, 40.0, 10.0, false);
         assert!((p.penalty - 10.0).abs() < 0.5 && (p.service - 30.0).abs() < 0.5, "{p:?}");
+        // A 38 s stop by another car, wobbling and flickering: the whole 38 s.
+        t += 60.0;
+        let (p, _) = stop(&mut e, &mut t, 38.0, 0.0, true);
+        assert!((p.service - 38.0).abs() < 0.5 && p.penalty == 0.0, "{p:?}");
         // The other car never stopped.
         assert!(e.hist[0].pit_time().is_none());
     }
