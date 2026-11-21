@@ -282,7 +282,7 @@ export const NUMBER_COLOR_SETTING = {
   default: 'class',
   options: [
     ['class', 'Main class colour'],
-    ['secondary', 'Secondary class colour (League builder)'],
+    ['secondary', 'Secondary class colour (League builder → roster)'],
     ['team', 'Team colour (League builder → Team builder)'],
   ] as [string, string][],
   help: 'Drivers without a secondary class or team colour keep the normal look',
@@ -307,8 +307,8 @@ export function numberChip(c: HTMLElement, label: string, r: Colored, s: Values)
   else chip(c, label, 'transparent', 'inherit');
 }
 
-/** The colour stripe by each row (Stripe colour setting): the number's colour, a class's or the team's. */
-export const stripeColor = (r: Colored, s: Values) => colorFrom(r, s.stripeColor === 'number' ? s.numberColor : s.stripeColor) || 'transparent';
+/** The colour bar by each row (Bar colour setting): the number's colour, a class's or the team's; a driver without the one picked keeps their main class colour. */
+export const stripeColor = (r: Colored, s: Values) => colorFrom(r, s.stripeColor === 'number' ? s.numberColor : s.stripeColor) || r.classColor || 'transparent';
 
 /** Team logo cell: the full or small logo (whichever the team has when only one). */
 function teamLogoCell(c: HTMLElement, r: Driver, small: boolean) {
@@ -444,11 +444,11 @@ export const STRIPE_COLOR_SETTING = {
   default: 'class',
   options: [
     ['class', 'Main class colour'],
-    ['secondary', 'Secondary class colour (League builder)'],
+    ['secondary', 'Secondary class colour (League builder → roster)'],
     ['team', 'Team colour (League builder → Team builder)'],
     ['number', 'As the car number'],
   ] as [string, string][],
-  help: 'Drivers without a secondary class or team colour keep their class colour',
+  help: 'Drivers without a secondary class or team colour keep their main class colour',
   group: 'Colours',
 };
 

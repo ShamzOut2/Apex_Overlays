@@ -89,7 +89,8 @@ export const standings: OverlayDef = {
     },
     { key: 'showColumnTitles', label: 'Show column titles', type: 'bool', default: true, group: 'Header' },
     { key: 'columnTitlesEveryClass', when: (v) => v.showColumnTitles !== false && (v.mode ?? 'multiclass') === 'multiclass', label: 'Repeat column titles for every class', type: 'bool', default: false, group: 'Header' },
-    STRIPE_COLOR_SETTING,
+    { key: 'classStripe', label: 'Colour bar by each driver', type: 'bool', default: true, group: 'Colours' },
+    { ...STRIPE_COLOR_SETTING, when: (v) => v.classStripe !== false },
     { key: 'dimPitCars', label: 'Dim cars in the pits', type: 'bool', default: true, group: 'Colours' },
     { key: 'dimDisconnected', label: 'Dim disconnected cars', type: 'bool', default: true, group: 'Colours' },
   ],
@@ -98,6 +99,7 @@ export const standings: OverlayDef = {
     const dec = s.gapDecimals as number;
     const overall = s.mode === 'overall';
     applyLook(root, s);
+    root.classList.toggle('no-stripe', s.classStripe === false);
     root.classList.toggle('mode-overall', overall);
     const modern = root.classList.contains('modern');
     const close = s.closeGap as number;

@@ -149,6 +149,7 @@ body.preview { background: #2a2f38 repeating-conic-gradient(#323843 0 25%, #2a2f
   border-radius: 2px;
   background: var(--class, transparent);
 }
+.no-stripe .section .row:not(.head)::before { display: none; }
 .row.player { background: var(--player-bg) !important; color: var(--player); }
 .row.lap-ahead { color: var(--lap-ahead); }
 .row.lap-behind { color: var(--lap-behind); }

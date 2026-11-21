@@ -296,19 +296,19 @@ function csvDialog(l: League, done: (msg: string) => void) {
       row.append(h('span', 'field-label', csv.FIELD_LABELS[f]), sel);
       form.append(row);
     }
-    // The sheet's classes: main ones, or secondary ones (a Rookie Cup...) running across them.
+    // The sheet's class column: each driver's main class, or their 2nd class (a Rookie Cup...).
     const role = h('select') as HTMLSelectElement;
     for (const [v, t] of [
-      ['main', 'Main classes'],
-      ['secondary', 'Secondary classes (e.g. a Rookie Cup, a Pro-Am trophy)'],
+      ['main', 'Their main class'],
+      ['secondary', 'Their 2nd class (e.g. a Rookie Cup, a Pro-Am trophy)'],
     ]) {
       const o = h('option', '', t);
       o.value = v;
       role.append(o);
     }
-    role.value = l.classes.some((k) => k.role === 'secondary') ? 'secondary' : 'main';
+    role.value = 'main';
     const roleRow = h('label', 'field');
-    roleRow.append(h('span', 'field-label', 'The sheet’s classes are'), role);
+    roleRow.append(h('span', 'field-label', 'The sheet’s class column is each driver’s'), role);
     form.append(roleRow);
     const go = btn('Import', () => {
       if (mapping.name == null && mapping.first == null && mapping.custId == null) return alert('Pick the column with the names or the iRacing IDs.');

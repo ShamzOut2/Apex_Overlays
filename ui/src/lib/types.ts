@@ -488,8 +488,8 @@ export interface LeagueClass {
   name: string;
   color: string;
   rules: ClassRules;
-  /** 'secondary': runs across the main classes (a Rookie Cup, a Pro-Am trophy), picked per
-   *  driver on the roster's 2nd class column, never by rules. Otherwise a main class. */
+  /** Leagues from before 1.5.3 only: 'secondary' was a class used only as drivers' secondary
+   *  class. Classes have no kind now (see `upgradeRoles`). */
   role?: 'main' | 'secondary' | '';
 }
 
@@ -499,9 +499,9 @@ export interface DriverOverride {
   name: string;
   /** League car number; replaces the sim number in overlays when set. */
   carNumber: string;
-  /** League class id this driver races in (overrides class rules). */
+  /** Their main class: a league class id (overrides class rules), '' to go by the rules. */
   classId: string;
-  /** Their secondary class (a class with role "secondary"), '' for none. */
+  /** Their secondary class (any league class: a Rookie Cup, a Pro-Am trophy), '' for none. */
   class2Id?: string;
   displayName: string;
   teamName: string;
