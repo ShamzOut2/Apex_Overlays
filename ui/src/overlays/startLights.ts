@@ -80,13 +80,18 @@ export const startLights: OverlayDef = {
     /** No start under way: the player topic is only looked at a few times a second. */
     let idle = false;
 
+    /** The whole seconds left as iRacing's own timer shows them: cut down, not rounded up
+     *  (9.4 s left reads 9, as 0:09 does in the game, not 10). */
+    const shownSecond = (secs: number) => Math.max(0, Math.floor(secs));
+
     const draw = () => {
       // In edit mode (and the settings preview) a sample shows, so it can be placed.
       const sample = (editing || preview) && !phase && startIn == null;
       const lights: Phase = sample ? 'set' : phase;
       const now = performance.now();
       const goLeft = (s.goSeconds as number) * 1000 - (now - goAt);
-      const counting = !!s.countdown && !lights && startIn != null && startIn <= (s.countdownFrom as number);
+      // Starts as the shown number reaches the chosen one, so that number shows for a whole second.
+      const counting = !!s.countdown && !lights && startIn != null && startIn < (s.countdownFrom as number) + 1;
       // Rolling start: amber while pacing (pulsing on the last lap), green for the go.
       const pace = !!s.rolling && !lights && (rolling === 'pacing' || rolling === 'oneToGreen') ? rolling : '';
       const rollGo = !!s.rolling && !lights && rollingGo && goLeft > 0;
@@ -97,7 +102,7 @@ export const startLights: OverlayDef = {
       show(count, counting);
       show(gantry, !counting);
       toggle(root, 'counting', counting);
-      if (counting) text(count, String(Math.max(1, Math.ceil(startIn as number))));
+      if (counting) text(count, String(shownSecond(startIn as number)));
       // Ready: the first lights red (three of five); set: all red; go: green, or all out.
       const red = lights === 'ready' ? Math.ceil(n * 0.6) : lights === 'set' ? n : 0;
       const green = (lights === 'go' && s.goStyle !== 'out') || rollGo;
@@ -132,9 +137,9 @@ export const startLights: OverlayDef = {
         // The countdown has just run out: the grid forms next.
         if (left == null && startIn != null) countdownEnded = performance.now();
         if (next) countdownEnded = 0;
-        const shownBefore = startIn == null ? null : Math.ceil(startIn);
+        const shownBefore = startIn == null ? null : shownSecond(startIn);
         const roll = (p.rolling ?? '') as Rolling;
-        const changed = next !== phase || (left == null) !== (startIn == null) || (left != null && Math.ceil(left) !== shownBefore) || !!p.gridding !== gridding || roll !== rolling;
+        const changed = next !== phase || (left == null) !== (startIn == null) || (left != null && shownSecond(left) !== shownBefore) || !!p.gridding !== gridding || roll !== rolling;
         if (next === 'go' && phase !== 'go') goAt = performance.now();
         // Green straight after the pace laps is the start; green at any other time is not.
         if (roll === 'green' && (rolling === 'pacing' || rolling === 'oneToGreen')) {
