@@ -6,6 +6,9 @@ Each version groups its changes under `### New features`, `### Improvements` and
 
 ## Unreleased
 
+### New features
+- Standings: Always show cars behind you (Layout). The list keeps its number of rows; once you are near the bottom of it, the cars just below the top ones make way so that many cars behind you always show (10 rows, top 3, 3 behind, you 10th: P1–3, then P7–13). 0 keeps the old way (the rows follow you, centred, once you are past the last row)
+
 ### Fixes
 - Standings and Relative: the Pit time of most other cars showed a second or two instead of their 35–40 s stop. A stop was only counted while iRacing said the car was in its stall and its speed (worked out from its position) was nil; other cars' positions wobble a little while they are serviced, which read as moving and stopped the clock. A car now counts as standing in its box while it stays within 2 m of where it stopped on pit road, the whole stop. Each finished stop is written to the log (car, time stood, time serving a penalty)
 

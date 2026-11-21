@@ -48,7 +48,7 @@ export const sectionOf = (s: SettingDef): string => SECTION_NAME[s.group ?? 'Opt
 /** The settings most people change, per overlay, in this order (then Show and Text size). */
 const ESSENTIALS: Record<string, string[]> = {
   relative: ['carsAhead', 'carsBehind', 'columns', 'look', 'gapMode', 'showHeader'],
-  standings: ['mode', 'maxRows', 'otherClassRows', 'columns', 'look', 'showClassHeader'],
+  standings: ['mode', 'maxRows', 'otherClassRows', 'topRows', 'behindRows', 'columns', 'look', 'showClassHeader'],
   trackmap: ['style', 'rotate', 'label', 'colorBy', 'showSectors', 'cornerLabels', 'dotSize'],
   inputs: ['showShiftLights', 'showTrace', 'showBars', 'showWheel', 'showCornerSpeeds', 'sideLayout', 'wheelStyle'],
   shiftlights: ['showRpm', 'rpmPosition', 'shiftLayout', 'shiftLightSize'],
