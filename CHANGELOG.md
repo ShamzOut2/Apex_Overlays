@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.5.1
 
 ### New features
 - Lap count in timed races: a new choice, "Lap 6-12.89": the lap you are on, and how long the race is in laps at the leader's pace (laps done plus what the time left allows). It counts up with the laps rather than down, and the length moves as the leader speeds up or slows down. Decimals as set for the estimated laps (headers and the session overlay)
