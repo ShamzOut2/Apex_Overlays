@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.5.5
 
 ### New features
 - Standings: Always show cars behind you (Layout). The list keeps its number of rows; once you are near the bottom of it, the cars just below the top ones make way so that many cars behind you always show (10 rows, top 3, 3 behind, you 10th: P1–3, then P7–13). 0 keeps the old way (the rows follow you, centred, once you are past the last row)
