@@ -1077,6 +1077,8 @@ pub mod tests {
         assert_eq!(Some(map.cars[0].i), e.tel.focus_idx());
         e.tel.car_left_right = 3;
         assert_eq!(crate::topics::spotter(&e).state, "", "no one is beside you");
+        let sa = crate::safety::build(&e);
+        assert!(sa.hazards.is_empty() && sa.approaching.is_empty() && sa.overtakes.is_empty(), "no safety alerts");
         let focus = e.tel.focus_idx().unwrap();
         for mode in crate::engine::battle::Mode::ALL {
             assert_eq!(crate::engine::battle::neighbours(&e, focus, mode), (None, None));

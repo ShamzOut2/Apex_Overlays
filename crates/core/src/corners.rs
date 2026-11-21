@@ -64,9 +64,13 @@ pub fn parse_lovely(v: &Value) -> Vec<Corner> {
                 .get("number")
                 .and_then(|n| n.as_i64())
                 .map(|n| n as i32)
-                .or_else(|| (name.len() <= 4 && !digits.is_empty()).then(|| digits.parse().ok()).flatten())
-                .unwrap_or(i as i32 + 1);
+                .or_else(|| (name.len() <= 4 && !digits.is_empty()).then(|| digits.parse().ok()).flatten());
             let name = if name.len() <= 4 && !digits.is_empty() { String::new() } else { name };
+            // A named corner without a number of its own gets none (0): the list is of named
+            // corners, not of every turn, so counting them gives the wrong turn numbers (Spa's
+            // Bus Stop would be "T15", not 18–19). The map shows its name instead. Only a corner
+            // with neither is numbered by its place in the list.
+            let number = number.unwrap_or(if name.is_empty() { i as i32 + 1 } else { 0 });
             Some(Corner { name, number, start: start.clamp(0.0, 1.0), end: end.clamp(0.0, 1.0) })
         })
         .collect()
@@ -139,7 +143,8 @@ pub fn spawn(hub: Arc<Hub>, data_dir: PathBuf, track: Arc<Mutex<(i64, String)>>)
                 if id == 0 || done == Some(id) {
                     continue;
                 }
-                let cache = dir.join(format!("{id}.v2.json"));
+                // v3: corners known only by name no longer get numbers from their place in the list.
+                let cache = dir.join(format!("{id}.v3.json"));
                 if let Some(data) = std::fs::read_to_string(&cache).ok().and_then(|s| serde_json::from_str::<TrackData>(&s).ok()) {
                     hub.command(Command::SetTrackData { track_id: id, data, source: "lovely" });
                     done = Some(id);
@@ -191,7 +196,8 @@ mod tests {
         assert_eq!(c[0], Corner { name: "".into(), number: 1, start: 0.05, end: 0.08 });
         assert_eq!(c[1].name, "Eau Rouge");
         assert_eq!(c[1].number, 2);
-        assert_eq!(c[2].number, 3);
+        // Named without a number: no number made up from its place in the list.
+        assert_eq!((c[2].number, c[2].name.as_str()), (0, "Kemmel"));
     }
 
     #[test]

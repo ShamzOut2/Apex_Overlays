@@ -33,6 +33,8 @@ export interface Session {
    *  session should end on (the leader's in a race). */
   estLapsLeft: number | null;
   estLapsTotal: number | null;
+  /** Timed sessions: the race's length in laps at the leader's pace (laps done plus those left by the clock). */
+  estRaceLaps: number | null;
   timeOfDay: number;
   trackTemp: number;
   trackTempDelta: number;
@@ -202,6 +204,8 @@ export interface Extras {
   /** Seconds stood in the pit box at the last stop, or at this one while it goes on (live):
    *  being serviced, and serving a penalty (stop-and-go, while black-flagged). */
   pitTime: { service: number; penalty: number; live: boolean } | null;
+  /** The lap the car last came into the pits on (null before its first stop). */
+  pitLap: number | null;
 }
 
 export interface RelRow extends Driver, Extras {

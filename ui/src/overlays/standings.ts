@@ -38,6 +38,7 @@ const COLS = [
   { id: 'fuelLeft', label: 'Fuel / energy left — FUEL', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
   { id: 'fuelAdded', label: 'Fuel added at last stop — FUEL+', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
   { id: 'pitTime', label: 'Pit time: stood in the box at the last stop (S&G: a penalty) — PIT TIME' },
+  { id: 'pitLap', label: 'Lap of the last pit stop — PIT LAP' },
   { id: 'fuelTotal', label: 'Fuel added this session — FUEL Σ', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
   { id: 'seasonPoints', label: 'Championship total (projected) — CHAMP' },
 ];
@@ -157,10 +158,11 @@ export const standings: OverlayDef = {
       { id: 'pits', label: 'Stops', width: '2.8em', align: 'center', render: (c, r) => text(c, r.pitStops ? String(r.pitStops) : '') },
       { id: 'tire', label: 'Tyre', width: '2.4em', align: 'center', render: (c, r) => tireCell(c, r.tireWet) },
       ...extraCols<StandRow>(s, () => ctx.units),
-      // Flags and penalties outside the table: placed past the row's end (see .mk-outside).
-      { id: 'markers', label: '', width: '0px', render: (c, r) => markersCell(c, r) },
+      // Flags and penalties at the end of each row, or outside the table (placed past the
+      // row's end, see .mk-outside).
+      { id: 'markers', label: '', width: outside ? '0px' : 'auto', render: (c, r) => markersCell(c, r) },
     ];
-    const order = [...enabledColumns(s.columns), ...(s.markersAt === 'end' ? ['markers'] : [])];
+    const order = [...enabledColumns(s.columns), ...(s.markersAt === 'end' || s.markersAt === 'row' ? ['markers'] : [])];
     let sections: Section[] = [];
     const fit = columnFitter();
     let key = '';

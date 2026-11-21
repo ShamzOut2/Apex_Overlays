@@ -185,16 +185,14 @@ pub fn fill(v: &Vars, r: Row, t: &mut Telemetry) {
     for (var, id) in dc {
         if var.is_some() {
             let value = r.f32(var);
-            // Brake bias in front %: cars give it as a %, a fraction or in hundredths of a %
-            // (5500 for 55.00%); anything else is not a bias in % and is left out.
-            let value = if matches!(id, "brakeBias" | "peakBias") {
-                match brake_bias_pct(value) {
-                    Some(v) => v,
-                    None => continue,
-                }
-            } else {
-                value
-            };
+            // Brake bias is kept as the car gives it (a %, a fraction, hundredths of a %, or an
+            // adjustment from the setup's bias) and read against the setup in the car settings
+            // topic. Anything else is a setting step: a value no car has (NaN, huge) is a
+            // misread and left out rather than shown.
+            let bias = matches!(id, "brakeBias" | "peakBias");
+            if !value.is_finite() || value.abs() > if bias { 10_000.0 } else { 1_000.0 } {
+                continue;
+            }
             t.car_settings.push(CarSetting { id, value, max: None });
         }
     }
@@ -306,12 +304,19 @@ impl Source for IRacing {
         let h = shm.header();
         if !h.is_connected() {
             self.last_session_update = -1;
+            // The variables are listed again for the next session (another car has other dc…
+            // settings), so their places are looked up again then.
+            self.layout = (-1, -1);
             if !got_signal {
                 std::thread::sleep(std::time::Duration::from_millis(200));
             }
             return Poll::Disconnected;
         }
-        if (h.num_vars, h.var_header_offset) != self.layout {
+        // Looked up again when the table moves or changes size, and with every new session
+        // info (a new session or car): the same number of variables does not mean the same
+        // variables in the same places, and stale places read the wrong bytes (an ABS of
+        // millions, a brake bias that never moves).
+        if (h.num_vars, h.var_header_offset) != self.layout || h.session_info_update != self.last_session_update {
             self.layout = (h.num_vars, h.var_header_offset);
             self.vars = Vars::resolve(shm.vars(&h));
             self.wheels = wheel_vars(shm.vars(&h));
@@ -382,6 +387,12 @@ mod tests {
         fill_wheels(&wheel_vars(&vars), Row(&row), &mut t);
         let ids: Vec<_> = t.car_settings.iter().map(|s| (s.id, s.value)).collect();
         assert_eq!(ids, vec![("brakeBias", 54.5), ("abs", 3.0), ("tc", 4.0)]);
+        // A misread (a value no setting has) is left out.
+        let (vars, row) = table(&[("dcABS", 4.2e9), ("dcTractionControl", f32::NAN), ("dcBrakeBias", -1.5)]);
+        let mut t2 = Telemetry::default();
+        fill(&Vars::resolve(&vars), Row(&row), &mut t2);
+        let ids: Vec<_> = t2.car_settings.iter().map(|s| (s.id, s.value)).collect();
+        assert_eq!(ids, vec![("brakeBias", -1.5)], "the bias adjustment is kept, read against the setup later");
         // Brake bias in other scales: hundredths of a % (5500), a fraction; not a bias: an offset.
         assert_eq!(brake_bias_pct(5500.0), Some(55.0));
         assert_eq!(brake_bias_pct(0.565), Some(56.5));

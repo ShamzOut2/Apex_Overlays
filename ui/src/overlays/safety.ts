@@ -4,13 +4,13 @@ import type { OverlayDef } from '../lib/overlay';
 import { NAME_STYLES } from '../lib/settings';
 import { chip } from '../lib/table';
 import type { Approach, Driver, Extras, Hazard, Overtake, Safety, Status } from '../lib/types';
-import { flagEmoji, iratingCell, NUMBER_COLOR_SETTING, numberChip } from './common';
+import { flagEmoji, iratingCell, NUMBER_COLOR_SETTING, numberChip, privateQualifyingSetting } from './common';
 
 const driverSample = (d: Partial<Driver & Extras>): Driver & Extras => ({
   idx: 0, number: '', name: '', abbrev: '', team: '', car: '', classId: '', className: '', classColor: '#888888', class2Id: '', class2Name: '', class2Color: '', userId: 0, carId: 0,
   irating: 0, license: '', licenseColor: '#888888', club: '', flair: '', country: '', make: '', teamColor: '', teamShort: '', teamLogo: '', teamLogoSmall: '', isPlayer: false, isFocus: false,
   lap: 0, stintState: 'lap', stintLap: null, bestLap: null, lastLap: null, classBest: false, lastIsPb: false, finished: false, lapsLed: 0,
-  flags: [], penalty: null, penaltyServed: false, incidents: null, irDelta: null, srDelta: null, points: null, seasonPoints: null, slowdown: null, fuelAdded: null, fuelLeft: null, pitTime: null, ...d,
+  flags: [], penalty: null, penaltyServed: false, incidents: null, irDelta: null, srDelta: null, points: null, seasonPoints: null, slowdown: null, fuelAdded: null, fuelLeft: null, pitTime: null, pitLap: null, ...d,
 });
 
 /** Shown while positioning the overlay: a stopped car ahead and a faster class behind. */
@@ -97,9 +97,21 @@ export const safety: OverlayDef = {
   topics: ['safety', 'status'],
   size: [400, 230],
   settings: [
+    privateQualifyingSetting('Behaviour'),
     { key: 'showHazards', label: 'Warn about cars ahead', type: 'bool', default: true, group: 'Yellow & meatball ahead' },
     { key: 'aheadSeconds', when: (v) => v.showHazards !== false, label: 'Look this far ahead', type: 'number', default: 10, min: 1, max: 30, step: 0.5, unit: 's', group: 'Yellow & meatball ahead' },
     { key: 'yellow', when: (v) => v.showHazards !== false, label: 'Cars causing a yellow', type: 'bool', default: true, group: 'Yellow & meatball ahead', help: 'Stopped, crawling or off track' },
+    {
+      key: 'yellowLevel', when: (v) => v.showHazards !== false && v.yellow !== false,
+      label: 'Warn about',
+      type: 'select',
+      default: 'clear',
+      options: [
+        ['clear', 'Clear dangers only: stopped or crawling cars, and cars stuck off the track'],
+        ['all', 'Every car off the track or slowing, even briefly'],
+      ],
+      group: 'Yellow & meatball ahead',
+    },
     { key: 'meatball', when: (v) => v.showHazards !== false, label: 'Cars with the meatball', type: 'bool', default: true, group: 'Yellow & meatball ahead', help: 'Damaged cars told to pit for repairs' },
     { key: 'maxHazards', when: (v) => v.showHazards !== false, label: 'Cars shown at once', type: 'number', default: 2, min: 1, max: 4, group: 'Yellow & meatball ahead' },
     { key: 'showOvertake', label: 'Car ahead serving a slow-down', type: 'bool', default: true, group: 'Slow-down ahead (possible overtake)' },
@@ -234,10 +246,16 @@ export const safety: OverlayDef = {
       side(c, o.gap, o.distance);
     };
 
+    /**
+     * Clear dangers only (Warn about): a car stopped or crawling on the track, or one off it
+     * and down to walking pace (spun, beached, in the wall). Not one running wide at speed,
+     * or back up to speed while its yellow is still out.
+     */
+    const dangerous = (z: Hazard) => s.yellowLevel === 'all' || z.reason === 'stopped' || z.reason === 'slow' || (z.reason === 'offTrack' && z.speed < 10);
     /** What to show now: the cars within the chosen windows. */
     const pick = (d: Safety | null) => {
       const hz = s.showHazards
-        ? (d?.hazards ?? []).filter((z) => z.gap <= (s.aheadSeconds as number) && (z.flag === 'repair' ? s.meatball : s.yellow)).slice(0, s.maxHazards as number)
+        ? (d?.hazards ?? []).filter((z) => z.gap <= (s.aheadSeconds as number) && (z.flag === 'repair' ? s.meatball : s.yellow && dangerous(z))).slice(0, s.maxHazards as number)
         : [];
       const ap = s.showApproach ? (d?.approaching ?? []).filter((a) => a.gap <= (s.behindSeconds as number)).slice(0, s.maxApproach as number) : [];
       const ot = s.showOvertake ? (d?.overtakes ?? []).filter((o) => o.gap <= (s.overtakeSeconds as number)).slice(0, s.maxOvertake as number) : [];

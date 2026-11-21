@@ -11,6 +11,11 @@ pub struct FuelLap {
     pub used: f32,
     pub time: f32,
     pub valid: bool,
+    /// The fuel at the line when the lap began and when it ended.
+    pub start: f32,
+    pub end: f32,
+    /// Why the lap is left out of the average ("" when it counts).
+    pub why: &'static str,
 }
 
 #[derive(Debug, Default)]
@@ -49,9 +54,20 @@ impl FuelTracker {
             if let Some(start) = self.lap_start_fuel {
                 if t.lap_completed == self.lap_start_completed + 1 {
                     let used = start - fuel;
-                    let valid =
-                        used > 0.0 && !self.refuel && t.is_on_track && (cfg.include_pit_laps || !self.pit) && (cfg.include_caution_laps || !self.caution);
-                    self.laps.push_back(FuelLap { used, time: self.prev_lap_time, valid });
+                    let why = if used <= 0.0 {
+                        "no fuel used"
+                    } else if self.refuel {
+                        "refuelled"
+                    } else if !t.is_on_track {
+                        "not on track"
+                    } else if !cfg.include_pit_laps && self.pit {
+                        "pit lane"
+                    } else if !cfg.include_caution_laps && self.caution {
+                        "caution"
+                    } else {
+                        ""
+                    };
+                    self.laps.push_back(FuelLap { used, time: self.prev_lap_time, valid: why.is_empty(), start, end: fuel, why });
                     self.counted += 1;
                     if self.laps.len() > 50 {
                         self.laps.pop_front();
@@ -263,7 +279,7 @@ mod tests {
         let mut h = History::load(Some(path.clone()));
         let key = History::key(132, 18);
         for (i, used) in [3.0, 3.2, 2.8, 3.0].iter().enumerate() {
-            h.add(&key, "BMW M4 GT3", "Road America", &FuelLap { used: *used, time: 140.0, valid: true }, i as i64);
+            h.add(&key, "BMW M4 GT3", "Road America", &FuelLap { used: *used, time: 140.0, valid: true, start: 0.0, end: 0.0, why: "" }, i as i64);
         }
         let c = h.get(&key).unwrap();
         assert!((c.per_lap - 3.0).abs() < 1e-4 && c.laps == 4 && c.max > 3.1 && c.max < 3.2);
@@ -273,7 +289,7 @@ mod tests {
         // Older laps fade out of the running average.
         let mut h = again;
         for i in 0..60 {
-            h.add(&key, "BMW M4 GT3", "Road America", &FuelLap { used: 2.5, time: 140.0, valid: true }, 10 + i);
+            h.add(&key, "BMW M4 GT3", "Road America", &FuelLap { used: 2.5, time: 140.0, valid: true, start: 0.0, end: 0.0, why: "" }, 10 + i);
         }
         assert!((h.get(&key).unwrap().per_lap - 2.5).abs() < 0.05);
         let _ = std::fs::remove_dir_all(dir);

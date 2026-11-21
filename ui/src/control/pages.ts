@@ -1531,7 +1531,7 @@ function cornersCard(rerender: () => void): HTMLElement {
       tr.append(td);
     };
     if (!custom) {
-      tr.append(h('td', '', String(corner.number)), h('td', '', corner.name || '–'), h('td', '', (corner.start * 100).toFixed(1)), h('td', '', (corner.end * 100).toFixed(1)), h('td'));
+      tr.append(h('td', '', corner.number > 0 ? String(corner.number) : '–'), h('td', '', corner.name || '–'), h('td', '', (corner.start * 100).toFixed(1)), h('td', '', (corner.end * 100).toFixed(1)), h('td'));
       table.append(tr);
       return;
     }

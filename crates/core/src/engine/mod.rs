@@ -871,6 +871,24 @@ impl Engine {
         if let Some(ve) = self.tel.virtual_energy {
             self.energy.update_level(ve, &self.tel, caution, &self.cfg.fuel);
         }
+        // Each lap's fuel in the log: what the calculator measured, so it can be checked
+        // against the game's own figures.
+        if self.fuel.counted != counted {
+            if let Some(l) = self.fuel.laps.back() {
+                let avg = self.fuel.average(self.cfg.fuel.avg_laps);
+                log::info!(
+                    "fuel: lap {} used {:.3} ({:.3} -> {:.3} at the line, {:.1}s){}; average of the last {} counted: {}",
+                    self.tel.lap_completed,
+                    l.used,
+                    l.start,
+                    l.end,
+                    l.time,
+                    if l.why.is_empty() { String::new() } else { format!(", not counted: {}", l.why) },
+                    self.cfg.fuel.avg_laps,
+                    avg.map_or("none yet".into(), |a| format!("{a:.3}")),
+                );
+            }
+        }
         if self.fuel.counted != counted && !combo.is_empty() {
             if let Some(lap) = self.fuel.laps.back().copied().filter(|l| l.valid) {
                 let me = self.info.driver(self.info.player_car_idx.max(0) as usize);
@@ -1220,10 +1238,11 @@ fn override_country(r: &Resolver, user_id: i64) -> String {
 
 /// Penalty / flag tracking that needs history (see [`Engine::track_incidents`]).
 pub const YELLOW_LINGER: f64 = 5.0;
-/// Off track for longer than this (seconds), or slower than `OFF_SLOW` (m/s) while off,
-/// counts as causing a yellow.
-pub const OFF_YELLOW: f64 = 1.0;
-pub const OFF_SLOW: f32 = 20.0;
+/// Off track for longer than this (seconds), or slower than `OFF_SLOW` (m/s, about 43 km/h)
+/// while off, counts as causing a yellow. A car running wide or through a run-off at speed
+/// for a second or two is not a danger to anyone.
+pub const OFF_YELLOW: f64 = 2.5;
+pub const OFF_SLOW: f32 = 12.0;
 
 /// iRacing's strength-of-field formula.
 pub fn sof(irs: &[i32]) -> i32 {
@@ -1631,8 +1650,12 @@ pub(crate) mod tests {
         drive(&mut e, 0.5, surface::OFF_TRACK);
         drive(&mut e, 0.5, surface::ON_TRACK);
         assert!(e.car_flags(1).is_empty(), "{:?}", e.car_flags(1));
-        // Off for two seconds: a yellow.
+        // Through a run-off at speed for two seconds: still not a danger.
         drive(&mut e, 2.0, surface::OFF_TRACK);
+        drive(&mut e, 0.5, surface::ON_TRACK);
+        assert!(e.car_flags(1).is_empty(), "{:?}", e.car_flags(1));
+        // Off for three seconds: a yellow.
+        drive(&mut e, 3.0, surface::OFF_TRACK);
         assert_eq!(e.car_flags(1), vec!["yellow"]);
     }
 
@@ -1653,8 +1676,11 @@ pub(crate) mod tests {
             step(&mut e, k as f64 * 0.25, 0.1 + k as f32 * 0.002, surface::ON_TRACK, false, 0);
         }
         assert!(e.car_flags(1).is_empty());
-        // Off track: causes a yellow that lingers after rejoining.
-        step(&mut e, 3.0, 0.13, surface::OFF_TRACK, false, 0);
+        // Off track and stopped (spun into the gravel): causes a yellow that lingers after
+        // rejoining.
+        for k in 0..4 {
+            step(&mut e, 3.0 + k as f64 * 0.1, 0.13, surface::OFF_TRACK, false, 0);
+        }
         step(&mut e, 4.0, 0.14, surface::ON_TRACK, false, 0);
         assert_eq!(e.car_flags(1), vec!["yellow"]);
         // Black flag served as a stop & go of ~3 seconds.
@@ -1717,6 +1743,9 @@ pub(crate) mod tests {
         let (p, live) = stop(&mut e, &mut t, 20.0, 0.0);
         assert!(!live);
         assert!((p.service - 20.0).abs() < 0.5 && p.penalty == 0.0, "{p:?}");
+        // The lap it came in on is kept for the Pit lap column.
+        assert_eq!(crate::topics::extras(&e, 1).pit_lap, Some(e.hist[1].last_pit_lap));
+        assert!(e.hist[1].last_pit_lap > 0);
         let x = crate::topics::extras(&e, 1).pit_time.unwrap();
         assert!(!x.live && (x.service - 20.0).abs() < 0.5);
         // A stop-and-go: black-flagged the whole time it stands there.
