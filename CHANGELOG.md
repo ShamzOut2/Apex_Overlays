@@ -10,6 +10,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - In-Car Setup: every setting you choose shows, in your order, even when the car does not have it or the game gives no value for it: those show a dimmed dash (—) and keep their place. "Settings your car does not have" can hide them again
 
 ### Fixes
+- Driver inputs: the steering wheel ran off the bottom of the overlay and covered its steering angle when turned. The formula-style wheel is wider than tall, and turned a quarter it is as tall as it is wide; it was sized straight. It is now sized for its turning circle, so it stays inside the overlay and under its angle at any steering angle, and it is fitted to the window with the wheel, speeds and gear stacked too (it had a fixed size there)
 - In-Car Setup: brake bias jumped to the setup's value when moved more than 8% from it in the car (Audi RS 3 LMS TCR: 40.3 then 48.3 instead of 39.9). The reading is now used however far it is from the setup's bias
 
 ## 1.5.3
