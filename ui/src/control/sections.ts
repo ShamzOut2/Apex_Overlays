@@ -64,7 +64,7 @@ const ESSENTIALS: Record<string, string[]> = {
   forecast: ['interval', 'tiles', 'showNow', 'showRain'],
   tyres: ['showGauge', 'showReasons', 'onlyWhenRelevant', 'flash'],
   tyredata: ['tempShown', 'showPressure', 'showWear', 'showBrakes', 'condensed'],
-  carsettings: ['items', 'layout', 'popup', 'showMeter'],
+  carsettings: ['items', 'missing', 'layout', 'popup', 'showMeter'],
   databox: ['field', 'label', 'valueSize', 'align'],
   spotter: ['style', 'barWidth', 'showCar', 'holdMs'],
   radar: ['range', 'hideWithin', 'showNumbers', 'colorBy'],

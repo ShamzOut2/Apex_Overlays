@@ -117,7 +117,19 @@ export const carsettings: OverlayDef = {
         ['brakeBias', 'abs', 'tc', 'tc2', 'tcSlip', 'tcCut', 'engineMap', 'fuelMix', 'deployMode'],
       ),
       group: 'What to show',
-      help: 'Only those your car has are shown',
+      help: 'Every one you pick shows, in this order; one your car does not have (or has no value for) shows a dash, unless you hide those below',
+    },
+    {
+      key: 'missing',
+      label: 'Settings your car does not have',
+      type: 'select',
+      default: 'show',
+      options: [
+        ['show', 'Show them with a dash (—)'],
+        ['hide', 'Hide them'],
+      ],
+      group: 'What to show',
+      help: 'Not adjustable in this car, or no value from the game',
     },
     { key: 'showMeter', label: 'Meter under each setting', type: 'bool', default: true, group: 'What to show', help: 'Steps (Le Mans Ultimate says how many each setting has) and brake bias front / rear' },
     { key: 'showMax', label: 'Number of steps (4/11)', type: 'bool', default: false, group: 'What to show', lmu: true, help: 'Le Mans Ultimate says how many steps each setting has' },
@@ -284,8 +296,14 @@ export const carsettings: OverlayDef = {
         carKey = key;
         for (const [id, c] of cells) {
           const it = d.items.find((i) => i.id === id);
-          show(c.el, !!it);
-          if (!it) continue;
+          // Not in this car (or no value): a dash, so every chosen setting keeps its place.
+          show(c.el, !!it || s.missing !== 'hide');
+          toggle(c.el, 'cs-missing', !it);
+          if (!it) {
+            text(c.val, '—');
+            text(c.unit, '');
+            continue;
+          }
           text(c.val, value(it));
           text(c.unit, unitOf(it));
           c.meter.set(it);

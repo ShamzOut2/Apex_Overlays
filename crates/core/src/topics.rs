@@ -1490,6 +1490,10 @@ mod tests {
         assert_eq!(bias_pct(-2.0, Some(55.0)), Some(53.0));
         // 0.5 next to a 55% setup is half a percent more, not 50%.
         assert_eq!(bias_pct(0.5, Some(55.0)), Some(55.5));
+        // Far from the setup's bias: still the reading itself, not the setup's bias.
+        assert_eq!(bias_pct(39.9, Some(48.3)), Some(39.9));
+        assert_eq!(bias_pct(40.3, Some(48.3)), Some(40.3));
+        assert_eq!(bias_pct(3990.0, Some(48.3)), Some(39.9));
         // No setup known: only a plain percentage.
         assert_eq!(bias_pct(56.0, None), Some(56.0));
         assert_eq!(bias_pct(1.5, None), None);
@@ -1805,15 +1809,17 @@ pub fn car_settings(e: &Engine) -> CarSettingsOut {
 
 /// A brake bias in front %, from what the car gives: a percentage (54.5), a fraction (0.545),
 /// hundredths of a % (5450), or an adjustment from the setup's bias (+1.5). With the setup's
-/// bias known, the reading closest to it is used; without it, only a value that is plainly a %.
+/// bias known, the reading closest to it is used where a value could be read more than one way
+/// (0.5: 50%, or half a percent more); a value that can only be a % is used however far the
+/// driver has moved the bias from the setup's. Without the setup's bias, only a plain %.
 pub fn bias_pct(raw: f32, setup: Option<f32>) -> Option<f32> {
     let as_pct = [(raw > 0.0 && raw <= 1.0).then_some(raw * 100.0), (raw > 100.0 && raw <= 10_000.0).then_some(raw / 100.0), Some(raw)];
     let pct = as_pct.into_iter().flatten().filter(|p| (20.0..=90.0).contains(p));
     match setup {
-        // Whichever reading lands nearest the setup's bias: drivers move the bias a few
-        // percent at most, so the right scale is the one that puts it close to the setup.
+        // Whichever reading lands nearest the setup's bias: the right scale is the one that
+        // puts it closest. No limit on how far: the bias in the car can be 8% or more from the
+        // setup's (Audi RS 3 LMS TCR: 48.3% in the setup, 39.9% in the car).
         Some(base) => pct
-            .filter(|p| (p - base).abs() <= 8.0)
             .chain((raw.abs() <= 10.0).then_some(base + raw))
             .filter(|p| (20.0..=90.0).contains(p))
             .min_by(|a, b| (a - base).abs().total_cmp(&(b - base).abs())),

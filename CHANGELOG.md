@@ -4,6 +4,14 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### New features
+- In-Car Setup: every setting you choose shows, in your order, even when the car does not have it or the game gives no value for it: those show a dimmed dash (—) and keep their place. "Settings your car does not have" can hide them again
+
+### Fixes
+- In-Car Setup: brake bias jumped to the setup's value when moved more than 8% from it in the car (Audi RS 3 LMS TCR: 40.3 then 48.3 instead of 39.9). The reading is now used however far it is from the setup's bias
+
 ## 1.5.3
 
 ### New features
