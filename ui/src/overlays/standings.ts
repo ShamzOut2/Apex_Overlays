@@ -66,6 +66,16 @@ export const standings: OverlayDef = {
     { key: 'maxRows', label: 'Rows in my class', type: 'number', default: 10, min: 1, max: 64, group: 'Layout' },
     { key: 'otherClassRows', when: (v) => (v.mode ?? 'multiclass') === 'multiclass', label: 'Rows in other classes', type: 'number', default: 3, min: 0, max: 64, group: 'Layout' },
     { key: 'topRows', label: 'Always show top', type: 'number', default: 3, min: 0, max: 20, group: 'Layout', help: 'The rest of the rows follow the car you are watching' },
+    {
+      key: 'behindRows',
+      label: 'Always show cars behind you',
+      type: 'number',
+      default: 0,
+      min: 0,
+      max: 20,
+      group: 'Layout',
+      help: 'The list keeps its number of rows: once you are near the bottom of it, the cars just below the top ones make way for this many behind you. 0: the rows follow you only when you are past the last one, with you in the middle',
+    },
     ...lookSettings('standings'),
     { key: 'columns', label: 'Columns', type: 'columns', ...columns(COLS, ['pos', 'number', 'flag', 'name', 'irating', 'gap', 'interval', 'lastLap', 'bestLap']), group: 'Columns' },
     { key: 'nameStyle', label: 'Name format', type: 'select', default: 'full', options: NAME_STYLES, group: 'Columns' },
@@ -185,15 +195,22 @@ export const standings: OverlayDef = {
       return { id, el, head, name, meta, logo, table };
     };
 
-    /** Top rows plus a window around the focused car, padded with leaders. */
+    /**
+     * `max` rows: the top ones, then a window that follows the focused car. With "cars behind
+     * you" set, that many cars behind it always show (as many as there are), the window ending
+     * on the last of them; otherwise the window is centred on it once it is past the last row.
+     */
     const pick = (rows: StandRow[], max: number): (StandRow | null)[] => {
       if (rows.length <= max) return rows;
       const top = Math.min(s.topRows as number, max);
       const focus = rows.findIndex((r) => r.isFocus);
-      if (focus < 0 || focus < max) return rows.slice(0, max);
+      const behind = focus < 0 ? 0 : Math.min(Math.max(0, Math.round(s.behindRows as number) || 0), rows.length - 1 - focus);
+      // Everything fits from the top: the focused car and the cars wanted behind it.
+      if (focus < 0 || focus + behind < max) return rows.slice(0, max);
       const rest = max - top;
-      let start = Math.max(top, focus - Math.floor((rest - 1) / 2));
-      start = Math.min(start, rows.length - rest);
+      if (rest <= 0) return rows.slice(0, max);
+      let start = behind > 0 ? focus + behind + 1 - rest : focus - Math.floor((rest - 1) / 2);
+      start = Math.min(Math.max(top, start), rows.length - rest);
       return [...rows.slice(0, top), ...rows.slice(start, start + rest)];
     };
 
