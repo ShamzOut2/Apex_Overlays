@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.5.2
 
 ### New features
 - Start lights: a new look. A gantry of five columns, two red lenses and a green one each, every lens a cluster of LEDs behind a hooded visor, with a status strip under it (Apex badge, READY / SET / GO, lights lit). Or a compact strip, one lens per column, for a screen corner (Look). It works as before: the countdown shows on the gantry, the reds come on for ready and set, green or lights out for the go, and for rolling starts amber on the pace laps, flashing on the last one, green when the flag drops. It scales to fit its window
