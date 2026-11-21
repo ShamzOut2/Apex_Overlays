@@ -30,6 +30,8 @@ pub struct FuelTracker {
     pub laps: VecDeque<FuelLap>,
     /// Laps counted so far (also past the 50 kept in `laps`), to notice new ones.
     pub counted: u64,
+    /// Average every lap, not only clean ones (FuelConfig::any_laps).
+    pub any_laps: bool,
 }
 
 impl FuelTracker {
@@ -45,6 +47,7 @@ impl FuelTracker {
 
     /// The same for another level than the fuel's (Le Mans Ultimate's virtual energy, in %).
     pub fn update_level(&mut self, fuel: f32, t: &Telemetry, caution: bool, cfg: &FuelConfig) {
+        self.any_laps = cfg.any_laps;
         if fuel > self.prev_fuel + 0.05 {
             self.refuel = true;
         }
@@ -90,8 +93,14 @@ impl FuelTracker {
         self.lap_start_fuel = None;
     }
 
+    /// Whether a lap goes in the average: a clean one, or with "every lap" on, a pit-lane or
+    /// caution lap too (never one you refuelled on, or with no fuel used).
+    pub fn counts(&self, l: &FuelLap) -> bool {
+        l.valid || (self.any_laps && matches!(l.why, "pit lane" | "caution"))
+    }
+
     pub fn valid(&self, n: usize) -> impl Iterator<Item = &FuelLap> {
-        self.laps.iter().rev().filter(|l| l.valid).take(n.max(1))
+        self.laps.iter().rev().filter(|l| self.counts(l)).take(n.max(1))
     }
 
     pub fn average(&self, n: usize) -> Option<f32> {
@@ -335,6 +344,18 @@ mod tests {
         let p = plan(90.0, 100.0, 2.0, 100.0, 0.0);
         assert_eq!(p.stops, 2);
         assert_eq!(p.fuel_to_add, 10.0);
+    }
+
+    #[test]
+    fn every_lap_or_clean_laps_only() {
+        let lap = |used: f32, why: &'static str| FuelLap { used, time: 90.0, valid: why.is_empty(), start: 0.0, end: 0.0, why };
+        let mut f = FuelTracker::default();
+        f.laps.extend([lap(3.0, ""), lap(2.0, "pit lane"), lap(2.4, "caution"), lap(0.0, "refuelled"), lap(3.2, "")]);
+        // Clean laps only: 3.0 and 3.2.
+        assert!((f.average(5).unwrap() - 3.1).abs() < 1e-5);
+        // Every lap: the pit and caution laps too, never the refuelled one.
+        f.any_laps = true;
+        assert!((f.average(5).unwrap() - (3.0 + 2.0 + 2.4 + 3.2) / 4.0).abs() < 1e-5);
     }
 
     #[test]

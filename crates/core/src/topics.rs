@@ -1106,6 +1106,8 @@ pub struct FuelOut<'a> {
     pub per_lap_last: Option<f32>,
     pub per_lap_max: Option<f32>,
     pub laps_sampled: usize,
+    /// Every lap is averaged, not only clean ones.
+    pub any_laps: bool,
     /// How many of the last clean laps the average is over (Strategy → Fuel).
     pub avg_laps: usize,
     pub laps_in_tank: Option<f32>,
@@ -1229,7 +1231,8 @@ pub fn fuel_out(e: &Engine) -> FuelOut<'_> {
         per_lap_avg: avg.map(r3),
         per_lap_last: e.fuel.laps.back().map(|l| r3(l.used)),
         per_lap_max: e.fuel.max(n).map(r3),
-        laps_sampled: e.fuel.laps.iter().filter(|l| l.valid).count(),
+        laps_sampled: e.fuel.laps.iter().filter(|l| e.fuel.counts(l)).count(),
+        any_laps: cfg.any_laps,
         avg_laps: n,
         laps_in_tank: avg.filter(|a| *a > 0.0).map(|a| round(t.fuel_level / a, 2)),
         use_per_hour: round(t.fuel_use_per_hour, 2),
@@ -1255,7 +1258,7 @@ pub fn fuel_out(e: &Engine) -> FuelOut<'_> {
         window_opens_lap: plan.as_ref().filter(|p| p.stops > 0).map(|p| lap + p.window_opens_in.ceil() as i32),
         window_closes_lap: plan.as_ref().filter(|p| p.stops > 0).map(|p| lap + p.window_closes_in.floor() as i32),
         margin_laps: cfg.margin_laps,
-        history: e.fuel.laps.iter().rev().filter(|l| l.valid).take(10).map(|l| r3(l.used)).collect(),
+        history: e.fuel.laps.iter().rev().filter(|l| e.fuel.counts(l)).take(10).map(|l| r3(l.used)).collect(),
         expected,
         estimate_from: if session_avg.is_some() {
             "session"
@@ -1403,7 +1406,10 @@ pub struct TrackMapOut<'a> {
     pub building: bool,
     pub progress: f32,
     pub sectors: &'a [f32],
-    pub corners: &'a [crate::config::Corner],
+    /// Numbered as iRacing's own map numbers the turns, when the official map is known.
+    pub corners: std::borrow::Cow<'a, [crate::config::Corner]>,
+    /// The official map's turns that no corner covers (number only).
+    pub turns: Vec<crate::config::Corner>,
     /// "custom" | "lovely" | "mock" | "none"
     pub corners_source: &'a str,
     pub straights: &'a [crate::config::Corner],
@@ -1412,6 +1418,15 @@ pub struct TrackMapOut<'a> {
 }
 
 pub fn trackmap(e: &Engine) -> TrackMapOut<'_> {
+    // The player's own corners stay as they made them.
+    let official = e.map.official.as_ref().filter(|m| m.track_id == e.info.track_id && !m.turns.is_empty() && e.corners_source != "custom");
+    let (corners, turns) = match official {
+        Some(m) => {
+            let (c, t) = crate::corners::number_from_map(&e.corners, &m.turns);
+            (std::borrow::Cow::Owned(c), t)
+        }
+        None => (std::borrow::Cow::Borrowed(e.corners.as_slice()), vec![]),
+    };
     TrackMapOut {
         track_id: e.info.track_id,
         track_name: &e.info.track_display_name,
@@ -1422,7 +1437,8 @@ pub fn trackmap(e: &Engine) -> TrackMapOut<'_> {
         building: e.map.building.is_some() && e.map.map.is_none(),
         progress: round(e.map.progress(), 2),
         sectors: &e.info.sectors,
-        corners: &e.corners,
+        corners,
+        turns,
         corners_source: e.corners_source,
         straights: e.track_data().map(|d| d.straights.as_slice()).unwrap_or(&[]),
         pit_entry: e.track_data().and_then(|d| d.pit_entry),
@@ -1446,6 +1462,7 @@ mod tests {
             source: "iracing".into(),
             version: crate::engine::trackmap::MAP_VERSION,
             pit: vec![],
+            turns: vec![],
         };
         e.map.set_official(outline);
         assert_eq!(trackmap(&e).source, Some("iracing"));
@@ -1790,11 +1807,7 @@ pub fn car_settings(e: &Engine) -> CarSettingsOut {
 /// hundredths of a % (5450), or an adjustment from the setup's bias (+1.5). With the setup's
 /// bias known, the reading closest to it is used; without it, only a value that is plainly a %.
 pub fn bias_pct(raw: f32, setup: Option<f32>) -> Option<f32> {
-    let as_pct = [
-        (raw > 0.0 && raw <= 1.0).then_some(raw * 100.0),
-        (raw > 100.0 && raw <= 10_000.0).then_some(raw / 100.0),
-        Some(raw),
-    ];
+    let as_pct = [(raw > 0.0 && raw <= 1.0).then_some(raw * 100.0), (raw > 100.0 && raw <= 10_000.0).then_some(raw / 100.0), Some(raw)];
     let pct = as_pct.into_iter().flatten().filter(|p| (20.0..=90.0).contains(p));
     match setup {
         // Whichever reading lands nearest the setup's bias: drivers move the bias a few

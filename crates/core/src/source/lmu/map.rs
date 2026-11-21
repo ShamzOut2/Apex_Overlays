@@ -145,6 +145,7 @@ impl MapBuilder {
             source: "lmu".into(),
             version: MAP_VERSION,
             pit,
+            turns: vec![],
         }
     }
 }

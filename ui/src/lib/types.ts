@@ -271,6 +271,8 @@ export interface Fuel {
   lapsSampled: number;
   /** How many of the last clean laps the average is over. */
   avgLaps: number;
+  /** Every lap is averaged, not only clean ones. */
+  anyLaps: boolean;
   lapsInTank: number | null;
   usePerHour: number;
   lapsRemaining: number | null;
@@ -363,7 +365,10 @@ export interface TrackMap {
   building?: boolean;
   progress: number;
   sectors: number[];
+  /** Numbered as iRacing's own map numbers the turns, when known. */
   corners: Corner[];
+  /** iRacing's turns that no corner covers (number only). */
+  turns?: Corner[];
   cornersSource: 'custom' | 'lovely' | 'mock' | 'none';
   /** Named straights from Lovely Track Data. */
   straights: Corner[];
@@ -396,6 +401,8 @@ export interface CarInfo {
 export interface Corner {
   name: string;
   number: number;
+  /** The last turn of a corner made of several (Bus Stop, T18-19). */
+  last?: number;
   start: number;
   end: number;
 }
@@ -592,7 +599,7 @@ export interface Config {
   /** The game the overlays and layouts above belong to; the other games' are in gameSets. */
   layoutGame?: string;
   gameSets?: Record<string, { overlays: OverlayInstance[]; layouts: SavedLayout[]; activeLayout: string }>;
-  fuel: { avgLaps: number; marginLaps: number; includeCautionLaps: boolean; includePitLaps: boolean; raceMinutes: number; raceLaps: number };
+  fuel: { avgLaps: number; marginLaps: number; includeCautionLaps: boolean; includePitLaps: boolean; anyLaps: boolean; raceMinutes: number; raceLaps: number };
   tyres: { wetThreshold: number; dryThreshold: number; useField: boolean; useCrossover: boolean; crossoverMargin: number };
   battle: { maxGap: number };
   leagues: League[];

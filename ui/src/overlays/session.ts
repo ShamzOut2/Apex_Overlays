@@ -1,6 +1,6 @@
 import { h, text, toggle } from '../lib/dom';
 import type { OverlayDef } from '../lib/overlay';
-import { FIELD_LABELS, fieldValue, flagKind, headerFields, lapSettings, type TimedLaps } from '../lib/sessionFields';
+import { FIELD_LABELS, fieldValue, flagKind, headerFields, incidentColorSettings, incidentField, lapSettings, type TimedLaps } from '../lib/sessionFields';
 import { enabledColumns } from '../lib/settings';
 import type { Session } from '../lib/types';
 
@@ -17,6 +17,7 @@ export const session: OverlayDef = {
     { key: 'clock24', label: '24-hour clock', type: 'bool', default: true, group: 'Format' },
     ...lapSettings('Format', undefined, 'fields'),
     { key: 'showTempTrend', label: 'Track temperature trend arrow', type: 'bool', default: true, group: 'Format' },
+    ...incidentColorSettings('Colours', 'fields'),
   ],
   create(root, ctx) {
     const s = ctx.settings;
@@ -35,7 +36,14 @@ export const session: OverlayDef = {
         if (topic !== 'session') return;
         const d = data as Session;
         const u = ctx.units;
-        for (const [id, el] of Object.entries(cells)) text(el, fieldValue(id, d, u, { clock24: s.clock24 as boolean, tempTrend: s.showTempTrend as boolean, timedLaps: s.timedLaps as TimedLaps, estDecimals: s.estDecimals as number }) || '–');
+        for (const [id, el] of Object.entries(cells)) {
+          // The incident count in its colour (how close it is to the next limit).
+          if (id === 'incidents') {
+            incidentField(el, d, s);
+            continue;
+          }
+          text(el, fieldValue(id, d, u, { clock24: s.clock24 as boolean, tempTrend: s.showTempTrend as boolean, timedLaps: s.timedLaps as TimedLaps, estDecimals: s.estDecimals as number, lengthSeparator: s.raceLengthSeparator as string }) || '–');
+        }
         if (cells.wetness) {
           toggle(cells.wetness, 'wet', d.wetness >= 4);
           toggle(cells.wetness, 'damp', d.wetness === 2 || d.wetness === 3);

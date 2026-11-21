@@ -641,41 +641,73 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .fuel.fl-compact .fl-bar { flex: 1; height: 0.95em; }
 .fuel.fl-compact .fl-at { font-size: 2.3em; font-weight: 800; color: var(--tone); min-width: 2.4em; text-align: right; }
 
-/* Start lights: a slim gantry of light pods, two lamps each */
-.panel.start-lights { align-items: center; justify-content: center; gap: 0.45em; padding: 0.6em 0.9em; transition: opacity 0.18s ease-out; }
-.sl-gantry { display: flex; gap: 0.55em; }
-.sl-gantry[hidden], .sl-count[hidden] { display: none; }
-.sl-count { font-size: 3.4em; font-weight: 800; line-height: 1; color: var(--sl-count, #fff); font-variant-numeric: tabular-nums; text-shadow: 0 0.06em 0.3em rgba(0, 0, 0, 0.7); animation: sl-tick 1s ease-out infinite; }
-@keyframes sl-tick { 0% { transform: scale(1.12); opacity: 0.75; } 25% { transform: scale(1); opacity: 1; } }
-/* Each pod is a light housing: brushed-metal edges, matte black face. */
-.sl-pod { display: flex; flex-direction: column; gap: 0.34em; padding: 0.36em 0.32em; border-radius: 0.5em; background: linear-gradient(90deg, #2b2e33, #101215 9%, #0a0b0d 50%, #101215 91%, #2b2e33); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(0, 0, 0, 0.9), 0 0 0 1px #000, 0 0.3em 0.8em rgba(0, 0, 0, 0.55); }
-/* A lamp: a recessed bezel, a grid of LEDs behind a glass lens (with its reflection), and the
-   visor's shadow over the top. Dark: the LEDs only just show through the lens. */
-.sl-lamp { --c: #1b1e23; position: relative; width: 1.55em; height: 1.55em; border-radius: 50%;
-  background:
-    radial-gradient(ellipse 52% 34% at 36% 26%, rgba(255, 255, 255, 0.16), transparent 70%),
-    radial-gradient(circle, rgba(255, 255, 255, 0.07) 28%, transparent 44%) center / 0.2em 0.2em,
-    radial-gradient(circle at 50% 56%, #16191e, #060708 78%);
-  box-shadow: 0 0 0 0.08em #33373e, 0 0 0 0.13em #000, inset 0 0.14em 0.3em rgba(0, 0, 0, 0.9); }
-.sl-lamp::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: linear-gradient(180deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.15) 30%, transparent 45%); pointer-events: none; }
-.sl-pod.red .sl-lamp { --c: var(--sl-red); }
-.sl-pod.green .sl-lamp { --c: var(--sl-green); }
-.sl-pod.amber .sl-lamp { --c: var(--sl-amber); }
-/* Lit: every LED bright, hottest in the middle, and light blooming out of the housing. */
-.sl-pod:is(.red, .green, .amber) .sl-lamp {
-  background:
-    radial-gradient(ellipse 52% 34% at 36% 26%, rgba(255, 255, 255, 0.32), transparent 70%),
-    radial-gradient(circle, color-mix(in srgb, var(--c) 45%, #fff) 26%, transparent 46%) center / 0.2em 0.2em,
-    radial-gradient(circle at 50% 52%, color-mix(in srgb, var(--c) 55%, #fff), var(--c) 42%, color-mix(in srgb, var(--c) 50%, #000) 100%);
-  box-shadow: 0 0 0 0.08em #33373e, 0 0 0 0.13em #000, 0 0 0.5em 0.04em color-mix(in srgb, var(--c) 75%, transparent), 0 0 1.6em 0.1em color-mix(in srgb, var(--c) 28%, transparent); }
-.start-lights.pulse .sl-pod.amber .sl-lamp { animation: sl-pulse 0.9s ease-in-out infinite; }
-@keyframes sl-pulse { 50% { filter: brightness(0.45); box-shadow: none; } }
-.start-lights.pacing .sl-label { color: var(--sl-amber); }
-.sl-label { font-size: 0.78em; font-weight: 800; letter-spacing: 0.32em; color: #e8ebf1; min-height: 1.2em; padding: 0.1em 0.6em 0.1em 0.92em; border-radius: 999px; background: rgba(11, 14, 19, 0.75); }
-.start-lights.go .sl-label { color: var(--sl-green); }
-.sl-label.hidden-label { display: none; }
-/* Counting down: "RACE STARTS IN" above the number. */
-.start-lights.counting .sl-label { order: -1; }
+/* Start lights: a gantry of five columns, two red lenses and a green/amber one each; every
+   lens a cluster of LEDs behind a hooded visor. Sizes are in design pixels (--px), so the whole
+   stage scales together to fit the window. */
+@property --px { syntax: '<length>'; inherits: true; initial-value: 1px; }
+.panel.start-lights { align-items: center; justify-content: center; padding: 0.25em; overflow: hidden; transition: opacity 0.18s ease-out;
+  --sl-red: #ff5442; --sl-green: #46ff86; --sl-amber: #ffb22a; }
+.sl-stage { --px: calc(1em / 14); flex: none; display: inline-flex; flex-direction: column; gap: calc(10 * var(--px)); font-family: 'Space Grotesk', var(--font, system-ui), sans-serif; }
+.sl-beam { position: relative; display: flex; gap: calc(12 * var(--px)); padding: calc(18 * var(--px)) calc(20 * var(--px)); border-radius: calc(14 * var(--px));
+  background: linear-gradient(180deg, #1c1c20 0%, #111114 55%, #0a0a0c 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 -1px 0 rgba(0, 0, 0, 0.8), 0 calc(16 * var(--px)) calc(34 * var(--px)) rgba(0, 0, 0, 0.6), 0 0 0 1px #040405; }
+.sl-bolt { position: absolute; width: calc(6 * var(--px)); height: calc(6 * var(--px)); border-radius: 50%; background: radial-gradient(circle at 35% 35%, #5a5a62, #1d1d21 70%); }
+.sl-bolt.tl { top: calc(7 * var(--px)); left: calc(7 * var(--px)); }
+.sl-bolt.tr { top: calc(7 * var(--px)); right: calc(7 * var(--px)); }
+.sl-bolt.bl { bottom: calc(7 * var(--px)); left: calc(7 * var(--px)); }
+.sl-bolt.br { bottom: calc(7 * var(--px)); right: calc(7 * var(--px)); }
+.sl-pod { display: flex; flex-direction: column; gap: calc(16 * var(--px)); padding: calc(14 * var(--px)) calc(12 * var(--px)); border-radius: calc(10 * var(--px));
+  background: linear-gradient(180deg, #151518, #0c0c0e); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 0 0 1px #050506, 0 2px 6px rgba(0, 0, 0, 0.5); }
+.sl-cell { position: relative; width: calc(52 * var(--px)); height: calc(52 * var(--px)); }
+/* The visor over the top of each lens. */
+.sl-cell::before { content: ''; position: absolute; z-index: 2; left: calc(-5 * var(--px)); right: calc(-5 * var(--px)); top: calc(-6 * var(--px)); height: calc(31 * var(--px)); box-sizing: border-box;
+  border: calc(5 * var(--px)) solid #1f1f23; border-bottom: 0; border-radius: calc(31 * var(--px)) calc(31 * var(--px)) 0 0;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.04), 0 -1px 0 rgba(255, 255, 255, 0.05); }
+.sl-lens { --led: #1a1b1c; --core: transparent; --o: 0; position: absolute; inset: 0; border-radius: 50%; overflow: hidden; background: #060607;
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.95), 0 0 0 2px #0a0a0b, 0 0 0 3px #27272c; }
+.sl-leds { position: absolute; inset: calc(3 * var(--px)); border-radius: 50%; background-image: radial-gradient(circle, var(--led) 0 calc(1.5 * var(--px)), transparent calc(2.1 * var(--px))); background-size: calc(5 * var(--px)) calc(5 * var(--px)); background-position: center; }
+.sl-glow { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, var(--core) 0%, transparent 72%); opacity: var(--o); }
+.sl-glass { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(ellipse 60% 45% at 38% 24%, rgba(255, 255, 255, 0.16), transparent 70%), linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, transparent 36%); }
+/* Dark: the red LEDs just show; the lower lens is neutral. */
+.sl-lens.r { --led: color-mix(in srgb, var(--sl-red) 20%, #080404); }
+.sl-lens.b { --led: #161a17; }
+.sl-lens.on, .sl-lens.go, .sl-lens.amb { --o: 1;
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.5), 0 0 0 2px #0a0a0b, 0 0 0 3px color-mix(in srgb, var(--c) 22%, #000),
+    0 0 calc(18 * var(--px)) calc(4 * var(--px)) color-mix(in srgb, var(--c) 58%, transparent), 0 0 calc(52 * var(--px)) calc(14 * var(--px)) color-mix(in srgb, var(--c) 26%, transparent); }
+.sl-lens.on { --c: var(--sl-red); --led: var(--sl-red); --core: color-mix(in srgb, var(--sl-red) 75%, #ffd9cc); }
+.sl-lens.go { --c: var(--sl-green); --led: var(--sl-green); --core: color-mix(in srgb, var(--sl-green) 70%, #e6ffee); }
+.sl-lens.amb { --c: var(--sl-amber); --led: var(--sl-amber); --core: color-mix(in srgb, var(--sl-amber) 70%, #fff3d9); }
+/* The last pace lap: amber flashes. */
+.start-lights.pulse .sl-lens.amb { animation: sl-blink 1s steps(1) infinite; }
+@keyframes sl-blink { 50% { filter: brightness(0.15) saturate(0.5); } }
+/* The countdown: over the gantry's dark lenses. */
+.sl-count { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; border-radius: inherit; background: rgba(8, 8, 10, 0.72);
+  font-size: calc(110 * var(--px)); font-weight: 700; line-height: 1; color: var(--sl-count, #fff); font-variant-numeric: tabular-nums; text-shadow: 0 0.04em 0.25em rgba(0, 0, 0, 0.8); }
+.sl-count { animation: sl-tick 1s ease-out infinite; }
+@keyframes sl-tick { 0% { opacity: 0.7; } 25% { opacity: 1; } }
+/* The status strip under the gantry: badge, state, lights lit. */
+.sl-strip { display: flex; align-items: center; justify-content: space-between; gap: calc(12 * var(--px)); height: calc(34 * var(--px)); padding: 0 calc(14 * var(--px)); border-radius: calc(9 * var(--px));
+  background: #0d0d10; box-shadow: inset 0 0 0 1px #1f1f25; font-size: calc(12 * var(--px)); letter-spacing: 0.14em; text-transform: uppercase; }
+.sl-strip[hidden], .sl-brand[hidden] { display: none; }
+.sl-brand { display: flex; align-items: center; gap: 0.66em; font-weight: 700; color: #f4f4f5; }
+.sl-dot { width: 0.66em; height: 0.66em; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0.66em var(--accent); }
+.sl-status { flex: 1; text-align: center; font-weight: 600; color: #f4f4f5; white-space: nowrap; }
+.sl-num { color: #a1a1aa; font-variant-numeric: tabular-nums; min-width: 2.6em; text-align: right; }
+.start-lights.go .sl-status { color: var(--sl-green); }
+.start-lights.pacing .sl-status { color: var(--sl-amber); }
+/* Compact strip: one lens per column in a pill, the state beside it. */
+.sl-mini { display: inline-flex; align-items: center; gap: calc(12 * var(--px)); padding: calc(12 * var(--px)) calc(18 * var(--px)) calc(10 * var(--px)) calc(16 * var(--px)); border-radius: 999px;
+  background: linear-gradient(180deg, #1a1a1e, #0b0b0d); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 0 1px #040405, 0 calc(10 * var(--px)) calc(24 * var(--px)) rgba(0, 0, 0, 0.55); }
+.sl-lenses { position: relative; display: flex; gap: calc(12 * var(--px)); }
+.sl-cell.sm { width: calc(26 * var(--px)); height: calc(26 * var(--px)); }
+.sl-cell.sm::before { left: calc(-3 * var(--px)); right: calc(-3 * var(--px)); top: calc(-4 * var(--px)); height: calc(16 * var(--px)); border-width: calc(3 * var(--px)); border-radius: calc(16 * var(--px)) calc(16 * var(--px)) 0 0; }
+.sl-cell.sm .sl-leds { inset: calc(2 * var(--px)); background-image: radial-gradient(circle, var(--led) 0 calc(1.05 * var(--px)), transparent calc(1.5 * var(--px))); background-size: calc(3.6 * var(--px)) calc(3.6 * var(--px)); }
+.sl-cell.sm .sl-lens:is(.on, .go, .amb) { box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 0 0 2px #0a0a0b, 0 0 calc(10 * var(--px)) calc(2 * var(--px)) var(--core); }
+/* Counting down in the strip: the number in place of the lenses. */
+.sl-compact .sl-count { font-size: calc(30 * var(--px)); background: none; }
+.sl-compact.counting .sl-cell { visibility: hidden; }
+.sl-mini-label { flex: none; font-size: calc(12 * var(--px)); letter-spacing: 0.14em; text-transform: uppercase; min-width: 9.4em; padding-left: 0.33em; text-align: left; }
+.sl-mini-label[hidden] { display: none; }
 
 /* Weather forecast: frosted cards, the weather now first. */
 .panel.forecast { padding: 0.5em 0.55em 0.55em; gap: 0.4em; }
@@ -768,7 +800,9 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 @keyframes cs-bump { from { transform: scale(1.06); } to { transform: scale(1); } }
 .cs-pop { position: relative; display: flex; align-items: center; gap: 1em; padding: 0.35em 1em 0.35em 1.15em; border-radius: 10px; overflow: hidden; white-space: nowrap; background: linear-gradient(100deg, color-mix(in srgb, var(--k) 24%, #0c1016), #0c1016 70%); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 55%, transparent), 0 6px 22px rgba(0, 0, 0, 0.45); animation: cs-in 0.16s ease-out; }
 .cs-pop::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--k); }
-.cs-pop-over .cs-pop { position: absolute; inset: 0.3em; z-index: 2; }
+.cs-pop-over .cs-pop { position: absolute; inset: 0; z-index: 2; }
+/* Pop-ups only, in a window you size yourself: the pop-up takes all of it. */
+.cs-pop-only:not(.auto-height) .cs-pop { flex: 1 1 auto; min-height: 0; }
 .cs-pop-over.cs-popping .cs-strip { visibility: hidden; }
 .cs-pop-text { display: flex; flex-direction: column; gap: 0.1em; }
 .cs-pop-name { font-size: 0.66em; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: color-mix(in srgb, var(--k) 65%, #fff); }
@@ -777,7 +811,7 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .cs-pop-only .cs-pop-val { font-size: 2.4em; }
 .cs-pop-unit { font-size: 0.85em; font-weight: 700; color: var(--dim); }
 .cs-pop-was { margin-left: 0.6em; font-size: 0.72em; font-weight: 700; color: var(--dim); }
-.cs-pop .cs-meter { flex: 1; min-width: 4.5em; height: 6px; }
+.cs-pop .cs-meter { flex: 1; min-width: 4.5em; height: 0.45em; }
 .cs-pop .cs-meter.m-none { display: none; }
 @keyframes cs-in { from { opacity: 0; transform: translateY(3px) scale(0.98); } to { opacity: 1; transform: none; } }
 .cs-empty { padding: 0.4em; font-size: 0.85em; }

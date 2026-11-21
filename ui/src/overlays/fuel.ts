@@ -42,7 +42,8 @@ export const fuel: OverlayDef = {
     { key: 'show_level', when: full, label: 'Fuel in tank', type: 'bool', default: true, group: 'Layout' },
     { key: 'showGauge', label: 'Fuel bar', type: 'bool', default: true, group: 'Layout' },
     { key: 'show_perLapAvg', when: details, label: 'Average per lap', type: 'bool', default: true, group: 'Layout' },
-    { key: 'avgLaps', when: details, label: 'Laps in the average', type: 'number', default: 5, min: 1, max: 20, unit: 'laps', group: 'Layout', shared: 'fuel.avgLaps', help: 'Your last clean laps. Everything the calculator works out uses this average (same as Strategy → Fuel)' },
+    { key: 'avgLaps', when: details, label: 'Laps in the average', type: 'number', default: 5, min: 1, max: 20, unit: 'laps', group: 'Layout', shared: 'fuel.avgLaps', help: 'Your last laps. Everything the calculator works out uses this average (same as Strategy → Fuel)' },
+    { key: 'anyLaps', when: details, label: 'Average every lap, clean or not', type: 'bool', default: false, group: 'Layout', shared: 'fuel.anyLaps', help: 'Off: clean laps only (no pit-lane or caution laps). On: those count too. A lap you refuelled on never does, as what it used cannot be measured (same as Strategy → Fuel)' },
     { key: 'show_lapsRemaining', when: details, label: 'Laps to go', type: 'bool', default: true, group: 'Layout' },
     { key: 'show_atFinish', label: 'Fuel at the finish', type: 'bool', default: true, group: 'Layout', help: 'What is left when you cross the line (minus: how much you are short)' },
     {
@@ -274,7 +275,7 @@ export const fuel: OverlayDef = {
         set(stats, 'perLapAvg', perLap == null ? '–' : `${vol(perLap)}${d.estimateFrom === 'history' ? '*' : ''}`);
         if (stats.perLapAvg)
           stats.perLapAvg.el.title =
-            d.estimateFrom === 'history' ? 'From your earlier sessions here until you have a clean lap' : `Average of your last ${Math.min(d.avgLaps, d.lapsSampled)} clean laps (set to ${d.avgLaps})`;
+            d.estimateFrom === 'history' ? 'From your earlier sessions here until you have a clean lap' : `Average of your last ${Math.min(d.avgLaps, d.lapsSampled)} ${d.anyLaps ? '' : 'clean '}laps (set to ${d.avgLaps})`;
         set(stats, 'lapsRemaining', laps(toGo));
         set(stats, 'atFinish', atFinish == null ? '–' : signed(atFinish, true));
 

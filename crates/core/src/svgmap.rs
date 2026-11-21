@@ -637,7 +637,7 @@ fn pit_lane(svg: &str, frame: &Frame) -> Vec<[[f32; 2]; 2]> {
 }
 
 /// The outline (already y-up) in its unit box, with the pit lane placed in the same box.
-fn finish_map(track_id: i64, name: &str, pts: &[[f64; 2]], pit_road: Option<&str>) -> TrackMap {
+fn finish_map(track_id: i64, name: &str, pts: &[[f64; 2]], pit_road: Option<&str>, turns: Vec<[f32; 2]>) -> TrackMap {
     let frame = Frame::of(pts);
     TrackMap {
         track_id,
@@ -646,7 +646,21 @@ fn finish_map(track_id: i64, name: &str, pts: &[[f64; 2]], pit_road: Option<&str
         source: "iracing".into(),
         version: MAP_VERSION,
         pit: pit_road.map(|p| pit_lane(p, &frame)).unwrap_or_default(),
+        turns,
     }
+}
+
+/// Each turn number once, with its lap fraction (`at` places a label on the lap), by number.
+/// A number drawn twice keeps its first place.
+fn lap_turns(labels: &[(u32, P)], at: impl Fn(P) -> f64) -> Vec<[f32; 2]> {
+    let mut out: Vec<[f32; 2]> = vec![];
+    for (n, p) in labels {
+        if *n > 0 && !out.iter().any(|t| t[0] as u32 == *n) {
+            out.push([*n as f32, (at(*p).rem_euclid(1.0)) as f32]);
+        }
+    }
+    out.sort_by(|a, b| a[0].total_cmp(&b[0]));
+    out
 }
 
 pub fn build(
@@ -703,7 +717,12 @@ pub fn build(
                 [p[0], -p[1]]
             })
             .collect();
-        return Some(finish_map(track_id, name, &pts, pit_road));
+        let labels = turns.map(|t| turn_numbers(parse(t).texts)).unwrap_or_default();
+        let lap = lap_turns(&labels, |p| {
+            let s = project(&line, &cum, p);
+            (if from_end { total - s } else { s }) / total
+        });
+        return Some(finish_map(track_id, name, &pts, pit_road, lap));
     }
     let (s0, arrow) = sf.unwrap_or((0.0, None));
     // Turn labels: the lowest number is turn 1.
@@ -755,7 +774,8 @@ pub fn build(
             [p[0], -p[1]]
         })
         .collect();
-    Some(finish_map(track_id, name, &pts, pit_road))
+    let lap = lap_turns(&labels, |p| if forward { ahead(p) } else { 1.0 - ahead(p) });
+    Some(finish_map(track_id, name, &pts, pit_road, lap))
 }
 
 /// Where the published index of iRacing's track maps lives (track id → map folder and
@@ -798,7 +818,10 @@ pub fn bundled_outline(outlines: &serde_json::Value, track_id: i64, name: &str) 
     let t = outlines.get("tracks")?.get(track_id.to_string())?;
     let points = unpack_points(t.get("p")?.as_str()?).filter(|p| p.len() == BINS)?;
     let pit = t.get("pit").and_then(|p| p.as_str()).and_then(unpack_points).unwrap_or_default();
-    Some(TrackMap { track_id, name: name.to_string(), points, source: "iracing".into(), version: MAP_VERSION, pit: pit.as_chunks::<2>().0.to_vec() })
+    // Turn numbers as (number, lap fraction) pairs.
+    let turns = t.get("t").and_then(|p| p.as_str()).and_then(unpack_points).unwrap_or_default();
+    let turns = turns.iter().map(|[n, f]| [(n * 65535.0).round(), *f]).collect();
+    Some(TrackMap { track_id, name: name.to_string(), points, source: "iracing".into(), version: MAP_VERSION, pit: pit.as_chunks::<2>().0.to_vec(), turns })
 }
 
 /// The map layers the outline is built from.
@@ -875,8 +898,8 @@ pub fn spawn(
     use serde_json::Value;
     use std::time::{Duration, Instant, SystemTime};
     let _ = std::thread::Builder::new().name("trackmaps".into()).spawn(move || {
-        // Built outlines, per track (v3: with the pit lane).
-        let dir = data_dir.join("trackmaps").join("iracing-v3");
+        // Built outlines, per track (v4: with the turn numbers).
+        let dir = data_dir.join("trackmaps").join("iracing-v4");
         let assets_file = data_dir.join("iracing").join("track-assets.json");
         let index_file = data_dir.join("iracing").join("published-track-maps.json");
         let catalogue_file = data_dir.join("iracing").join("track-map-catalogue.json");

@@ -83,10 +83,19 @@ export function lapSettings(group: string, when: (v: Record<string, unknown>) =>
       options: [
         ['infinity', 'Lap 12/∞'],
         ['estimate', 'Lap 12/~24 (estimated laps)'],
-        ['length', 'Lap 6-12.89 (race length in laps at the leader’s pace)'],
+        ['length', 'Lap 6/12.89 (race length in laps at the leader’s pace)'],
         ['count', 'Lap 12'],
       ],
       group,
+    },
+    {
+      key: 'raceLengthSeparator',
+      when: (v) => when(v) && v.timedLaps === 'length',
+      label: 'Between the lap and the race length',
+      type: 'text',
+      default: '/',
+      group,
+      help: 'Any character or text, e.g. / or - or “of”',
     },
     {
       key: 'estDecimals',
@@ -112,6 +121,8 @@ export interface FieldOpts {
   timedLaps?: TimedLaps;
   /** Decimals of the estimated laps left. */
   estDecimals?: number;
+  /** Between the lap and the race length ("6/12.89"). */
+  lengthSeparator?: string;
 }
 
 /** Display value of a field; '' when there is nothing to show. */
@@ -134,7 +145,7 @@ export function fieldValue(id: string, d: Session, u: f.Units, o: FieldOpts = {}
           ? timed === 'estimate' && d.estLapsTotal != null
             ? `/~${d.estLapsTotal}`
             : timed === 'length' && d.estRaceLaps != null
-              ? `-${d.estRaceLaps.toFixed(o.estDecimals ?? 1)}`
+              ? `${o.lengthSeparator ?? '/'}${d.estRaceLaps.toFixed(o.estDecimals ?? 1)}`
               : timed === 'count'
               ? ''
               : '/∞'
@@ -215,6 +226,42 @@ export function incidentTone(now: number, limits: number[]): 'ok' | 'warn' | 'ba
   const prev = reached.length ? reached[reached.length - 1] : 0;
   const share = (now - prev) / (next - prev);
   return share < 0.5 ? 'ok' : share < 0.75 ? 'warn' : 'bad';
+}
+
+/**
+ * The incident colours (green, orange, red), for a field list kept under `fieldsKey`: how
+ * far the count is from the last limit reached to the next one (under 50%, under 75%, the
+ * rest), starting again at each limit.
+ */
+export function incidentColorSettings(group: string, fieldsKey: string, when: (v: Record<string, unknown>) => boolean = () => true): SettingDef[] {
+  const on = (v: Record<string, unknown>) => when(v) && columnOn(v, 'incidents', fieldsKey);
+  const colored = (v: Record<string, unknown>) => on(v) && v.incColors !== false;
+  return [
+    { key: 'incColors', when: on, label: 'Colour the incident count', type: 'bool', default: true, group, help: 'By how close it is to the next limit (a penalty or the disqualification), counted from the last one reached: green under half way, orange to three quarters, red after; it starts again at each limit' },
+    { key: 'incColorOk', when: colored, label: 'Incidents: under 50% of the way', type: 'color', default: '#3ddc84', group },
+    { key: 'incColorWarn', when: colored, label: 'Incidents: 50% to 74%', type: 'color', default: '#ff9f1a', group },
+    { key: 'incColorBad', when: colored, label: 'Incidents: 75% and over', type: 'color', default: '#ff4d4d', group },
+  ];
+}
+
+/**
+ * The incidents field into `el`: the count in its colour (see incidentColorSettings), then the
+ * limits still ahead ("9x / 17x / 25x"). Drawn again only when something changed.
+ */
+export function incidentField(el: HTMLElement, d: Session, s: Record<string, unknown>) {
+  const limits = d.incidentLimits ?? (d.incidentLimit ? [d.incidentLimit] : []);
+  const now = d.incidents;
+  const tone = s.incColors === false ? '' : incidentTone(now, limits);
+  const color = tone === 'ok' ? s.incColorOk : tone === 'warn' ? s.incColorWarn : tone === 'bad' ? s.incColorBad : '';
+  const key = `${now}|${limits.join(',')}|${color}`;
+  if (el.dataset.inc === key) return;
+  el.dataset.inc = key;
+  const count = document.createElement('span');
+  count.className = 'inc-count';
+  count.textContent = `${now}x`;
+  if (color) count.style.color = color as string;
+  const rest = limitsAhead(now, limits).map((l) => ` / ${l}x`).join('');
+  el.replaceChildren(count, rest);
 }
 
 /** Data attribute used to colour the flags field. */

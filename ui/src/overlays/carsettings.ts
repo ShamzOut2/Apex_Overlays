@@ -100,7 +100,7 @@ function meter() {
 
 export const carsettings: OverlayDef = {
   kind: 'carsettings',
-  name: 'Car settings',
+  name: 'In-Car Setup',
   description:
     'Brake bias, ABS, TC, engine map and whatever else your car has, each with a meter. A big pop-up shows the new value whenever you change one.',
   topics: ['carsettings', 'status'],
@@ -213,6 +213,40 @@ export const carsettings: OverlayDef = {
       popMeter.set(it);
     };
 
+    /**
+     * The pop-up fills the overlay, whatever its size: its text is scaled up or down so the
+     * name, value and meter take the room there is. Measured at the normal size (what the
+     * content needs), then scaled by how much room there is, and checked once more so it
+     * never spills over. With the window fitted to the pop-up itself (pop-ups only, Fit the
+     * window to the content), the window follows the text, so it is only scaled down there.
+     */
+    const fitPop = () => {
+      if (pop.hidden) return;
+      pop.style.fontSize = '';
+      const cs = getComputedStyle(pop);
+      const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      const gap = parseFloat(cs.columnGap) || 0;
+      const roomW = pop.clientWidth - padX;
+      const roomH = pop.clientHeight - padY;
+      const meterOn = !popMeter.el.hidden && getComputedStyle(popMeter.el).display !== 'none';
+      const meterW = meterOn ? parseFloat(getComputedStyle(popMeter.el).minWidth) || 0 : 0;
+      const needW = popText.offsetWidth + (meterOn ? meterW + gap : 0);
+      const needH = popText.offsetHeight;
+      if (roomW <= 0 || roomH <= 0 || needW <= 0 || needH <= 0) return;
+      const fitted = root.classList.contains('auto-height') || root.classList.contains('auto-width');
+      const most = popupMode === 'only' && fitted ? 1 : 12;
+      let k = Math.min(most, roomW / needW, roomH / needH) * 0.94;
+      pop.style.fontSize = `${k * 100}%`;
+      // The padding grows with the text: take off whatever still overflows.
+      const over = Math.max(popText.offsetHeight / Math.max(1, pop.clientHeight - padY * k), (pop.scrollWidth - padX * k) / Math.max(1, pop.clientWidth - padX * k));
+      if (over > 1) {
+        k /= over * 1.02;
+        pop.style.fontSize = `${k * 100}%`;
+      }
+    };
+    new ResizeObserver(() => fitPop()).observe(root);
+
     const popup = (it: CarSetting, was: number) => {
       fillPop(it, was);
       popping = true;
@@ -224,6 +258,7 @@ export const carsettings: OverlayDef = {
         visibility();
       }, (s.popupSeconds as number) * 1000);
       visibility();
+      fitPop();
     };
 
     const flash = (id: string) => {
@@ -266,6 +301,7 @@ export const carsettings: OverlayDef = {
         prev = new Map(d.items.map((i) => [i.id, i.value]));
         if (d === SAMPLE && popupMode === 'only') fillPop({ id: 'tc', value: 5, max: 11 }, 4);
         visibility();
+        if (!pop.hidden) fitPop();
       },
     };
   },
