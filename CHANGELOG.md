@@ -10,6 +10,10 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - Race length in timed races now reads "Lap 6/12.89" (was "6-12.89"), and what goes between the two is yours to set (Between the lap and the race length: /, -, "of"…)
 - Fuel calculator: Average every lap, clean or not (in the fuel overlay and Strategy → Fuel). Off, as before, only clean laps count; on, pit-lane and caution laps count too. A lap you refuelled on never does, as what it used cannot be measured. It applies at once, to the laps already driven too
 
+### Fixes
+- Driver inputs: the steering wheel no longer runs off the bottom of the overlay. It was sized before the steering angle above it had its first reading, so it ended up too tall; it now sizes itself to the window, and again whenever the angle line or the window changes
+- Car settings: the pop-up after a change scales its text to fit the overlay as it is, so a short or narrow overlay shows all of it instead of cutting it off
+
 ## 1.5.1
 
 ### New features

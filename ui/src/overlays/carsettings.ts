@@ -213,6 +213,27 @@ export const carsettings: OverlayDef = {
       popMeter.set(it);
     };
 
+    /**
+     * The pop-up's text scaled down to fit the overlay as it is (never up): a short or narrow
+     * overlay shows the whole of it, smaller, instead of cutting it off. Measured with the
+     * text at full size, then scaled by how far it overflows.
+     */
+    const fitPop = () => {
+      if (pop.hidden) return;
+      pop.style.fontSize = '';
+      const cs = getComputedStyle(pop);
+      const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      const roomW = pop.clientWidth - padX;
+      const roomH = pop.clientHeight - padY;
+      const needW = pop.scrollWidth - padX;
+      const needH = popText.offsetHeight;
+      if (roomW <= 0 || roomH <= 0 || needW <= 0 || needH <= 0) return;
+      const k = Math.min(1, roomW / needW, roomH / needH);
+      if (k < 0.999) pop.style.fontSize = `${Math.max(0.3, k * 0.97) * 100}%`;
+    };
+    new ResizeObserver(() => fitPop()).observe(root);
+
     const popup = (it: CarSetting, was: number) => {
       fillPop(it, was);
       popping = true;
@@ -224,6 +245,7 @@ export const carsettings: OverlayDef = {
         visibility();
       }, (s.popupSeconds as number) * 1000);
       visibility();
+      fitPop();
     };
 
     const flash = (id: string) => {
@@ -266,6 +288,7 @@ export const carsettings: OverlayDef = {
         prev = new Map(d.items.map((i) => [i.id, i.value]));
         if (d === SAMPLE && popupMode === 'only') fillPop({ id: 'tc', value: 5, max: 11 }, 4);
         visibility();
+        if (!pop.hidden) fitPop();
       },
     };
   },

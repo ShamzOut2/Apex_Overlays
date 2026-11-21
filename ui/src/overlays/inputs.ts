@@ -180,7 +180,7 @@ export const inputs: OverlayDef = {
     } else wheel.innerHTML = s.wheelStyle === 'simple' ? WHEEL_SIMPLE : WHEEL_DETAILED;
     wheel.style.color = s.wheelColor as string;
     root.style.setProperty('--wheel-mark', s.wheelMarkColor as string);
-    const angle = h('div', 'steer-angle');
+    const angle = h('div', 'steer-angle', '0°');
     wheelBlock.append(angle, wheel);
     const gear = h('div', 'gear');
     gear.style.color = s.gearColor as string;
@@ -222,7 +222,10 @@ export const inputs: OverlayDef = {
     if (s.sideLayout !== 'column' && s.showWheel !== false) {
       const fit = () => {
         const gap = parseFloat(getComputedStyle(side).columnGap) || 0;
-        const tall = side.clientHeight - (showAngle ? angle.offsetHeight + 2 : 0);
+        // The angle line above it and the gap between them (the angle is given its line
+        // from the start, so it does not push the wheel down when the first reading comes).
+        const above = showAngle ? angle.offsetHeight + (parseFloat(getComputedStyle(wheelBlock).rowGap) || 0) : 0;
+        const tall = side.clientHeight - above - 2;
         const others = [...side.children].filter((c) => c !== wheelBlock && (c as HTMLElement).offsetParent).reduce((w, c) => w + (c as HTMLElement).offsetWidth + gap, 0);
         const rest = [...main.children].filter((c) => c !== side && (c as HTMLElement).offsetParent && c !== canvas).reduce((w, c) => w + (c as HTMLElement).offsetWidth + 8, 0);
         // With the trace shown it keeps at least 40% of the width (30% next to the wider
@@ -236,8 +239,13 @@ export const inputs: OverlayDef = {
           wheel.style.height = `${height}px`;
         }
       };
-      new ResizeObserver(fit).observe(main);
+      // Fitted again when the overlay, or the angle line, changes size, and once the fonts
+      // are in (they change how tall the angle line is).
+      const ro = new ResizeObserver(fit);
+      ro.observe(main);
+      if (showAngle) ro.observe(angle);
       requestAnimationFrame(fit);
+      void document.fonts?.ready.then(fit);
     }
 
     const trace = inputTrace(canvas, s, () => !!s.showClutch);
