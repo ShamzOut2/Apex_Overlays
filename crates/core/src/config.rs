@@ -366,6 +366,9 @@ pub struct FuelConfig {
     pub margin_laps: f32,
     pub include_caution_laps: bool,
     pub include_pit_laps: bool,
+    /// Average every lap, clean or not (pit-lane and caution laps too); a lap you refuelled
+    /// on never counts, as its use cannot be measured.
+    pub any_laps: bool,
     /// The race's length for the estimate before it starts, when the game does not say
     /// (Le Mans Ultimate tells it only once in the race session): minutes, or laps (0: none).
     pub race_minutes: f32,
@@ -374,7 +377,7 @@ pub struct FuelConfig {
 
 impl Default for FuelConfig {
     fn default() -> Self {
-        Self { avg_laps: 5, margin_laps: 1.0, include_caution_laps: false, include_pit_laps: false, race_minutes: 0.0, race_laps: 0 }
+        Self { avg_laps: 5, margin_laps: 1.0, include_caution_laps: false, include_pit_laps: false, any_laps: false, race_minutes: 0.0, race_laps: 0 }
     }
 }
 

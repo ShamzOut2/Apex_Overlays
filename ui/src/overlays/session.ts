@@ -35,7 +35,7 @@ export const session: OverlayDef = {
         if (topic !== 'session') return;
         const d = data as Session;
         const u = ctx.units;
-        for (const [id, el] of Object.entries(cells)) text(el, fieldValue(id, d, u, { clock24: s.clock24 as boolean, tempTrend: s.showTempTrend as boolean, timedLaps: s.timedLaps as TimedLaps, estDecimals: s.estDecimals as number }) || '–');
+        for (const [id, el] of Object.entries(cells)) text(el, fieldValue(id, d, u, { clock24: s.clock24 as boolean, tempTrend: s.showTempTrend as boolean, timedLaps: s.timedLaps as TimedLaps, estDecimals: s.estDecimals as number, lengthSeparator: s.raceLengthSeparator as string }) || '–');
         if (cells.wetness) {
           toggle(cells.wetness, 'wet', d.wetness >= 4);
           toggle(cells.wetness, 'damp', d.wetness === 2 || d.wetness === 3);

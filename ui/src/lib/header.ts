@@ -86,7 +86,7 @@ export function sessionHeader(s: Values, fallbackTitle: string, units: () => Uni
       text(badge, type);
       badge.dataset.type = type.toLowerCase();
       show(badge, (s.sessionBadge as boolean) && !!type);
-      const parts = fields.map((id) => fieldValue(id, d, units(), { compact: true, timedLaps: s.timedLaps as TimedLaps, estDecimals: s.estDecimals as number })).filter(Boolean);
+      const parts = fields.map((id) => fieldValue(id, d, units(), { compact: true, timedLaps: s.timedLaps as TimedLaps, estDecimals: s.estDecimals as number, lengthSeparator: s.raceLengthSeparator as string })).filter(Boolean);
       text(info, parts.join(s.headerSeparator as string));
       info.dataset.flag = fields.includes('flags') ? flagKind(d) : '';
     },

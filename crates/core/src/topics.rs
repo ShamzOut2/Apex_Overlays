@@ -1106,6 +1106,8 @@ pub struct FuelOut<'a> {
     pub per_lap_last: Option<f32>,
     pub per_lap_max: Option<f32>,
     pub laps_sampled: usize,
+    /// Every lap is averaged, not only clean ones.
+    pub any_laps: bool,
     /// How many of the last clean laps the average is over (Strategy → Fuel).
     pub avg_laps: usize,
     pub laps_in_tank: Option<f32>,
@@ -1229,7 +1231,8 @@ pub fn fuel_out(e: &Engine) -> FuelOut<'_> {
         per_lap_avg: avg.map(r3),
         per_lap_last: e.fuel.laps.back().map(|l| r3(l.used)),
         per_lap_max: e.fuel.max(n).map(r3),
-        laps_sampled: e.fuel.laps.iter().filter(|l| l.valid).count(),
+        laps_sampled: e.fuel.laps.iter().filter(|l| e.fuel.counts(l)).count(),
+        any_laps: cfg.any_laps,
         avg_laps: n,
         laps_in_tank: avg.filter(|a| *a > 0.0).map(|a| round(t.fuel_level / a, 2)),
         use_per_hour: round(t.fuel_use_per_hour, 2),
@@ -1255,7 +1258,7 @@ pub fn fuel_out(e: &Engine) -> FuelOut<'_> {
         window_opens_lap: plan.as_ref().filter(|p| p.stops > 0).map(|p| lap + p.window_opens_in.ceil() as i32),
         window_closes_lap: plan.as_ref().filter(|p| p.stops > 0).map(|p| lap + p.window_closes_in.floor() as i32),
         margin_laps: cfg.margin_laps,
-        history: e.fuel.laps.iter().rev().filter(|l| l.valid).take(10).map(|l| r3(l.used)).collect(),
+        history: e.fuel.laps.iter().rev().filter(|l| e.fuel.counts(l)).take(10).map(|l| r3(l.used)).collect(),
         expected,
         estimate_from: if session_avg.is_some() {
             "session"

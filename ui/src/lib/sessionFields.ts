@@ -83,10 +83,19 @@ export function lapSettings(group: string, when: (v: Record<string, unknown>) =>
       options: [
         ['infinity', 'Lap 12/∞'],
         ['estimate', 'Lap 12/~24 (estimated laps)'],
-        ['length', 'Lap 6-12.89 (race length in laps at the leader’s pace)'],
+        ['length', 'Lap 6/12.89 (race length in laps at the leader’s pace)'],
         ['count', 'Lap 12'],
       ],
       group,
+    },
+    {
+      key: 'raceLengthSeparator',
+      when: (v) => when(v) && v.timedLaps === 'length',
+      label: 'Between the lap and the race length',
+      type: 'text',
+      default: '/',
+      group,
+      help: 'Any character or text, e.g. / or - or “of”',
     },
     {
       key: 'estDecimals',
@@ -112,6 +121,8 @@ export interface FieldOpts {
   timedLaps?: TimedLaps;
   /** Decimals of the estimated laps left. */
   estDecimals?: number;
+  /** Between the lap and the race length ("6/12.89"). */
+  lengthSeparator?: string;
 }
 
 /** Display value of a field; '' when there is nothing to show. */
@@ -134,7 +145,7 @@ export function fieldValue(id: string, d: Session, u: f.Units, o: FieldOpts = {}
           ? timed === 'estimate' && d.estLapsTotal != null
             ? `/~${d.estLapsTotal}`
             : timed === 'length' && d.estRaceLaps != null
-              ? `-${d.estRaceLaps.toFixed(o.estDecimals ?? 1)}`
+              ? `${o.lengthSeparator ?? '/'}${d.estRaceLaps.toFixed(o.estDecimals ?? 1)}`
               : timed === 'count'
               ? ''
               : '/∞'

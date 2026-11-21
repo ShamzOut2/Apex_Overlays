@@ -4,6 +4,12 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### New features
+- Race length in timed races now reads "Lap 6/12.89" (was "6-12.89"), and what goes between the two is yours to set (Between the lap and the race length: /, -, "of"…)
+- Fuel calculator: Average every lap, clean or not (in the fuel overlay and Strategy → Fuel). Off, as before, only clean laps count; on, pit-lane and caution laps count too. A lap you refuelled on never does, as what it used cannot be measured. It applies at once, to the laps already driven too
+
 ## 1.5.1
 
 ### New features

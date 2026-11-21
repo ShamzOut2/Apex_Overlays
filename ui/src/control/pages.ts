@@ -1206,6 +1206,7 @@ const strategyPage: Page = {
           { key: 'raceLaps', label: 'Race length (laps)', type: 'number', default: 0, min: 0, max: 2000, unit: 'laps', help: 'For a race set by laps. 0: none' },
           { key: 'includePitLaps', label: 'Include in/out laps', type: 'bool', default: false },
           { key: 'includeCautionLaps', label: 'Include caution laps', type: 'bool', default: false },
+          { key: 'anyLaps', label: 'Average every lap, clean or not', type: 'bool', default: false, help: 'Off: clean laps only. On: pit-lane and caution laps count too; a lap you refuelled on never does' },
         ],
         'Consumption is measured per lap. Laps with refuelling, off-track resets or (optionally) pit/caution laps are ignored.',
       ),
