@@ -240,9 +240,9 @@ canvas.trace.grid { background-image: linear-gradient(var(--trace-grid), var(--t
 .inputs .side.col > .wheel-block { flex: 1 1 0; width: 100%; }
 .inputs .wheel-block { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1em; min-height: 0; }
 .inputs .side.row .wheel-block > .wheel { flex: none; width: 3em; height: 3em; }
-.inputs .side.col .wheel-block > .wheel { flex: 1 1 0; width: 100%; min-height: 1.4em; max-height: 3.2em; }
-.inputs .wheel-photo { width: 100%; height: 100%; display: block; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7)); }
-.inputs .side.col .wheel.photo { height: auto; max-height: none; flex: none; }
+.inputs .side.col .wheel-block > .wheel { flex: none; width: 3em; height: 3em; }
+.inputs .wheel.photo { display: flex; align-items: center; justify-content: center; }
+.inputs .wheel-photo { height: auto; display: block; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7)); }
 .inputs .wheel svg { width: 100%; height: 100%; display: block; overflow: visible; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.6)); }
 .inputs .gear { min-width: 1.1em; color: var(--text); font-size: 2.6em; font-weight: 800; line-height: 1; text-align: center; font-variant-numeric: tabular-nums; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); }
 .inputs .side.col .gear { font-size: 1.7em; }
@@ -801,6 +801,9 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 @keyframes cs-bump { from { transform: scale(1.06); } to { transform: scale(1); } }
 .cs-pop { position: relative; display: flex; align-items: center; gap: 1em; padding: 0.35em 1em 0.35em 1.15em; border-radius: 10px; overflow: hidden; white-space: nowrap; background: linear-gradient(100deg, color-mix(in srgb, var(--k) 24%, #0c1016), #0c1016 70%); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 55%, transparent), 0 6px 22px rgba(0, 0, 0, 0.45); animation: cs-in 0.16s ease-out; }
 .cs-pop::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--k); }
+/* A chosen setting the car does not have: a dash, dimmed, no meter. */
+.cs-item.cs-missing { opacity: 0.45; }
+.cs-item.cs-missing .cs-meter { visibility: hidden; }
 .cs-pop-over .cs-pop { position: absolute; inset: 0; z-index: 2; }
 /* Pop-ups only, in a window you size yourself: the pop-up takes all of it. */
 .cs-pop-only:not(.auto-height) .cs-pop { flex: 1 1 auto; min-height: 0; }

@@ -167,14 +167,15 @@ export const inputs: OverlayDef = {
     const side = h('div', `side ${s.sideLayout === 'column' ? 'col' : 'row'}`);
     const wheelBlock = h('div', 'wheel-block');
     const wheel = h('div', 'wheel');
-    // The photo wheel is wider than tall (its height is this share of its width).
+    // The photo wheel is wider than tall: it sits in the middle of the square it turns in,
+    // as wide as fits that square at any angle (the square's side over its diagonal).
     const photo = (s.wheelStyle ?? 'photo') === 'photo';
-    const AR = 271 / 520;
     if (photo) {
       const img = h('img', 'wheel-photo');
       img.src = '/assets/wheels/wheel.png';
       img.alt = '';
       img.draggable = false;
+      img.style.width = `${100 / Math.hypot(1, 271 / 520)}%`;
       wheel.append(img);
       wheel.classList.add('photo');
     } else wheel.innerHTML = s.wheelStyle === 'simple' ? WHEEL_SIMPLE : WHEEL_DETAILED;
@@ -216,27 +217,37 @@ export const inputs: OverlayDef = {
     else main.append(canvas, bars, side);
     root.append(lights, rpm, main);
 
-    // Side by side, the wheel is as tall as the room allows (less its angle above it) and no
-    // wider than the overlay leaves once the speeds, gear and pedals have theirs. Sized when
-    // the overlay is, not on every update.
-    if (s.sideLayout !== 'column' && s.showWheel !== false) {
+    // The wheel takes the room the overlay leaves it, at any steering angle: it turns inside a
+    // square, so a wheel wider than tall (the photo) is sized for its turning circle (its
+    // diagonal) and never runs off the overlay or over its angle line when turned. Side by
+    // side: as tall as the room (less the angle line above it), as wide as the speeds, gear
+    // and pedals leave. Stacked: as wide as the column, as tall as the speeds and gear leave.
+    // Sized when the overlay is, not on every update.
+    if (s.showWheel !== false) {
+      const stacked = s.sideLayout === 'column';
       const fit = () => {
-        const gap = parseFloat(getComputedStyle(side).columnGap) || 0;
+        const cs = getComputedStyle(side);
+        const gap = parseFloat(stacked ? cs.rowGap : cs.columnGap) || 0;
         // The angle line above it and the gap between them (the angle is given its line
         // from the start, so it does not push the wheel down when the first reading comes).
         const above = showAngle ? angle.offsetHeight + (parseFloat(getComputedStyle(wheelBlock).rowGap) || 0) : 0;
-        const tall = side.clientHeight - above - 2;
-        const others = [...side.children].filter((c) => c !== wheelBlock && (c as HTMLElement).offsetParent).reduce((w, c) => w + (c as HTMLElement).offsetWidth + gap, 0);
-        const rest = [...main.children].filter((c) => c !== side && (c as HTMLElement).offsetParent && c !== canvas).reduce((w, c) => w + (c as HTMLElement).offsetWidth + 8, 0);
-        // With the trace shown it keeps at least 40% of the width (30% next to the wider
-        // photo wheel).
-        const wide = main.clientWidth * (s.showTrace ? (photo ? 0.7 : 0.6) : 1) - others - rest - 8;
-        // Round wheels are square; the photo wheel is as wide as its height allows.
-        const width = Math.max(16, Math.floor(Math.min(photo ? tall / AR : tall, wide)));
-        const height = photo ? Math.round(width * AR) : width;
-        if (wheel.style.width !== `${width}px` || wheel.style.height !== `${height}px`) {
-          wheel.style.width = `${width}px`;
-          wheel.style.height = `${height}px`;
+        const others = [...side.children].filter((c) => c !== wheelBlock && (c as HTMLElement).offsetParent) as HTMLElement[];
+        let tall: number;
+        let wide: number;
+        if (stacked) {
+          tall = side.clientHeight - above - others.reduce((t, c) => t + c.offsetHeight + gap, 0) - 2;
+          wide = side.clientWidth;
+        } else {
+          tall = side.clientHeight - above - 2;
+          const beside = others.reduce((w, c) => w + c.offsetWidth + gap, 0);
+          const rest = [...main.children].filter((c) => c !== side && (c as HTMLElement).offsetParent && c !== canvas).reduce((w, c) => w + (c as HTMLElement).offsetWidth + 8, 0);
+          // With the trace shown it keeps at least 40% of the width.
+          wide = main.clientWidth * (s.showTrace ? 0.6 : 1) - beside - rest - 8;
+        }
+        const size = Math.max(8, Math.floor(Math.min(tall, wide)));
+        if (wheel.style.width !== `${size}px`) {
+          wheel.style.width = `${size}px`;
+          wheel.style.height = `${size}px`;
         }
       };
       // Fitted again when the overlay, or the angle line, changes size, and once the fonts
