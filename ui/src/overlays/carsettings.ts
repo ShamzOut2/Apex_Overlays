@@ -214,9 +214,11 @@ export const carsettings: OverlayDef = {
     };
 
     /**
-     * The pop-up's text scaled down to fit the overlay as it is (never up): a short or narrow
-     * overlay shows the whole of it, smaller, instead of cutting it off. Measured with the
-     * text at full size, then scaled by how far it overflows.
+     * The pop-up fills the overlay, whatever its size: its text is scaled up or down so the
+     * name, value and meter take the room there is. Measured at the normal size (what the
+     * content needs), then scaled by how much room there is, and checked once more so it
+     * never spills over. With the window fitted to the pop-up itself (pop-ups only, Fit the
+     * window to the content), the window follows the text, so it is only scaled down there.
      */
     const fitPop = () => {
       if (pop.hidden) return;
@@ -224,13 +226,24 @@ export const carsettings: OverlayDef = {
       const cs = getComputedStyle(pop);
       const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
       const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      const gap = parseFloat(cs.columnGap) || 0;
       const roomW = pop.clientWidth - padX;
       const roomH = pop.clientHeight - padY;
-      const needW = pop.scrollWidth - padX;
+      const meterOn = !popMeter.el.hidden && getComputedStyle(popMeter.el).display !== 'none';
+      const meterW = meterOn ? parseFloat(getComputedStyle(popMeter.el).minWidth) || 0 : 0;
+      const needW = popText.offsetWidth + (meterOn ? meterW + gap : 0);
       const needH = popText.offsetHeight;
       if (roomW <= 0 || roomH <= 0 || needW <= 0 || needH <= 0) return;
-      const k = Math.min(1, roomW / needW, roomH / needH);
-      if (k < 0.999) pop.style.fontSize = `${Math.max(0.3, k * 0.97) * 100}%`;
+      const fitted = root.classList.contains('auto-height') || root.classList.contains('auto-width');
+      const most = popupMode === 'only' && fitted ? 1 : 12;
+      let k = Math.min(most, roomW / needW, roomH / needH) * 0.94;
+      pop.style.fontSize = `${k * 100}%`;
+      // The padding grows with the text: take off whatever still overflows.
+      const over = Math.max(popText.offsetHeight / Math.max(1, pop.clientHeight - padY * k), (pop.scrollWidth - padX * k) / Math.max(1, pop.clientWidth - padX * k));
+      if (over > 1) {
+        k /= over * 1.02;
+        pop.style.fontSize = `${k * 100}%`;
+      }
     };
     new ResizeObserver(() => fitPop()).observe(root);
 

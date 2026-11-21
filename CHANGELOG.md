@@ -12,7 +12,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 
 ### Fixes
 - Driver inputs: the steering wheel no longer runs off the bottom of the overlay. It was sized before the steering angle above it had its first reading, so it ended up too tall; it now sizes itself to the window, and again whenever the angle line or the window changes
-- Car settings: the pop-up after a change scales its text to fit the overlay as it is, so a short or narrow overlay shows all of it instead of cutting it off
+- Car settings: the pop-up after a change fills the whole overlay, however big or small: it covers it edge to edge and its text and meter scale up or down to the room there is, so nothing is cut off and a big overlay gets a big read-out
 
 ## 1.5.1
 
