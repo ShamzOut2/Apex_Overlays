@@ -4,6 +4,15 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 1.5.3
+
+### New features
+- League builder: classes no longer have a kind (main or secondary). Each driver has a Main class and a 2nd class, both picked in the roster from all the league's classes, so any class can be a main class for some drivers and a 2nd class (a Rookie Cup, a Pro-Am trophy) for others. A driver with no main class picked still gets the first class whose rules match. Leagues made before work as they did: their secondary classes become plain classes, kept as each driver's 2nd class. The sign-up sheet import asks whether the sheet's class column is each driver's main or 2nd class
+- Standings: the colour bar by each driver can be switched off (Colour bar by each driver), as on the relative. On both, the bar and the car number take their colour from the main class, the 2nd class or the team
+
+### Fixes
+- Relative and standings: with the bar coloured by the 2nd class or the team, drivers without one had no bar at all; they keep their main class colour, as the setting says
+
 ## 1.5.2
 
 ### New features

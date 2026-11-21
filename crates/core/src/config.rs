@@ -440,6 +440,27 @@ pub struct League {
     pub teams: Vec<LeagueTeam>,
 }
 
+impl League {
+    /// Leagues from before 1.5.3 had "secondary" classes, only ever a driver's secondary
+    /// class: they become plain classes that work as before. Their rules (never used) are
+    /// dropped, so the rules give nobody that class as their main one, and a roster pick of
+    /// one as a main class (never used either) is cleared. Does nothing to newer leagues.
+    pub fn upgrade_roles(&mut self) {
+        let old: Vec<String> = self.classes.iter().filter(|c| c.role == "secondary").map(|c| c.id.clone()).collect();
+        for c in &mut self.classes {
+            if c.role == "secondary" {
+                c.rules = ClassRules::default();
+            }
+            c.role.clear();
+        }
+        for o in &mut self.driver_overrides {
+            if old.contains(&o.class_id) {
+                o.class_id.clear();
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
 pub struct LeagueTeam {
@@ -543,15 +564,11 @@ pub struct LeagueClass {
     /// CSS hex colour, e.g. "#ff4d4d".
     pub color: String,
     pub rules: ClassRules,
-    /// "secondary": a class running across the main ones (a Rookie Cup, a Pro-Am trophy),
-    /// picked per driver on the roster and never by rules. Anything else: a main class.
+    /// Before 1.5.3, "secondary" made this a class only for drivers' secondary class (its
+    /// rules unused, never a main class). Classes no longer have a kind: each driver has a
+    /// main and a secondary class picked from all of them. Cleared by `League::upgrade_roles`.
+    #[serde(skip_serializing_if = "String::is_empty")]
     pub role: String,
-}
-
-impl LeagueClass {
-    pub fn is_secondary(&self) -> bool {
-        self.role == "secondary"
-    }
 }
 
 /// A car joins the class if ANY populated rule matches. Text rules are
@@ -578,7 +595,7 @@ pub struct DriverOverride {
     pub car_number: String,
     /// League class this driver races in (a `LeagueClass::id`); takes priority over class rules.
     pub class_id: String,
-    /// Their secondary class (a `LeagueClass::id` of a secondary class), if any.
+    /// Their secondary class (any `LeagueClass::id`), if any: a Rookie Cup, a Pro-Am trophy.
     pub class2_id: String,
     pub display_name: String,
     pub team_name: String,
@@ -719,6 +736,9 @@ impl Config {
             if self.vr.mode == "steamvr" {
                 self.vr.mode = "auto".into();
             }
+        }
+        for l in &mut self.leagues {
+            l.upgrade_roles();
         }
         self.version = CONFIG_VERSION;
         self.add_new_kinds();

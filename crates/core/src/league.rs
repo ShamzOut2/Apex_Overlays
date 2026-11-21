@@ -19,7 +19,11 @@ pub struct Resolver {
 }
 
 impl Resolver {
-    pub fn new(league: Option<League>) -> Self {
+    pub fn new(mut league: Option<League>) -> Self {
+        // A league file from before 1.5.3 (secondary classes) works as it did.
+        if let Some(l) = &mut league {
+            l.upgrade_roles();
+        }
         Self { league }
     }
 
@@ -45,15 +49,14 @@ impl Resolver {
             color: parse_color(&c.color).unwrap_or(0xffffff),
             order: i as f32,
         };
-        // A class picked for the driver on the league roster wins over the rules.
-        // Secondary classes are never anyone's main class.
+        // A main class picked for the driver on the league roster wins over the rules.
         if let Some(o) = league.driver_overrides.iter().find(|o| o.customer_id == d.user_id && !o.class_id.is_empty()) {
-            if let Some((i, c)) = league.classes.iter().enumerate().find(|(_, c)| c.id == o.class_id && !c.is_secondary()) {
+            if let Some((i, c)) = league.classes.iter().enumerate().find(|(_, c)| c.id == o.class_id) {
                 return key(i, c);
             }
         }
         for (i, c) in league.classes.iter().enumerate() {
-            if !c.is_secondary() && matches(c, d) {
+            if matches(c, d) {
                 return key(i, c);
             }
         }
@@ -64,11 +67,12 @@ impl Resolver {
         }
     }
 
-    /// The driver's secondary class (picked for them on the roster), if they have one.
+    /// The driver's secondary class (picked for them on the roster, from any of the league's
+    /// classes), if they have one.
     pub fn secondary_of(&self, d: &Driver) -> Option<ClassKey> {
         let league = self.league.as_ref()?;
         let o = league.driver_overrides.iter().find(|o| o.customer_id == d.user_id && !o.class2_id.is_empty())?;
-        let (i, c) = league.classes.iter().enumerate().find(|(_, c)| c.id == o.class2_id && c.is_secondary())?;
+        let (i, c) = league.classes.iter().enumerate().find(|(_, c)| c.id == o.class2_id)?;
         Some(ClassKey { id: format!("lg{}", c.id), name: c.name.clone(), color: parse_color(&c.color).unwrap_or(0xffffff), order: i as f32 })
     }
 
@@ -207,38 +211,66 @@ mod tests {
     }
 
     #[test]
-    fn secondary_classes_run_alongside_the_main_ones() {
-        let rookie = LeagueClass {
-            id: "rookie".into(),
-            name: "Rookie Cup".into(),
-            color: "#00ff00".into(),
-            role: "secondary".into(),
-            rules: ClassRules { car_numbers: vec!["1".into()], ..Default::default() },
-        };
-        let pro = LeagueClass {
-            id: "pro".into(),
-            name: "Pro".into(),
-            color: "#ff0000".into(),
-            rules: ClassRules { car_numbers: vec!["1".into()], ..Default::default() },
+    fn each_driver_has_a_main_and_a_secondary_class() {
+        let class = |id: &str, name: &str, color: &str, numbers: &[&str]| LeagueClass {
+            id: id.into(),
+            name: name.into(),
+            color: color.into(),
+            rules: ClassRules { car_numbers: numbers.iter().map(|n| n.to_string()).collect(), ..Default::default() },
             ..Default::default()
         };
         let league = League {
-            classes: vec![rookie, pro],
+            classes: vec![class("pro", "Pro", "#ff0000", &["1"]), class("am", "Am", "#0000ff", &[]), class("rookie", "Rookie Cup", "#00ff00", &[])],
             driver_overrides: vec![
+                // Main class from the rules (Pro), secondary picked.
                 DriverOverride { customer_id: 7, class2_id: "rookie".into(), ..Default::default() },
-                // A secondary class picked as the main one by mistake: not used as such.
-                DriverOverride { customer_id: 8, class_id: "rookie".into(), class2_id: "pro".into(), ..Default::default() },
+                // Both picked, from any of the classes.
+                DriverOverride { customer_id: 8, class_id: "am".into(), class2_id: "pro".into(), ..Default::default() },
             ],
             ..Default::default()
         };
         let r = Resolver::new(Some(league));
         let d = |id: i64| Driver { user_id: id, car_number: "1".into(), class_id: 3, ..Default::default() };
-        // The rules of a secondary class pick nobody: the main class is Pro.
         assert_eq!(r.class_of(&d(7)).name, "Pro");
         assert_eq!(r.secondary_of(&d(7)).map(|c| (c.name, c.color)), Some(("Rookie Cup".into(), 0x00ff00)));
-        assert_eq!(r.class_of(&d(8)).name, "Pro");
-        assert!(r.secondary_of(&d(8)).is_none(), "a main class is not a secondary one");
+        assert_eq!(r.class_of(&d(8)).name, "Am");
+        assert_eq!(r.secondary_of(&d(8)).map(|c| c.name), Some("Pro".into()));
         assert!(r.secondary_of(&d(9)).is_none());
+    }
+
+    #[test]
+    fn old_secondary_classes_keep_working() {
+        // A league from before 1.5.3: Rookie Cup was a secondary class, its rules unused.
+        let league = League {
+            classes: vec![
+                LeagueClass {
+                    id: "rookie".into(),
+                    name: "Rookie Cup".into(),
+                    role: "secondary".into(),
+                    rules: ClassRules { car_numbers: vec!["1".into()], ..Default::default() },
+                    ..Default::default()
+                },
+                LeagueClass {
+                    id: "pro".into(),
+                    name: "Pro".into(),
+                    rules: ClassRules { car_numbers: vec!["1".into()], ..Default::default() },
+                    ..Default::default()
+                },
+            ],
+            driver_overrides: vec![
+                DriverOverride { customer_id: 7, class2_id: "rookie".into(), ..Default::default() },
+                // Picked as a main class by mistake, which was never used.
+                DriverOverride { customer_id: 8, class_id: "rookie".into(), ..Default::default() },
+            ],
+            ..Default::default()
+        };
+        let r = Resolver::new(Some(league));
+        let d = |id: i64| Driver { user_id: id, car_number: "1".into(), class_id: 3, ..Default::default() };
+        assert_eq!(r.class_of(&d(7)).name, "Pro");
+        assert_eq!(r.secondary_of(&d(7)).map(|c| c.name), Some("Rookie Cup".into()));
+        assert_eq!(r.class_of(&d(8)).name, "Pro");
+        let l = r.league().unwrap();
+        assert!(l.classes.iter().all(|c| c.role.is_empty()));
     }
 
     #[test]

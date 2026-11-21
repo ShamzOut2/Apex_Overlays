@@ -148,10 +148,9 @@ export function apply(l: League, rows: string[][], mapping: Mapping, role: 'main
     const i = mapping[f];
     return i != null && i >= 0 && i < r.length ? r[i].trim() : '';
   };
-  const isSecondary = (k: { role?: string }) => k.role === 'secondary';
-  // The league's class of that name and kind (else of that name), or a new one of that kind.
+  // The league's class of that name, or a new one.
   const classOf = (name: string) => {
-    let c = l.classes.find((k) => key(k.name) === key(name) && isSecondary(k) === (role === 'secondary')) ?? l.classes.find((k) => key(k.name) === key(name));
+    let c = l.classes.find((k) => key(k.name) === key(name));
     if (!c) {
       const label = name === name.toUpperCase() && name.length > 3 ? name[0] + name.slice(1).toLowerCase() : name;
       c = {
@@ -159,7 +158,6 @@ export function apply(l: League, rows: string[][], mapping: Mapping, role: 'main
         name: label,
         color: CLASS_COLORS[key(name)] ?? PALETTE[l.classes.length % PALETTE.length],
         rules: { carIds: [], carNames: [], carNumbers: [], customerIds: [], teamNames: [], driverNames: [], iracingClassIds: [] },
-        role,
       };
       l.classes.push(c);
       sum.classes++;
@@ -201,7 +199,8 @@ export function apply(l: League, rows: string[][], mapping: Mapping, role: 'main
     const klass = cell(r, 'class');
     if (klass) {
       const c = classOf(klass);
-      if (isSecondary(c)) d.class2Id = c.id;
+      // The sheet's class column is each driver's main class, or their 2nd class.
+      if (role === 'secondary') d.class2Id = c.id;
       else d.classId = c.id;
     }
   }
