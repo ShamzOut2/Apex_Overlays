@@ -59,7 +59,7 @@ const ESSENTIALS: Record<string, string[]> = {
   battle: ['mode', 'showAhead', 'showBehind', 'showGapBar', 'onlyInBattle'],
   session: ['fields', 'layout', 'showLabels', 'clock24'],
   flags: ['style', 'showLabel', 'maxFlags', 'hideWhenNone'],
-  startLights: ['countdown', 'lights', 'goStyle', 'rolling'],
+  startLights: ['layout', 'countdown', 'lights', 'goStyle', 'rolling'],
   weather: ['compassSize', 'carUp', 'showTrack', 'showAir', 'showRain'],
   forecast: ['interval', 'tiles', 'showNow', 'showRain'],
   tyres: ['showGauge', 'showReasons', 'onlyWhenRelevant', 'flash'],

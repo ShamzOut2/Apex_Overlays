@@ -7,6 +7,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 ## Unreleased
 
 ### New features
+- Start lights: a new look. A gantry of five columns, two red lenses and a green one each, every lens a cluster of LEDs behind a hooded visor, with a status strip under it (Apex badge, READY / SET / GO, lights lit). Or a compact strip, one lens per column, for a screen corner (Look). It works as before: the countdown shows on the gantry, the reds come on for ready and set, green or lights out for the go, and for rolling starts amber on the pace laps, flashing on the last one, green when the flag drops. It scales to fit its window
 - Race length in timed races now reads "Lap 6/12.89" (was "6-12.89"), and what goes between the two is yours to set (Between the lap and the race length: /, -, "of"…)
 - Fuel calculator: Average every lap, clean or not (in the fuel overlay and Strategy → Fuel). Off, as before, only clean laps count; on, pit-lane and caution laps count too. A lap you refuelled on never does, as what it used cannot be measured. It applies at once, to the laps already driven too
 
