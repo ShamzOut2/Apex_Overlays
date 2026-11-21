@@ -29,6 +29,10 @@ pub struct TrackMap {
     /// in the same unit box as `points`. Official maps only.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub pit: Vec<[[f32; 2]; 2]>,
+    /// Where iRacing's map puts each turn number: `[number, lap fraction]`, by number.
+    /// Official maps only.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub turns: Vec<[f32; 2]>,
 }
 
 impl TrackMap {
@@ -241,6 +245,7 @@ impl Recorder {
             source: "recorded".into(),
             version: MAP_VERSION,
             pit: vec![],
+            turns: vec![],
         };
         if let Some(p) = self.path(self.track_id) {
             if let Some(dir) = p.parent() {
@@ -393,7 +398,7 @@ mod tests {
     #[test]
     fn old_recordings_are_turned_round() {
         // Recorded before version 2: x was north, y (down) was 1 - east.
-        let old = TrackMap { track_id: 1, name: "T".into(), points: vec![[0.9, 0.2]], source: "recorded".into(), version: 0, pit: vec![] };
+        let old = TrackMap { track_id: 1, name: "T".into(), points: vec![[0.9, 0.2]], source: "recorded".into(), version: 0, pit: vec![], turns: vec![] };
         let new = old.clone().upgraded();
         // East 0.8, north 0.9: x 0.8, y 0.1.
         let p = new.points[0];
@@ -409,7 +414,7 @@ mod library_tests {
     use super::*;
 
     fn map(id: i64, source: &str) -> TrackMap {
-        TrackMap { track_id: id, name: "T".into(), points: vec![[0.0, 0.0]; BINS], source: source.into(), version: MAP_VERSION, pit: vec![] }
+        TrackMap { track_id: id, name: "T".into(), points: vec![[0.0, 0.0]; BINS], source: source.into(), version: MAP_VERSION, pit: vec![], turns: vec![] }
     }
 
     #[test]

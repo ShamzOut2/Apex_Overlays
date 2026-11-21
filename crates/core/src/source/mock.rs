@@ -126,6 +126,7 @@ impl Circuit {
                     out.push(crate::config::Corner {
                         name: NAMES.get(n).unwrap_or(&"").to_string(),
                         number: n as i32 + 1,
+                        last: 0,
                         start: start as f32 / SAMPLES as f32,
                         end: i as f32 / SAMPLES as f32,
                     });
@@ -145,6 +146,7 @@ impl Circuit {
             source: "mock".into(),
             version: crate::engine::trackmap::MAP_VERSION,
             pit: vec![],
+            turns: vec![],
         }
     }
 }

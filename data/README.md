@@ -26,8 +26,10 @@ The official outline of every layout in `iracing-track-maps.json`, already built
 shows the moment a track loads, with no download and no lap to drive. Built into the app;
 the app still downloads the SVGs when it can and replaces the built-in outline with its own
 (in case iRacing redraws a map). Format: `{"version": 2, "tracks": {"<trackId>": {"p": ...,
-"pit": ...}}}`, where `p` is the 500 outline points and `pit` the pit lane dashes (pairs of
-points), each as base64 of little-endian u16 x, y pairs (0 to 65535 for 0 to 1).
+"pit": ..., "t": ...}}}`, where `p` is the 500 outline points, `pit` the pit lane dashes (pairs of
+points) and `t` the turn numbers iRacing's map shows, each with its lap fraction (number,
+fraction pairs, the number stored as itself), each as base64 of little-endian u16 pairs (0 to
+65535 for 0 to 1).
 
 To rebuild it, run the `every_indexed_track` check above (it writes each outline to
 `<dir>/out/<trackId>.json`), then pack them:

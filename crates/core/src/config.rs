@@ -491,9 +491,16 @@ pub struct SeasonEntry {
 pub struct Corner {
     pub name: String,
     pub number: i32,
+    /// The last turn number of a corner made of several (Spa's Bus Stop is 18 to 19), else 0.
+    #[serde(skip_serializing_if = "is_zero")]
+    pub last: i32,
     /// Lap fractions (0..1).
     pub start: f32,
     pub end: f32,
+}
+
+fn is_zero(n: &i32) -> bool {
+    *n == 0
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

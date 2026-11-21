@@ -50,7 +50,7 @@ export const trackmap: OverlayDef = {
       type: 'select',
       default: 'number',
       options: [['none', 'None'], ['number', 'Turn numbers (T3)'], ['name', 'Corner names (Eau Rouge)'], ['both', 'Both (T3 Eau Rouge)']],
-      help: 'Corner data is downloaded per track; edit or add your own under Settings → General',
+      help: 'Turn numbers are iRacing’s own, from its track map; names come from the corner data downloaded per track (edit or add your own under Settings → General)',
       group: 'Corners',
     },
     { key: 'cornerPrefix', when: (v) => v.cornerLabels === 'number' || v.cornerLabels === 'both', label: 'Turn number prefix', type: 'text', default: 'T', group: 'Corners' },
@@ -192,7 +192,13 @@ export const trackmap: OverlayDef = {
       b.lineWidth = tw;
       b.stroke(path);
       const labels: Label[] = [];
-      if (s.cornerLabels !== 'none') for (const c of map?.corners ?? []) labels.push({ start: c.start, end: c.end, text: cornerText(c) });
+      if (s.cornerLabels !== 'none') {
+        const turns = s.cornerLabels === 'name' ? [] : (map?.turns ?? []);
+        for (const c of [...(map?.corners ?? []), ...turns]) {
+          const text = cornerText(c);
+          if (text) labels.push({ start: c.start, end: c.end, text });
+        }
+      }
       if (s.straightLabels) for (const c of map?.straights ?? []) labels.push({ start: c.start, end: c.end, text: c.name, dim: true });
       if (labels.length) drawLabels(b, nl, labels);
     };
@@ -291,9 +297,10 @@ export const trackmap: OverlayDef = {
 
     /** A corner's label. Corners known only by name (no official turn number in the track
      *  data) show their name in every mode rather than a made-up number. */
-    const cornerText = (c: { name: string; number: number }) => {
-      const num = c.number > 0 ? `${s.cornerPrefix}${c.number}` : '';
-      if (s.cornerLabels === 'number') return num || c.name;
+    // Numbers only when numbers are chosen: a corner without one is left unlabelled.
+    const cornerText = (c: { name: string; number: number; last?: number }) => {
+      const num = c.number > 0 ? `${s.cornerPrefix}${c.number}${c.last && c.last > c.number ? `-${c.last}` : ''}` : '';
+      if (s.cornerLabels === 'number') return num;
       if (s.cornerLabels === 'name') return c.name || num;
       return c.name && num ? `${num} ${c.name}` : num || c.name;
     };

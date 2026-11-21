@@ -35,7 +35,7 @@ pub fn parse_track(v: &Value) -> TrackData {
             let start = t.get("start")?.as_f64()? as f32;
             let end = t.get("end").and_then(|e| e.as_f64()).map(|e| e as f32).unwrap_or(start);
             let name = t.get("name").and_then(|n| n.as_str()).unwrap_or("").trim().to_string();
-            (!name.is_empty()).then_some(Corner { name, number: 0, start: start.clamp(0.0, 1.0), end: end.clamp(0.0, 1.0) })
+            (!name.is_empty()).then_some(Corner { name, number: 0, last: 0, start: start.clamp(0.0, 1.0), end: end.clamp(0.0, 1.0) })
         })
         .collect();
     TrackData { corners: parse_lovely(v), straights, pit_entry: frac("pitentry"), pit_exit: frac("pitexit") }
@@ -71,9 +71,104 @@ pub fn parse_lovely(v: &Value) -> Vec<Corner> {
             // Bus Stop would be "T15", not 18–19). The map shows its name instead. Only a corner
             // with neither is numbered by its place in the list.
             let number = number.unwrap_or(if name.is_empty() { i as i32 + 1 } else { 0 });
-            Some(Corner { name, number, start: start.clamp(0.0, 1.0), end: end.clamp(0.0, 1.0) })
+            Some(Corner { name, number, last: 0, start: start.clamp(0.0, 1.0), end: end.clamp(0.0, 1.0) })
         })
         .collect()
+}
+
+/// Distance between two lap fractions, either way round the lap.
+fn lap_gap(a: f32, b: f32) -> f32 {
+    let d = (a - b).abs().rem_euclid(1.0);
+    d.min(1.0 - d)
+}
+
+/// How far a lap fraction is outside a corner (0 inside it), either way round the lap.
+fn outside(c: &Corner, pct: f32) -> f32 {
+    let inside = if c.start <= c.end { (c.start..=c.end).contains(&pct) } else { pct >= c.start || pct <= c.end };
+    if inside {
+        0.0
+    } else {
+        lap_gap(pct, c.start).min(lap_gap(pct, c.end))
+    }
+}
+
+/// The corners numbered as iRacing's own map numbers its turns (`turns`: `[number, lap
+/// fraction]` from the official map), plus the turns no corner covers, number only.
+///
+/// A turn goes to the corner it falls in (or just beside); a corner left without one takes
+/// the nearest turn left over that still fits the order of the numbers round the lap (a label
+/// drawn out beside a hairpin can land on the approach). A corner with several turns is
+/// numbered from the first to the last (Skyline, T11–14), and a turn just beside a corner
+/// whose numbers it continues joins it. Corners with no turn keep the
+/// number they had.
+pub fn number_from_map(corners: &[Corner], turns: &[[f32; 2]]) -> (Vec<Corner>, Vec<Corner>) {
+    const NEAR: f32 = 0.008;
+    const REACH: f32 = 0.035;
+    let mut owner: Vec<Option<usize>> = turns
+        .iter()
+        .map(|t| corners.iter().enumerate().map(|(i, c)| (i, outside(c, t[1]))).filter(|(_, d)| *d <= NEAR).min_by(|a, b| a.1.total_cmp(&b.1)).map(|(i, _)| i))
+        .collect();
+    let nums = |owner: &[Option<usize>], i: usize| -> Vec<u32> { turns.iter().zip(owner).filter(|(_, o)| **o == Some(i)).map(|(t, _)| t[0] as u32).collect() };
+    // Corners in lap order, for the order check.
+    let mut order: Vec<usize> = (0..corners.len()).collect();
+    order.sort_by(|&a, &b| corners[a].start.total_cmp(&corners[b].start));
+    for (k, &i) in order.iter().enumerate() {
+        if !nums(&owner, i).is_empty() {
+            continue;
+        }
+        // The numbers of the corners before and after it round the lap.
+        let before = order[..k].iter().rev().find_map(|&j| nums(&owner, j).into_iter().max());
+        let after = order[k + 1..].iter().find_map(|&j| nums(&owner, j).into_iter().min());
+        let pick = turns
+            .iter()
+            .enumerate()
+            .filter(|(t, _)| owner[*t].is_none())
+            .filter(|(_, t)| before.is_none_or(|b| t[0] as u32 > b) && after.is_none_or(|a| (t[0] as u32) < a))
+            .map(|(t, x)| (t, outside(&corners[i], x[1])))
+            .filter(|(_, d)| *d <= REACH)
+            .min_by(|a, b| a.1.total_cmp(&b.1));
+        if let Some((t, _)) = pick {
+            owner[t] = Some(i);
+        }
+    }
+    // A turn left over just beside a corner whose numbers it continues joins it (T21 drawn
+    // a little before the Chase, which has T22).
+    loop {
+        let join = turns
+            .iter()
+            .enumerate()
+            .filter(|(t, _)| owner[*t].is_none())
+            .filter_map(|(t, x)| {
+                let n = x[0] as u32;
+                (0..corners.len())
+                    .filter(|&i| nums(&owner, i).iter().any(|&m| m + 1 == n || m == n + 1))
+                    .map(|i| (i, outside(&corners[i], x[1])))
+                    .filter(|(_, d)| *d <= REACH)
+                    .min_by(|a, b| a.1.total_cmp(&b.1))
+                    .map(|(i, d)| (t, i, d))
+            })
+            .min_by(|a, b| a.2.total_cmp(&b.2));
+        let Some((t, i, _)) = join else { break };
+        owner[t] = Some(i);
+    }
+    let numbered = corners
+        .iter()
+        .enumerate()
+        .map(|(i, c)| {
+            let n = nums(&owner, i);
+            match (n.iter().min(), n.iter().max()) {
+                (Some(&lo), Some(&hi)) => Corner { number: lo as i32, last: if hi > lo { hi as i32 } else { 0 }, ..c.clone() },
+                _ => c.clone(),
+            }
+        })
+        .collect();
+    let rest = turns
+        .iter()
+        .zip(&owner)
+        .filter(|(_, o)| o.is_none())
+        .map(|(t, _)| Corner { name: String::new(), number: t[0] as i32, last: 0, start: t[1], end: t[1] })
+        .collect();
+    (numbered, rest)
 }
 
 /// Words and numbers of a track name ("charlotte 2025 roval2019" → charlotte, roval / 2025, 2019).
@@ -183,6 +278,39 @@ pub fn spawn(hub: Arc<Hub>, data_dir: PathBuf, track: Arc<Mutex<(i64, String)>>)
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn corners_take_the_official_turn_numbers() {
+        let c = |name: &str, start: f32, end: f32| Corner { name: name.into(), number: 0, last: 0, start, end };
+        // Bathurst, from Lovely Track Data and iRacing's map.
+        let corners = [
+            c("Hell Corner", 0.046, 0.075),
+            c("The Cutting", 0.3, 0.33),
+            c("Skyline", 0.517, 0.55),
+            c("The Chase", 0.87, 0.926),
+            c("Murray's Corner", 0.965, 0.993),
+        ];
+        let turns = [
+            [1.0, 0.0502],
+            [4.0, 0.3000],
+            [5.0, 0.3257],
+            [11.0, 0.5160],
+            [12.0, 0.5224],
+            [13.0, 0.5413],
+            [14.0, 0.5367],
+            [20.0, 0.8142],
+            [21.0, 0.8589],
+            [22.0, 0.8777],
+            [23.0, 0.9395],
+        ];
+        let (n, rest) = number_from_map(&corners, &turns);
+        let got: Vec<(i32, i32)> = n.iter().map(|c| (c.number, c.last)).collect();
+        // Murray's label lands on the approach, but it is the turn left over after the Chase.
+        assert_eq!(got, vec![(1, 0), (4, 5), (11, 14), (21, 22), (23, 0)]);
+        assert_eq!(rest.iter().map(|c| c.number).collect::<Vec<_>>(), vec![20]);
+        // No official map: nothing changes.
+        assert_eq!(number_from_map(&corners, &[]).0, corners.to_vec());
+    }
     use serde_json::json;
 
     #[test]
@@ -193,7 +321,7 @@ mod tests {
             {"start": 0.2, "end": 0.25, "name": "Kemmel"}
         ]});
         let c = parse_lovely(&v);
-        assert_eq!(c[0], Corner { name: "".into(), number: 1, start: 0.05, end: 0.08 });
+        assert_eq!(c[0], Corner { name: "".into(), number: 1, last: 0, start: 0.05, end: 0.08 });
         assert_eq!(c[1].name, "Eau Rouge");
         assert_eq!(c[1].number, 2);
         // Named without a number: no number made up from its place in the list.

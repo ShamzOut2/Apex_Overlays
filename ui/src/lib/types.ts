@@ -365,7 +365,10 @@ export interface TrackMap {
   building?: boolean;
   progress: number;
   sectors: number[];
+  /** Numbered as iRacing's own map numbers the turns, when known. */
   corners: Corner[];
+  /** iRacing's turns that no corner covers (number only). */
+  turns?: Corner[];
   cornersSource: 'custom' | 'lovely' | 'mock' | 'none';
   /** Named straights from Lovely Track Data. */
   straights: Corner[];
@@ -398,6 +401,8 @@ export interface CarInfo {
 export interface Corner {
   name: string;
   number: number;
+  /** The last turn of a corner made of several (Bus Stop, T18-19). */
+  last?: number;
   start: number;
   end: number;
 }

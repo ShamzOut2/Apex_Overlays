@@ -14,6 +14,7 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - The Car settings overlay is now called In-Car Setup
 
 ### Fixes
+- Track map: "Turn numbers" showed corner names at about half the iRacing tracks, whose corner data has names but no numbers. The numbers now come from iRacing's own track map (built into the app for every layout, and taken from the map download), so each corner shows the number iRacing gives it (Spa's Raidillon T3-4, the Bus Stop T18-19), turns the corner data leaves out get a number of their own, and "Turn numbers" shows only numbers. Your own corners in Settings → General keep the numbers you gave them
 - Start lights: the countdown was a second behind the timer. It rounded the seconds left up (9.4 s showed 10) where iRacing's timer and the app's own clock cut them down (0:09); it now counts like them, and the first number shows for a whole second
 - Driver inputs: the steering wheel no longer runs off the bottom of the overlay. It was sized before the steering angle above it had its first reading, so it ended up too tall; it now sizes itself to the window, and again whenever the angle line or the window changes
 - Car settings: the pop-up after a change fills the whole overlay, however big or small: it covers it edge to edge and its text and meter scale up or down to the room there is, so nothing is cut off and a big overlay gets a big read-out
