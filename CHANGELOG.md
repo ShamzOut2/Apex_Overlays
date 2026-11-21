@@ -10,6 +10,9 @@ Each version groups its changes under `### New features`, `### Improvements` and
 - Race length in timed races now reads "Lap 6/12.89" (was "6-12.89"), and what goes between the two is yours to set (Between the lap and the race length: /, -, "of"…)
 - Fuel calculator: Average every lap, clean or not (in the fuel overlay and Strategy → Fuel). Off, as before, only clean laps count; on, pit-lane and caution laps count too. A lap you refuelled on never does, as what it used cannot be measured. It applies at once, to the laps already driven too
 
+- Session details and overlay headers: the incident count is coloured by how close it is to the next limit: green under half way, orange from 50% to 74%, red from 75% (the Data box already did). Past a penalty limit it starts again towards the next one (e.g. after 17x, from 17x towards 25x). The three colours are settings, and it can be switched off
+- The Car settings overlay is now called In-Car Setup
+
 ### Fixes
 - Driver inputs: the steering wheel no longer runs off the bottom of the overlay. It was sized before the steering angle above it had its first reading, so it ended up too tall; it now sizes itself to the window, and again whenever the angle line or the window changes
 - Car settings: the pop-up after a change fills the whole overlay, however big or small: it covers it edge to edge and its text and meter scale up or down to the room there is, so nothing is cut off and a big overlay gets a big read-out

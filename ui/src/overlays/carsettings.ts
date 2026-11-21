@@ -100,7 +100,7 @@ function meter() {
 
 export const carsettings: OverlayDef = {
   kind: 'carsettings',
-  name: 'Car settings',
+  name: 'In-Car Setup',
   description:
     'Brake bias, ABS, TC, engine map and whatever else your car has, each with a meter. A big pop-up shows the new value whenever you change one.',
   topics: ['carsettings', 'status'],

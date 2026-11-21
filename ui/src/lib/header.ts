@@ -2,7 +2,7 @@
 
 import { h, show, text } from './dom';
 import type { Units } from './format';
-import { fieldValue, flagKind, headerFields, lapSettings, sessionType, type TimedLaps } from './sessionFields';
+import { fieldValue, flagKind, headerFields, incidentColorSettings, incidentField, lapSettings, sessionType, type TimedLaps } from './sessionFields';
 import { enabledColumns, type SettingDef, type Values } from './settings';
 import type { Session } from './types';
 
@@ -52,6 +52,7 @@ export function headerSettings(on: string[]): SettingDef[] {
     { key: 'headerFields', when: (v) => v.showHeader !== false, label: 'Session details in the header', type: 'columns', ...headerFields(on), group: 'Header' },
     { key: 'headerSeparator', when: (v) => v.showHeader !== false, label: 'Separator', type: 'text', default: '  ·  ', group: 'Header' },
     ...lapSettings('Header', (v) => v.showHeader !== false),
+    ...incidentColorSettings('Header', 'headerFields', (v) => v.showHeader !== false),
   ];
 }
 
@@ -76,6 +77,8 @@ export function sessionHeader(s: Values, fallbackTitle: string, units: () => Uni
   }
   show(title, s.headerTitle !== 'none');
   const fields = enabledColumns(s.headerFields);
+  // The incident count, coloured, as its own element among the header's details.
+  const incEl = h('span', 'inc-field');
   return {
     el,
     update(d: Session) {
@@ -86,8 +89,20 @@ export function sessionHeader(s: Values, fallbackTitle: string, units: () => Uni
       text(badge, type);
       badge.dataset.type = type.toLowerCase();
       show(badge, (s.sessionBadge as boolean) && !!type);
-      const parts = fields.map((id) => fieldValue(id, d, units(), { compact: true, timedLaps: s.timedLaps as TimedLaps, estDecimals: s.estDecimals as number, lengthSeparator: s.raceLengthSeparator as string })).filter(Boolean);
-      text(info, parts.join(s.headerSeparator as string));
+      const sep = s.headerSeparator as string;
+      const parts = fields
+        .map((id) => (id === 'incidents' ? incEl : fieldValue(id, d, units(), { compact: true, timedLaps: s.timedLaps as TimedLaps, estDecimals: s.estDecimals as number, lengthSeparator: s.raceLengthSeparator as string })))
+        .filter((p) => p !== '');
+      if (!fields.includes('incidents')) text(info, (parts as string[]).join(sep));
+      else {
+        incidentField(incEl, d, s);
+        // Laid out again only when a text part changes; the count updates itself.
+        const key = parts.map((p) => (typeof p === 'string' ? p : '\u0000')).join(sep);
+        if (info.dataset.key !== key) {
+          info.dataset.key = key;
+          info.replaceChildren(...parts.flatMap((p, i) => (i ? [sep, p] : [p])));
+        }
+      }
       info.dataset.flag = fields.includes('flags') ? flagKind(d) : '';
     },
   };
