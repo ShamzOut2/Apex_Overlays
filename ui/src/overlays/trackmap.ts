@@ -71,7 +71,8 @@ export const trackmap: OverlayDef = {
     { key: 'colorBy', label: 'Car colour', type: 'select', default: 'class', options: [['class', 'Class colour'], ['single', 'Single colour']], group: 'Cars' },
     { key: 'carColor', when: (v) => v.colorBy === 'single', label: 'Single car colour', type: 'color', default: '#ffffff', group: 'Cars' },
     { key: 'leaderRing', label: 'Ring around class leaders', type: 'bool', default: true, group: 'Cars' },
-    { key: 'dimPitCars', label: 'Dim cars in the pits', type: 'bool', default: true, group: 'Cars' },
+    { key: 'hidePitCars', label: 'Hide cars in the pits', type: 'bool', default: false, group: 'Cars', help: 'Cars on pit road disappear from the map until they rejoin. Your own car always shows' },
+    { key: 'dimPitCars', when: (v) => !v.hidePitCars, label: 'Dim cars in the pits', type: 'bool', default: true, group: 'Cars' },
     { key: 'showPanel', label: 'Background panel', type: 'bool', default: false, group: 'Style' },
   ],
   create(root, ctx) {
@@ -288,11 +289,13 @@ export const trackmap: OverlayDef = {
       }
     };
 
+    /** A corner's label. Corners known only by name (no official turn number in the track
+     *  data) show their name in every mode rather than a made-up number. */
     const cornerText = (c: { name: string; number: number }) => {
-      const num = `${s.cornerPrefix}${c.number}`;
-      if (s.cornerLabels === 'number') return num;
+      const num = c.number > 0 ? `${s.cornerPrefix}${c.number}` : '';
+      if (s.cornerLabels === 'number') return num || c.name;
       if (s.cornerLabels === 'name') return c.name || num;
-      return c.name ? `${num} ${c.name}` : num;
+      return c.name && num ? `${num} ${c.name}` : num || c.name;
     };
 
     /** Corner (and straight) labels, pushed outwards from the track so they don't cover cars. */
@@ -390,7 +393,7 @@ export const trackmap: OverlayDef = {
       const mine = s.playerThemeColor === false && s.playerColor ? (s.playerColor as string) : (t.playerColor as string);
       // Focus car last so it is drawn on top (one list, reused every frame).
       list.length = 0;
-      for (const c of cars.cars) list.push(c);
+      for (const c of cars.cars) if (!(s.hidePitCars && c.pit && c.i !== focus)) list.push(c);
       list.sort((a, b) => (a.i === focus ? 1 : b.i === focus ? -1 : b.pos - a.pos));
       const font = Math.max(8, (s.dotSize as number) * 1.15) * dpr();
       family ||= getComputedStyle(root).getPropertyValue('--font') || 'sans-serif';

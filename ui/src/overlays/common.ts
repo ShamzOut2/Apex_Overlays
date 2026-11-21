@@ -430,6 +430,7 @@ export function extraCols<R extends Driver & Extras>(s: Values, units: () => Uni
             (p.live ? ' (this stop)' : ' (last stop)');
       },
     },
+    { id: 'pitLap', label: 'Pit lap', width: '3.2em', align: 'center', render: (c, r) => text(c, r.pitLap ? `L${r.pitLap}` : '') },
     { id: 'fuelTotal', label: 'Fuel Σ', width: '3.4em', align: 'center', render: (c, r) => text(c, r.fuelAdded ? fuelText(r.fuelAdded.total, r.fuelAdded.unit, units()) : '') },
     { id: 'seasonPoints', label: 'Champ', width: '3.2em', align: 'center', render: (c, r) => text(c, r.seasonPoints == null ? '' : String(+r.seasonPoints.toFixed(1))) },
   ];
@@ -521,13 +522,14 @@ export function markerSettings(outside: boolean): SettingDef[] {
       label: 'Flags & penalties: where to show',
       type: 'select',
       default: 'name',
-      options: [['name', 'Next to the driver’s name'], ...(outside ? ([['end', 'Outside the overlay (an extension of it)']] as [string, string][]) : []), ['off', 'Don’t show']],
+      options: [['name', 'Next to the driver’s name'], ['row', 'At the end of each row'], ...(outside ? ([['end', 'Outside the overlay (an extension of it)']] as [string, string][]) : []), ['off', 'Don’t show']],
       group: 'Columns',
       help: 'Yellow, black, meatball and blue flags, SLOW, and penalties like DT or S&G',
     },
     {
       key: 'markersSide',
-      when: (v) => v.markersAt !== 'off',
+      // At the end of the row there is only one place for them.
+      when: (v) => v.markersAt !== 'off' && v.markersAt !== 'row',
       label: 'Flags & penalties: side',
       type: 'select',
       default: 'left',

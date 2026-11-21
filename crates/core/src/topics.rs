@@ -335,6 +335,9 @@ pub struct SessionOut<'a> {
     /// laps the session will be (the leader's in a race; yours otherwise), lap-number style.
     pub est_laps_left: Option<f32>,
     pub est_laps_total: Option<i32>,
+    /// The race's length in laps at the leader's pace (laps done plus the laps left by the
+    /// clock): it counts up past the laps run, changing with the leader's pace.
+    pub est_race_laps: Option<f32>,
     pub time_of_day: f32,
     pub track_temp: f32,
     pub track_temp_delta: f32,
@@ -368,7 +371,10 @@ pub struct SessionOut<'a> {
 /// Timed sessions: the laps left at your pace (time left over your lap time), and the lap the
 /// session will end on (the leader's in a race, when the clock runs out and they finish the
 /// lap they are on; the car you watch otherwise).
-fn estimated_laps(e: &Engine) -> Option<(f32, Option<i32>)> {
+/// Estimated laps in a timed session: (laps left at your pace, the lap the leader finishes on,
+/// the race's length in laps at the leader's pace: laps done plus the time left over their
+/// lap time, e.g. 12.89).
+fn estimated_laps(e: &Engine) -> Option<(f32, Option<i32>, Option<f32>)> {
     let t = &e.tel;
     let def = e.session_def()?;
     def.time?;
@@ -388,7 +394,9 @@ fn estimated_laps(e: &Engine) -> Option<(f32, Option<i32>)> {
     // out on is the whole part of where it will be then; reaching the line just as it does
     // ends the session there.
     let total = (pace > 0.0 && t.cars[car].lap > 0).then(|| (((e.progress(car) + remain / pace as f64) - 1e-3).ceil() as i32 - 1).max(t.cars[car].lap));
-    Some((left, total))
+    // Laps done (lap 12, halfway: 11.5) plus the laps the time left allows at their pace.
+    let length = (pace > 0.0 && t.cars[car].lap > 0).then(|| ((e.progress(car) - 1.0).max(0.0) + remain / pace as f64) as f32);
+    Some((left, total, length))
 }
 
 pub fn session(e: &Engine) -> SessionOut<'_> {
@@ -418,8 +426,9 @@ pub fn session(e: &Engine) -> SessionOut<'_> {
         laps_total: def.and_then(|d| d.laps),
         // Cars in the garage are on lap -1: no lap then.
         leader_lap: e.order.first().map(|r| t.cars[r.idx].lap.max(0)).unwrap_or(0),
-        est_laps_left: est.map(|(left, _)| round(left, 2)),
-        est_laps_total: est.and_then(|(_, total)| total),
+        est_laps_left: est.map(|(left, _, _)| round(left, 2)),
+        est_laps_total: est.and_then(|(_, total, _)| total),
+        est_race_laps: est.and_then(|(_, _, length)| length).map(|v| round(v, 2)),
         time_of_day: t.time_of_day.round(),
         track_temp: round(t.track_temp, 1),
         track_temp_delta: round(e.weather.track_temp_delta(), 1),
@@ -803,6 +812,8 @@ pub struct Extras {
     pub fuel_added: Option<FuelAddedOut>,
     /// Seconds stood in the pit box at the last stop (or this one, live).
     pub pit_time: Option<PitTimeOut>,
+    /// The lap the car last came into the pits on (none before its first stop).
+    pub pit_lap: Option<i32>,
     /// Fuel or virtual energy left, where the game tells it for this car (LMU: every car;
     /// iRacing: only the player).
     pub fuel_left: Option<FuelLeftOut>,
@@ -892,6 +903,7 @@ pub fn extras(e: &Engine, idx: usize) -> Extras {
         }),
         fuel_left: fuel_left(e, idx),
         pit_time: e.hist[idx].pit_time().map(|(p, live)| PitTimeOut { service: round(p.service, 1), penalty: round(p.penalty, 1), live }),
+        pit_lap: (e.hist[idx].pit_stops > 0 && e.hist[idx].last_pit_lap > 0).then_some(e.hist[idx].last_pit_lap),
     }
 }
 
@@ -1450,6 +1462,23 @@ mod tests {
     }
 
     #[test]
+    fn brake_bias_read_against_the_setup() {
+        // A percentage, a fraction, hundredths of a %: the one near the setup's bias.
+        assert_eq!(bias_pct(54.5, Some(55.0)), Some(54.5));
+        assert_eq!(bias_pct(0.545, Some(55.0)), Some(54.5));
+        assert_eq!(bias_pct(5450.0, Some(55.0)), Some(54.5));
+        // An adjustment from the setup's bias follows each click in the car.
+        assert_eq!(bias_pct(0.0, Some(55.0)), Some(55.0));
+        assert_eq!(bias_pct(1.5, Some(55.0)), Some(56.5));
+        assert_eq!(bias_pct(-2.0, Some(55.0)), Some(53.0));
+        // 0.5 next to a 55% setup is half a percent more, not 50%.
+        assert_eq!(bias_pct(0.5, Some(55.0)), Some(55.5));
+        // No setup known: only a plain percentage.
+        assert_eq!(bias_pct(56.0, None), Some(56.0));
+        assert_eq!(bias_pct(1.5, None), None);
+    }
+
+    #[test]
     fn estimated_laps_in_timed_sessions() {
         // A 40-minute race, 10 minutes (600 s) left, laps of 100 s (the class estimate).
         let yaml = crate::engine::tests::session_yaml(2, true).replace("   SessionLaps: 20\n", "   SessionLaps: unlimited\n   SessionTime: 2400.0000 sec\n");
@@ -1464,6 +1493,8 @@ mod tests {
         // The leader (on lap 12, halfway) covers 6 more laps: the clock runs out halfway round
         // lap 18, which they finish.
         assert_eq!(s.est_laps_total, Some(18));
+        // The race's length at the leader's pace: 11.5 laps done and 6 more by the clock.
+        assert_eq!(s.est_race_laps, Some(17.5));
         // A race set by laps: no estimate.
         let mut e = engine(2, true);
         e.tel.session_time_remain = 600.0;
@@ -1498,7 +1529,7 @@ mod tests {
         assert!(r.fuel.is_none());
         // Laps of 1:36 using 2.5 L: 25 laps, (25 + 1 margin) x 2.5 = 65 L, one stop from a 50 L tank.
         for _ in 0..3 {
-            e.fuel.laps.push_back(fuel::FuelLap { used: 2.5, time: 96.0, valid: true });
+            e.fuel.laps.push_back(fuel::FuelLap { used: 2.5, time: 96.0, valid: true, start: 0.0, end: 0.0, why: "" });
         }
         let r = fuel_out(&e).race.unwrap();
         assert_eq!((r.laps, r.fuel, r.stops, r.start_fuel), (25.0, Some(65.0), Some(1), Some(50.0)));
@@ -1729,15 +1760,52 @@ pub fn car_settings(e: &Engine) -> CarSettingsOut {
     let t = &e.tel;
     let driving = t.driving();
     let mut items = if driving { t.car_settings.clone() } else { vec![] };
-    // iRacing: the live brake bias (read in %, whatever the car's scale) follows changes made
-    // in the car. Cars whose live value is not a percentage (an offset from the setup, say)
-    // show the bias their setup states instead.
+    // iRacing: the live brake bias, in front %, read against the setup's bias (see
+    // `bias_pct`), so it follows changes made in the car whatever scale the car uses.
+    if e.source == "iracing" {
+        let setup = e.info.setup_brake_bias;
+        items.retain_mut(|s| {
+            if !matches!(s.id, "brakeBias" | "peakBias") {
+                return true;
+            }
+            match bias_pct(s.value, if s.id == "brakeBias" { setup } else { None }) {
+                Some(v) => {
+                    s.value = round(v, 2);
+                    true
+                }
+                None => false,
+            }
+        });
+    }
+    // No live bias at all: the bias the setup states.
     if driving && e.source == "iracing" && !items.iter().any(|s| s.id == "brakeBias") {
         if let Some(b) = e.info.setup_brake_bias {
             items.insert(0, model::CarSetting { id: "brakeBias", value: b, max: None });
         }
     }
     CarSettingsOut { game: e.source, driving, items }
+}
+
+/// A brake bias in front %, from what the car gives: a percentage (54.5), a fraction (0.545),
+/// hundredths of a % (5450), or an adjustment from the setup's bias (+1.5). With the setup's
+/// bias known, the reading closest to it is used; without it, only a value that is plainly a %.
+pub fn bias_pct(raw: f32, setup: Option<f32>) -> Option<f32> {
+    let as_pct = [
+        (raw > 0.0 && raw <= 1.0).then_some(raw * 100.0),
+        (raw > 100.0 && raw <= 10_000.0).then_some(raw / 100.0),
+        Some(raw),
+    ];
+    let pct = as_pct.into_iter().flatten().filter(|p| (20.0..=90.0).contains(p));
+    match setup {
+        // Whichever reading lands nearest the setup's bias: drivers move the bias a few
+        // percent at most, so the right scale is the one that puts it close to the setup.
+        Some(base) => pct
+            .filter(|p| (p - base).abs() <= 8.0)
+            .chain((raw.abs() <= 10.0).then_some(base + raw))
+            .filter(|p| (20.0..=90.0).contains(p))
+            .min_by(|a, b| (a - base).abs().total_cmp(&(b - base).abs())),
+        None => crate::source::iracing::brake_bias_pct(raw),
+    }
 }
 
 /// The player's tyres and brakes.

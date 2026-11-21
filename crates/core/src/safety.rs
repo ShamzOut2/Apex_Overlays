@@ -104,6 +104,10 @@ fn class_pace(e: &Engine, idx: usize) -> Option<f32> {
 
 pub fn build(e: &Engine) -> SafetyOut {
     let t = &e.tel;
+    // Private qualifying: the others are on track in sessions of their own, not around you.
+    if e.alone_on_track() {
+        return SafetyOut::default();
+    }
     let Some(focus) = t.focus_idx() else { return SafetyOut::default() };
     let me = &t.cars[focus];
     if me.on_pit_road || me.surface == surface::IN_PIT_STALL {

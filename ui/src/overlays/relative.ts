@@ -5,7 +5,7 @@ import type { OverlayDef } from '../lib/overlay';
 import { columns, enabledColumns, NAME_STYLES } from '../lib/settings';
 import { type Col, columnFitter, Table } from '../lib/table';
 import type { RelRow, Relative, Session } from '../lib/types';
-import { applyLook, COLUMN_STYLE_SETTINGS, driverCols, lookSettings, markerSettings, extraCols, STRIPE_COLOR_SETTING, stripeColor, tireCell, privateQualifyingSetting } from './common';
+import { applyLook, COLUMN_STYLE_SETTINGS, driverCols, lookSettings, markersCell, markerSettings, extraCols, STRIPE_COLOR_SETTING, stripeColor, tireCell, privateQualifyingSetting } from './common';
 
 const COLS = [
   { id: 'pos', label: 'Class position — POS' },
@@ -32,6 +32,7 @@ const COLS = [
   { id: 'fuelLeft', label: 'Fuel / energy left — FUEL', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
   { id: 'fuelAdded', label: 'Fuel added at last stop — FUEL+', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
   { id: 'pitTime', label: 'Pit time: stood in the box at the last stop (S&G: a penalty) — PIT TIME' },
+  { id: 'pitLap', label: 'Lap of the last pit stop — PIT LAP' },
   { id: 'fuelTotal', label: 'Fuel added this session — FUEL Σ', lmu: 'Every car in Le Mans Ultimate; only you in iRacing' },
   { id: 'seasonPoints', label: 'Championship total (projected) — CHAMP' },
   { id: 'gap', label: 'Gap' },
@@ -112,7 +113,9 @@ export const relative: OverlayDef = {
         },
       },
     ];
-    const table = new Table<RelRow>(cols, enabledColumns(s.columns), s.showColumnTitles as boolean);
+    // Flags and penalties at the end of each row (Flags & penalties: where to show).
+    cols.push({ id: 'markers', label: '', width: 'auto', render: (c, r) => markersCell(c, r) });
+    const table = new Table<RelRow>(cols, [...enabledColumns(s.columns), ...(s.markersAt === 'row' ? ['markers'] : [])], s.showColumnTitles as boolean);
     const fit = columnFitter();
     root.append(header.el, table.el);
     root.classList.toggle('stripe', s.classStripe as boolean);

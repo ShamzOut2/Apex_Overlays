@@ -68,7 +68,7 @@ export const FIELD_LABELS: Record<string, string> = {
 /** Columns-type setting for picking and ordering header fields. */
 export const headerFields = (on: string[]) => columns(SESSION_FIELDS, on);
 
-export type TimedLaps = 'infinity' | 'estimate' | 'count';
+export type TimedLaps = 'infinity' | 'estimate' | 'length' | 'count';
 
 /** Settings for the lap count in timed sessions and the estimated laps left (headers and the
  *  session overlay). */
@@ -83,20 +83,21 @@ export function lapSettings(group: string, when: (v: Record<string, unknown>) =>
       options: [
         ['infinity', 'Lap 12/∞'],
         ['estimate', 'Lap 12/~24 (estimated laps)'],
+        ['length', 'Lap 6-12.89 (race length in laps at the leader’s pace)'],
         ['count', 'Lap 12'],
       ],
       group,
     },
     {
       key: 'estDecimals',
-      when: (v) => when(v) && columnOn(v, 'estLaps', fieldsKey),
+      when: (v) => when(v) && (columnOn(v, 'estLaps', fieldsKey) || v.timedLaps === 'length'),
       label: 'Estimated laps: decimals',
       type: 'number',
       default: 1,
       min: 0,
       max: 3,
       group,
-      help: 'Estimated laps left: the time left over your lap time, in timed sessions',
+      help: 'Estimated laps left (the time left over your lap time) and the race length (Lap 6-12.89), in timed sessions',
     },
   ];
 }
@@ -132,7 +133,9 @@ export function fieldValue(id: string, d: Session, u: f.Units, o: FieldOpts = {}
         d.timeTotal != null
           ? timed === 'estimate' && d.estLapsTotal != null
             ? `/~${d.estLapsTotal}`
-            : timed === 'count'
+            : timed === 'length' && d.estRaceLaps != null
+              ? `-${d.estRaceLaps.toFixed(o.estDecimals ?? 1)}`
+              : timed === 'count'
               ? ''
               : '/∞'
           : d.lapsTotal

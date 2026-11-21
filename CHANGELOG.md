@@ -4,6 +4,24 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 1.5.1
+
+### New features
+- Lap count in timed races: a new choice, "Lap 6-12.89": the lap you are on, and how long the race is in laps at the leader's pace (laps done plus what the time left allows). It counts up with the laps rather than down, and the length moves as the leader speeds up or slows down. Decimals as set for the estimated laps (headers and the session overlay)
+- Standings and Relative: a Pit lap column, the lap each car last came into the pits on (L12)
+- Standings and Relative: flags and penalties can go at the end of each row (Flags & penalties: where to show → At the end of each row), as well as next to the name or, for the standings, outside the overlay
+- Track map: Hide cars in the pits (Cars). Cars on pit road disappear from the map until they rejoin; your own car always shows
+- Safety alert: "Private qualifying: hide other cars" (Behaviour), the same switch as the relative, track map, radar, spotter and battle box: in LMU's online qualifying and iRacing's Lone Qualify it stays quiet
+- Safety alert: Warn about: clear dangers only (new default: stopped or crawling cars, and cars stuck off the track) or every car off the track or slowing
+- The fuel calculator writes each lap to the log (Open logs): the fuel at the line when the lap began and ended, what it used, whether it counts towards the average (and if not, why), and the average, to check its figures against the game's
+
+### Fixes
+- Yellow flags (the safety alert and the yellow marks by drivers) were too eager: a car running wide or through a run-off at speed for a second counted. It now takes 2.5 seconds off the track, or being off it below about 43 km/h (was 1 second, or below 72 km/h)
+- Car settings (iRacing): the ABS could show an absurd number and the brake bias stop following changes made in the car. After changing car or session the app could keep reading the settings from where the previous car had them; it now looks them up again with every new session. A value no setting has is left out rather than shown
+- Car settings (iRacing): brake bias is read against the setup's bias, whatever scale the car uses (a %, a fraction, hundredths of a %, or an adjustment from the setup), so it follows each click of the adjuster; an adjustment of +0.5 no longer reads as 50%
+- Track map: corner numbers were wrong on tracks whose data names its corners (Spa's La Source, Eau Rouge…) rather than numbering them: they were numbered in list order, so Spa's Bus Stop read T15. Those corners now show their name; real turn numbers are kept. Track data is fetched again so the fix applies to tracks already seen
+- Manufacturer logos: Ligier shows Ligier Automotive's current logo instead of the old Ligier Automobiles one
+
 ## 1.5.0
 
 ### New features

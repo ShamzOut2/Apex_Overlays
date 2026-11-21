@@ -29,6 +29,7 @@ The following data is downloaded at runtime from community projects by [Lovely S
 `ui/static/assets/makes/` contains the logos of the manufacturers that appear in iRacing, taken from the
 [car-logos-dataset](https://github.com/filippofilip95/car-logos-dataset) (MIT License, © filippofilip95; thumbnails).
 The Dallara, Oreca, Tatuus and Williams logos (not in that dataset) were supplied by the project owner.
+The Ligier logo is Ligier Automotive's current one, from [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Ligier_Automotive_logo.png) (public domain: simple text and shapes), recoloured for dark overlays.
 The logos themselves are trademarks of their respective owners and are shown only to identify each car's manufacturer.
 
 ## Class badges
