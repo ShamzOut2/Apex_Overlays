@@ -2026,7 +2026,7 @@ const generalPage: Page = {
               label: 'Private qualifying: hide other cars',
               type: 'bool',
               default: true,
-              help: 'Le Mans Ultimate’s online qualifying and iRacing’s Lone Qualify put each driver alone on track, so the other cars are left off the relative, track map, radar, spotter and battle box. Open qualifying (everyone out together) is not affected',
+              help: 'Private qualifying (each driver alone on track): other cars are left off the relative, track map, radar, spotter, battle box and safety alert. Open qualifying (everyone out together) shows them as usual. The app tells which it is: iRacing by the session (Lone Qualify is private), Le Mans Ultimate by the cars passing through each other',
               group: 'Display',
             },
             {

@@ -4,6 +4,11 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## Unreleased
+
+### Fixes
+- Private qualifying: Le Mans Ultimate's qualifying was always taken to be private, so open qualifying (everyone on track together) also lost the other cars on the relative, track map, radar, spotter, battle box and safety alert. The game does not say which it is, so the app now tells by the cars: in private qualifying the others are not really on track with you and pass straight through each other, which cars never do in open qualifying. Qualifying shows everyone until that is seen (a few times, on track, at the same point of the lap), then leaves the others off for the rest of the session. iRacing still goes by the session: Lone Qualify private, Open Qualify open
+
 ## 1.5.5
 
 ### New features
