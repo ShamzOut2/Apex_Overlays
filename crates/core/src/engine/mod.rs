@@ -1138,6 +1138,7 @@ impl Engine {
         let player = usize::try_from(self.tel.player_idx).ok();
         // Each car's lap time, to work out what a pass through the pit lane cost it.
         let refs: Vec<f32> = (0..MAX_CARS).map(|i| self.ref_lap(i)).collect();
+        let mut refs = refs.into_iter();
         let lap_m = self.info.track_length_km.max(0.5) * 1000.0;
         let mut lane_losses: Vec<f32> = vec![];
         let my_fuel = (self.tel.fuel_level > 0.0).then_some(self.tel.fuel_level);
@@ -1151,7 +1152,7 @@ impl Engine {
                 None => None,
             };
             h.track_fuel(fuel, c.on_pit_road && c.in_world());
-            let pace = refs[i];
+            let pace = refs.next().unwrap_or(100.0);
             let on_pit = c.on_pit_road && c.in_world();
             // Drove onto pit road (at speed, not starting in its box or towed there).
             if on_pit && !h.lane_on && h.seen && h.speed > 5.0 {
