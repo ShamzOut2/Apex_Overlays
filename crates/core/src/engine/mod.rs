@@ -5,6 +5,7 @@ pub mod fuel;
 pub mod incidents;
 pub mod laps;
 pub mod pit;
+pub mod pitservice;
 pub mod radar;
 pub mod ratings;
 pub mod sectors;
@@ -127,7 +128,15 @@ pub struct CarHist {
     still_pct: f32,
     still_at: f64,
     still_counted: Option<f64>,
+    /// On pit road (and in the world) last tick, and where and when the car drove onto it.
+    lane_on: bool,
+    lane_in: Option<(f64, f32)>,
 }
+
+/// Le Mans Ultimate: cars closer than this (metres, centre to centre) are in each other.
+const GHOST_M: f32 = 1.2;
+/// ...seen this many times (updates) before qualifying is taken to be private.
+const GHOST_HITS: u32 = 3;
 
 /// A car on pit road that stays within this many metres of one spot counts as standing in its
 /// box. Generous, as other cars' positions wobble a little while they are jacked up and serviced.
@@ -288,6 +297,8 @@ pub struct Engine {
     pub sectors: sectors::SectorTracker,
     pub incidents: incidents::IncidentTracker,
     pub pit: pit::PitTracker,
+    /// How long your stops take for fuel and tyres, learned per car.
+    pub pit_service: pitservice::PitService,
     /// The player's pit lane state this tick.
     pub pit_out: pit::PitOut,
     /// Corners of the current track (custom > downloaded > source-provided).
@@ -313,6 +324,9 @@ pub struct Engine {
     checkered_at: Option<f64>,
     last_session: (i64, i32),
     last_state: i32,
+    /// Le Mans Ultimate qualifying: times two cars were seen in the same spot on track (they
+    /// pass through each other, so each driver is alone: private qualifying).
+    ghost_hits: u32,
 }
 
 impl Engine {
@@ -339,6 +353,7 @@ impl Engine {
             laps: laps::LapRecorder::new(data_dir.as_ref().map(|d| d.join("laps"))),
             incidents: Default::default(),
             pit: pit::PitTracker::new(data_dir.as_ref().map(|d| d.join("pit-lines.json"))),
+            pit_service: pitservice::PitService::new(data_dir.as_ref().map(|d| d.join("pit-service.json"))),
             pit_out: Default::default(),
             grid: vec![],
             grid_dir: data_dir.map(|d| d.join("grids")),
@@ -356,6 +371,7 @@ impl Engine {
             checkered_at: None,
             last_session: (-1, -1),
             last_state: 0,
+            ghost_hits: 0,
         };
         e.set_config(e.cfg.clone());
         e
@@ -755,15 +771,51 @@ impl Engine {
 
     /// Driving alone in a private qualifying session, with the "hide other cars" switch on: the
     /// other cars are on track in sessions of their own, so they are not around you (relative,
-    /// radar, track map, spotter, battle). Le Mans Ultimate: its online qualifying. iRacing:
-    /// Lone Qualify (each driver alone, as in official races), not Open Qualify, where everyone
-    /// is out together.
+    /// radar, track map, spotter, battle). iRacing: Lone Qualify (each driver alone, as in
+    /// official races), not Open Qualify, where everyone is out together. Le Mans Ultimate does
+    /// not say which kind its qualifying is: private once the other cars are seen to pass
+    /// through each other (see `watch_ghosts`), open (everyone shows) until then.
     pub fn alone_on_track(&self) -> bool {
         self.cfg.lmu_private_qualifying
             && self.session_def().is_some_and(|s| {
                 let qualifying = crate::config::session_category(&s.kind) == "qualifying";
-                qualifying && (self.source == "lmu" || s.kind.to_lowercase().contains("lone"))
+                qualifying && if self.source == "lmu" { self.ghost_hits >= GHOST_HITS } else { s.kind.to_lowercase().contains("lone") }
             })
+    }
+
+    /// Le Mans Ultimate qualifying: two cars on track in the same spot (within `GHOST_M` on the
+    /// map and along the lap, so not a bridge over the track) can only be ghosts of each other:
+    /// private qualifying, where each driver drives alone. Counted until it is sure.
+    fn watch_ghosts(&mut self) {
+        if self.source != "lmu" || self.ghost_hits >= GHOST_HITS {
+            return;
+        }
+        if !self.session_def().is_some_and(|s| crate::config::session_category(&s.kind) == "qualifying") {
+            return;
+        }
+        let lap_m = self.info.track_length_km.max(0.5) * 1000.0;
+        let on_track: Vec<([f32; 2], f32)> = self
+            .tel
+            .cars
+            .iter()
+            .filter(|c| c.in_world() && !c.on_pit_road && c.surface == surface::ON_TRACK)
+            .filter_map(|c| c.pos.map(|p| (p, c.pct)))
+            .collect();
+        let found = on_track.iter().enumerate().any(|(i, a)| {
+            on_track[i + 1..].iter().any(|b| {
+                let along = (a.1 - b.1).abs();
+                let along = along.min(1.0 - along) * lap_m;
+                along < 3.0 && (a.0[0] - b.0[0]).hypot(a.0[1] - b.0[1]) < GHOST_M
+            })
+        });
+        if found {
+            self.ghost_hits += 1;
+            if self.ghost_hits == GHOST_HITS {
+                log::info!(
+                    "qualifying: cars pass through each other, so it is private qualifying (other cars left off the relative, track map, radar and alerts)"
+                );
+            }
+        }
     }
 
     pub fn under_caution(&self) -> bool {
@@ -852,8 +904,10 @@ impl Engine {
             self.fuel.new_session();
             self.energy.new_session();
             self.checkered_at = None;
+            self.ghost_hits = 0;
         }
         self.update_hist();
+        self.watch_ghosts();
         self.update_slowdowns();
         self.compute_order();
         self.compute_ir();
@@ -924,6 +978,13 @@ impl Engine {
         self.sectors.update(&self.tel, &self.info.sectors);
         self.incidents.update(&self.tel, &self.info);
         self.pit.update(&self.tel, self.info.track_id);
+        // iRacing's black box (and the simulator's, to try it).
+        if matches!(self.source, "iracing" | "mock") && self.tel.driving() {
+            let me = usize::try_from(self.tel.player_idx).ok();
+            let car_id = me.and_then(|i| self.static_of(i)).map_or(0, |s| s.car_id);
+            let black = me.is_some_and(|i| self.tel.cars[i].session_flags & flags::BLACK != 0);
+            self.pit_service.update(&self.tel, car_id, black);
+        }
         let (entry, exit) = self.pit_lines();
         self.pit_out = self.pit.player(&self.tel, entry, exit, self.info.track_length_km * 1000.0, self.info.pit_speed_limit_kph);
         battle::update(self);
@@ -1086,6 +1147,11 @@ impl Engine {
         let checkered_at = self.checkered_at;
         // The player's own fuel in litres where the game only tells it for the player (iRacing).
         let player = usize::try_from(self.tel.player_idx).ok();
+        // Each car's lap time, to work out what a pass through the pit lane cost it.
+        let refs: Vec<f32> = (0..MAX_CARS).map(|i| self.ref_lap(i)).collect();
+        let mut refs = refs.into_iter();
+        let lap_m = self.info.track_length_km.max(0.5) * 1000.0;
+        let mut lane_losses: Vec<f32> = vec![];
         let my_fuel = (self.tel.fuel_level > 0.0).then_some(self.tel.fuel_level);
         for i in 0..MAX_CARS {
             let c = &self.tel.cars[i];
@@ -1097,12 +1163,33 @@ impl Engine {
                 None => None,
             };
             h.track_fuel(fuel, c.on_pit_road && c.in_world());
-            if !(c.on_pit_road && c.in_world()) {
-                if let Some(p) = h.end_pit_stop() {
+            let pace = refs.next().unwrap_or(100.0);
+            let on_pit = c.on_pit_road && c.in_world();
+            // Drove onto pit road (at speed, not starting in its box or towed there).
+            if on_pit && !h.lane_on && h.seen && h.speed > 5.0 {
+                h.lane_in = Some((now, c.pct));
+            }
+            if !on_pit {
+                let stop = h.end_pit_stop();
+                if let Some(p) = stop {
                     let number = self.statics[i].as_ref().map_or("?", |s| s.number.as_str());
                     log::info!("pit: car #{number} stood {:.1} s in its box ({:.1} s serving a penalty)", p.service + p.penalty, p.penalty);
                 }
+                // Drove off pit road: the time the lane cost (over the same stretch at the car's
+                // pace), the stop itself left out.
+                if let Some((t0, p0)) = h.lane_in.take().filter(|_| h.lane_on && c.in_world()) {
+                    let frac = (c.pct - p0).rem_euclid(1.0);
+                    let lane = (now - t0) as f32;
+                    let stood = stop.map_or(0.0, |p| p.service + p.penalty);
+                    let loss = lane - stood - frac * pace;
+                    if frac * lap_m > 100.0 && frac < 0.4 && (5.0..400.0).contains(&lane) && (2.0..120.0).contains(&loss) {
+                        let number = self.statics[i].as_ref().map_or("?", |s| s.number.as_str());
+                        log::info!("pit lane: car #{number} lost {loss:.1} s driving through ({lane:.1} s on pit road, {stood:.1} s stood)");
+                        lane_losses.push(loss);
+                    }
+                }
             }
+            h.lane_on = on_pit;
             if !c.in_world() {
                 continue;
             }
@@ -1145,6 +1232,9 @@ impl Engine {
                     h.laps.pop_front();
                 }
             }
+        }
+        for v in lane_losses {
+            self.pit.add_lane_loss(v);
         }
     }
 
@@ -1334,6 +1424,63 @@ pub(crate) mod tests {
             assert!(!e.alone_on_track(), "{kind}, switched off");
             assert!(crate::topics::relative(&e).rows.len() > 1, "{kind}, switched off");
         }
+    }
+
+    #[test]
+    fn lmu_qualifying_is_private_once_cars_pass_through_each_other() {
+        let mut e = Engine::new(Config::default(), None);
+        e.source = "lmu";
+        e.set_session(SessionInfo::parse(&session_yaml(4, false).replace("SessionType: Practice", "SessionType: Qualify")));
+        e.info.track_length_km = 5.0;
+        e.tel.player_idx = 0;
+        e.tel.session_state = STATE_RACING;
+        let at = |e: &mut Engine, i: usize, pct: f32, x: f32| {
+            place(e, i, 1, pct);
+            e.tel.cars[i].pos = Some([x, 0.0]);
+        };
+        // Open: cars close, but never in the same spot (one alongside, 2.5 m apart).
+        for k in 0..20 {
+            let p = 0.1 + k as f32 * 0.001;
+            at(&mut e, 0, p, p * 5000.0);
+            at(&mut e, 1, p, p * 5000.0 + 2.5);
+            at(&mut e, 2, 0.5, 2500.0);
+            e.tick();
+        }
+        assert!(!e.alone_on_track(), "open qualifying: everyone shows");
+        assert!(crate::topics::relative(&e).rows.len() > 1);
+        // A car drives through another: private qualifying, for the rest of the session.
+        for k in 0..5 {
+            let p = 0.2 + k as f32 * 0.001;
+            at(&mut e, 0, p, p * 5000.0);
+            at(&mut e, 1, p + 0.00005, p * 5000.0 + 0.25);
+            e.tick();
+        }
+        assert!(e.alone_on_track(), "private qualifying");
+        assert_eq!(crate::topics::relative(&e).rows.len(), 1);
+        assert_eq!(crate::topics::cars(&e).cars.len(), 1, "track map: only you");
+        // Same spot on the map but far apart along the lap (a bridge): not counted.
+        let mut f = Engine::new(Config::default(), None);
+        f.source = "lmu";
+        f.set_session(SessionInfo::parse(&session_yaml(4, false).replace("SessionType: Practice", "SessionType: Qualify")));
+        f.info.track_length_km = 5.0;
+        f.tel.player_idx = 0;
+        for _ in 0..10 {
+            at(&mut f, 0, 0.1, 500.0);
+            at(&mut f, 1, 0.6, 500.0);
+            f.tick();
+        }
+        assert!(!f.alone_on_track(), "a crossing is not a ghost");
+        // In a race, never.
+        let mut r = Engine::new(Config::default(), None);
+        r.source = "lmu";
+        r.set_session(SessionInfo::parse(&session_yaml(4, false).replace("SessionType: Practice", "SessionType: Race")));
+        r.info.track_length_km = 5.0;
+        for _ in 0..10 {
+            at(&mut r, 0, 0.1, 500.0);
+            at(&mut r, 1, 0.1, 500.2);
+            r.tick();
+        }
+        assert!(!r.alone_on_track());
     }
 
     #[test]

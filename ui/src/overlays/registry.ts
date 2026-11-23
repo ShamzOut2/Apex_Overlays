@@ -29,8 +29,10 @@ import { radar } from './radar';
 import { carsettings } from './carsettings';
 import { tyredata } from './tyredata';
 import { shiftlights } from './shiftlightsOverlay';
+import { pitRejoin } from './pitRejoin';
+import { cornerTimes } from './cornerTimes';
 
-const ALL: OverlayDef[] = [relative, standings, trackmap, inputs, shiftlights, inputGraph, laptimes, fuel, energy, battle, session, flags, startLights, weather, forecast, tyres, tyredata, carsettings, databox, spotter, radar, safety, delta, pit, incidents, garage61, monitor];
+const ALL: OverlayDef[] = [relative, standings, trackmap, inputs, shiftlights, inputGraph, laptimes, cornerTimes, fuel, pitRejoin, energy, battle, session, flags, startLights, weather, forecast, tyres, tyredata, carsettings, databox, spotter, radar, safety, delta, pit, incidents, garage61, monitor];
 
 /** Overlays held back for now: Garage 61 comes back once the integration is ready. They are
  *  not offered, listed or opened; their code stays. */

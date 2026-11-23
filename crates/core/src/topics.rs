@@ -37,11 +37,15 @@ pub enum Topic {
     CarSettings,
     /// Tyre temperatures, pressures and wear, and brake temperatures.
     TyreData,
+    /// Where you would rejoin if you pitted now.
+    PitRejoin,
+    /// Your last lap, corner by corner, against your best.
+    CornerTimes,
 }
 
 impl Topic {
     // Drivers first: when they change, they reach the clients before the rows that use them.
-    pub const ALL: [Topic; 22] = [
+    pub const ALL: [Topic; 24] = [
         Topic::Drivers,
         Topic::Session,
         Topic::Player,
@@ -64,6 +68,8 @@ impl Topic {
         Topic::Radar,
         Topic::CarSettings,
         Topic::TyreData,
+        Topic::PitRejoin,
+        Topic::CornerTimes,
     ];
 
     pub fn name(self) -> &'static str {
@@ -90,6 +96,8 @@ impl Topic {
             Topic::Radar => "radar",
             Topic::CarSettings => "carsettings",
             Topic::TyreData => "tyredata",
+            Topic::PitRejoin => "pitrejoin",
+            Topic::CornerTimes => "cornertimes",
         }
     }
 
@@ -109,10 +117,12 @@ impl Topic {
             // A change shows within a tenth of a second (only sent when something changes).
             Topic::CarSettings => 6,
             Topic::TyreData => 15,
+            // Four times a second: it moves with you round the lap.
+            Topic::PitRejoin => 15,
             // Weather changes slowly: once a second.
             Topic::Forecast => 60,
             // Only re-sent when they change (see `publish`).
-            Topic::TrackMap | Topic::Car | Topic::Delta | Topic::Drivers => 1,
+            Topic::TrackMap | Topic::Car | Topic::Delta | Topic::Drivers | Topic::CornerTimes => 1,
         }
     }
 
@@ -166,6 +176,8 @@ impl Topic {
             Topic::Radar => serde_json::to_string(&crate::engine::radar::build(e)),
             Topic::CarSettings => serde_json::to_string(&car_settings(e)),
             Topic::TyreData => serde_json::to_string(&tyre_data(e)),
+            Topic::PitRejoin => serde_json::to_string(&pit_rejoin(e)),
+            Topic::CornerTimes => serde_json::to_string(&corner_times(e)),
         };
         r.unwrap_or_else(|_| "null".into())
     }
@@ -1130,6 +1142,24 @@ pub struct FuelOut<'a> {
     pub estimate_from: &'static str,
     /// The race ahead, before it starts (practice, qualifying, the grid).
     pub race: Option<RaceEstimateOut>,
+    /// This lap against the fuel per lap you can use (fuel save coach).
+    pub coach: Option<FuelCoachOut>,
+}
+
+/// The lap in progress against a fuel per lap: what this point of the lap should have used
+/// (by the shape of your last clean lap) and what it has.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FuelCoachOut {
+    /// "save" (the per lap that makes the finish on fewer stops) or "average" (your average).
+    pub against: &'static str,
+    pub per_lap: f32,
+    pub used: f32,
+    pub expected: f32,
+    /// expected - used: above 0, under it (saving); below 0, over it.
+    pub delta: f32,
+    /// This lap's use if the rest goes like the part driven (from a tenth of the lap on).
+    pub projected: Option<f32>,
 }
 
 /// How long the race will be and what it takes, worked out before the start.
@@ -1254,6 +1284,33 @@ pub fn fuel_out(e: &Engine) -> FuelOut<'_> {
                 (save > 0.0 && save <= a * 0.12).then(|| r3(save))
             }
             _ => None,
+        },
+        coach: {
+            let save = match (&plan, avg) {
+                (Some(p), Some(a)) if p.stops >= 1 && p.target_per_lap > 0.0 => {
+                    let tank_after_stops = t.fuel_level + capacity * (p.stops - 1) as f32;
+                    let target = tank_after_stops / (laps_left.unwrap_or(0.0) + cfg.margin_laps);
+                    let s = a - target;
+                    (s > 0.0 && s <= a * 0.12).then_some(target)
+                }
+                _ => None,
+            };
+            let reference = save.map(|v| ("save", v)).or(avg.map(|a| ("average", a)));
+            match (reference, e.fuel.lap_used()) {
+                (Some((against, per_lap)), Some(used)) if t.is_on_track && !t.on_pit_road && per_lap > 0.0 && (0.02..1.0).contains(&t.lap_dist_pct) => {
+                    let share = e.fuel.share_at(t.lap_dist_pct);
+                    let expected = per_lap * share;
+                    Some(FuelCoachOut {
+                        against,
+                        per_lap: r3(per_lap),
+                        used: r3(used),
+                        expected: r3(expected),
+                        delta: r3(expected - used),
+                        projected: (share > 0.1).then(|| r3(used / share)),
+                    })
+                }
+                _ => None,
+            }
         },
         window_opens_lap: plan.as_ref().filter(|p| p.stops > 0).map(|p| lap + p.window_opens_in.ceil() as i32),
         window_closes_lap: plan.as_ref().filter(|p| p.stops > 0).map(|p| lap + p.window_closes_in.floor() as i32),
@@ -1417,16 +1474,21 @@ pub struct TrackMapOut<'a> {
     pub pit_exit: Option<f32>,
 }
 
-pub fn trackmap(e: &Engine) -> TrackMapOut<'_> {
-    // The player's own corners stay as they made them.
+/// The corners numbered as iRacing's own map numbers them (when known; the player's own
+/// corners stay as they made them), and the map's turns no corner covers.
+fn numbered_corners(e: &Engine) -> (std::borrow::Cow<'_, [crate::config::Corner]>, Vec<crate::config::Corner>) {
     let official = e.map.official.as_ref().filter(|m| m.track_id == e.info.track_id && !m.turns.is_empty() && e.corners_source != "custom");
-    let (corners, turns) = match official {
+    match official {
         Some(m) => {
             let (c, t) = crate::corners::number_from_map(&e.corners, &m.turns);
             (std::borrow::Cow::Owned(c), t)
         }
         None => (std::borrow::Cow::Borrowed(e.corners.as_slice()), vec![]),
-    };
+    }
+}
+
+pub fn trackmap(e: &Engine) -> TrackMapOut<'_> {
+    let (corners, turns) = numbered_corners(e);
     TrackMapOut {
         track_id: e.info.track_id,
         track_name: &e.info.track_display_name,
@@ -1450,6 +1512,58 @@ pub fn trackmap(e: &Engine) -> TrackMapOut<'_> {
 mod tests {
     use super::*;
     use crate::engine::tests::{engine, place};
+
+    #[test]
+    fn pit_rejoin_positions_and_neighbours() {
+        let mut e = engine(5, true);
+        // You (class 1) mid-lap; laps of 100 s, so 0.1 of a lap is 10 s.
+        for (i, pct) in [(0, 0.5), (1, 0.45), (2, 0.30), (3, 0.20), (4, 0.70)] {
+            place(&mut e, i, 5, pct);
+        }
+        e.tick();
+        e.cfg.pit_rejoin.lane_seconds = 22.0;
+        e.cfg.pit_rejoin.stop_seconds = 3.0;
+        let r = pit_rejoin(&e);
+        assert_eq!((r.loss, r.lane, r.stop, r.stop_from, r.lane_measured), (25.0, 22.0, 3.0, "set", 0));
+        // P2 now; 25 s down you come out behind cars 1 and 2 as well: P4 (class: P2 to P3).
+        assert_eq!(r.position, Some([2, 4]));
+        assert_eq!(r.class_position, Some([2, 3]));
+        let (a, b) = (r.ahead.unwrap(), r.behind.unwrap());
+        assert_eq!((a.idx, a.gap, a.same_class), (2, 5.0, true));
+        assert_eq!((b.idx, b.gap), (3, -5.0));
+        assert!((r.ghost_pct.unwrap() - 0.25).abs() < 1e-4);
+        // The stop from your class's stops when none is set and you have not stopped.
+        e.cfg.pit_rejoin.stop_seconds = 0.0;
+        assert_eq!(pit_rejoin(&e).stop_from, "none");
+    }
+
+    #[test]
+    fn corner_times_add_up_to_the_lap() {
+        let mut e = engine(1, false);
+        let n = crate::garage61::REF_STEPS;
+        let mine: Vec<f32> = (0..=n).map(|k| k as f32 / n as f32 * 100.0).collect();
+        // The best lap a second quicker between 0.2 and 0.5 of the lap.
+        let best: Vec<f32> = (0..=n)
+            .map(|k| {
+                let x = k as f32 / n as f32;
+                x * 100.0 - ((x - 0.2) / 0.3).clamp(0.0, 1.0)
+            })
+            .collect();
+        let r = |times: Vec<f32>, lap: f64| crate::garage61::Reference { driver: "Me".into(), lap_time: lap, source: "session".into(), times };
+        e.laps.last = Some(crate::engine::laps::LastLap { lap_time: 100.0, valid: true, times: mine, session: Some(r(best, 99.0)), all_time: None });
+        e.corners = vec![
+            crate::config::Corner { name: "Turn one".into(), number: 1, last: 0, start: 0.2, end: 0.25 },
+            crate::config::Corner { name: "".into(), number: 2, last: 3, start: 0.5, end: 0.55 },
+        ];
+        let c = corner_times(&e);
+        assert_eq!(c.by, "corners");
+        assert_eq!(c.segments.len(), 2);
+        assert_eq!((c.segments[1].number, c.segments[1].last), (2, 3));
+        let vs = &c.vs[0];
+        assert_eq!(vs.source, "session");
+        assert!((vs.deltas[0] - 1.0).abs() < 0.01 && vs.deltas[1].abs() < 0.01, "{:?}", vs.deltas);
+        assert!((vs.deltas.iter().sum::<f32>() - vs.delta).abs() < 0.01);
+    }
 
     #[test]
     fn official_map_survives_a_disconnect_and_a_new_session() {
@@ -1914,4 +2028,256 @@ pub fn energy_out(e: &Engine) -> EnergyOut {
         margin_laps: cfg.margin_laps,
         history: e.energy.laps.iter().rev().filter(|l| l.valid).take(10).map(|l| round(l.used, 2)).collect(),
     }
+}
+
+/// A car you would come out near after a stop.
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct RejoinCar {
+    pub idx: usize,
+    pub number: String,
+    pub name: String,
+    pub class_color: String,
+    pub same_class: bool,
+    /// Seconds from you on track after the stop (ahead positive).
+    pub gap: f32,
+    /// Laps it would be ahead of you (+1) or behind (-1) in the race; 0 the same lap.
+    pub laps: i32,
+}
+
+/// Where you would rejoin if you came in now: positions before and after, the cars you would
+/// come out between, and the spot on the map.
+#[derive(Serialize, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PitRejoinOut {
+    pub ready: bool,
+    pub in_pits: bool,
+    pub race: bool,
+    /// Seconds a stop costs: the pit lane plus standing in the box.
+    pub loss: f32,
+    pub lane: f32,
+    /// Stops the lane time was measured from (0: the time set in the settings).
+    pub lane_measured: usize,
+    pub stop: f32,
+    /// "plan" (what you set in the black box, timed from the car's measured stops), "set"
+    /// (the settings), "you" (your last stop), "class" (your class's stops), "none".
+    pub stop_from: &'static str,
+    /// The black box stop worked out: fuel and tyres and how long each takes.
+    pub plan: Option<crate::engine::pitservice::StopPlan>,
+    /// Where the timings come from: "you" (your stops in this car) or "community" (shared).
+    pub plan_from: Option<&'static str>,
+    /// Mandatory repairs still to do (s), included in the stop.
+    pub repair: f32,
+    /// [now, after], in the race.
+    pub position: Option<[i32; 2]>,
+    pub class_position: Option<[i32; 2]>,
+    pub ahead: Option<RejoinCar>,
+    pub behind: Option<RejoinCar>,
+    /// Lap fraction you would rejoin at (where you will be when the stop is done).
+    pub ghost_pct: Option<f32>,
+}
+
+/// Seconds into the lap at lap fraction `x` on a reference lap.
+fn ref_time(times: &[f32], x: f32) -> f32 {
+    let n = times.len() - 1;
+    let f = x.clamp(0.0, 1.0) * n as f32;
+    let k = (f as usize).min(n - 1);
+    times[k] + (times[k + 1] - times[k]) * (f - k as f32)
+}
+
+/// The lap fraction a reference lap reaches at `secs` into it.
+fn ref_pct(times: &[f32], secs: f32) -> f32 {
+    let n = times.len() - 1;
+    let k = times.partition_point(|&t| t < secs).clamp(1, n);
+    let (a, b) = (times[k - 1], times[k]);
+    let f = if b > a { (secs - a) / (b - a) } else { 0.0 };
+    ((k - 1) as f32 + f.clamp(0.0, 1.0)) / n as f32
+}
+
+pub fn pit_rejoin(e: &Engine) -> PitRejoinOut {
+    let Some(me) = e.tel.focus_idx() else { return PitRejoinOut::default() };
+    let Some(my) = e.static_of(me) else { return PitRejoinOut::default() };
+    let cfg = &e.cfg.pit_rejoin;
+    let (lane, lane_measured) = e.pit.lane_loss().unwrap_or((cfg.lane_seconds, 0));
+    // The stop: as set, else your last one, else the middle of your class's.
+    let served = |i: usize| e.hist[i].pit_last.map(|p| p.service).filter(|s| *s >= 3.0);
+    // Your own car in iRacing: what the black box is set to do, timed per car.
+    let player = usize::try_from(e.tel.player_idx).ok() == Some(me) && matches!(e.source, "iracing" | "mock");
+    let plan = player.then(|| e.pit_service.model(my.car_id)).flatten().and_then(|(m, from)| {
+        let (fuel, tyres) = crate::engine::pitservice::planned(&e.tel, e.info.fuel_capacity());
+        m.predict(fuel, tyres).map(|p| (p, from))
+    });
+    let repair = if player { e.tel.pit_repair_left.max(0.0) } else { 0.0 };
+    let (stop, stop_from) = if cfg.stop_seconds > 0.0 {
+        (cfg.stop_seconds, "set")
+    } else if let Some((p, _)) = plan {
+        (p.stood + repair, "plan")
+    } else if let Some(s) = served(me) {
+        (s, "you")
+    } else {
+        let mut v: Vec<f32> =
+            (0..crate::model::MAX_CARS).filter(|&i| i != me && e.static_of(i).is_some_and(|s| s.class.id == my.class.id)).filter_map(served).collect();
+        v.sort_by(f32::total_cmp);
+        match v.get(v.len() / 2) {
+            Some(&s) => (s, "class"),
+            None => (0.0, "none"),
+        }
+    };
+    let loss = lane + stop;
+    let reference = e.ref_lap(me).max(1.0);
+    let shift = (loss / reference) as f64;
+    let now = e.progress(me);
+    let after = now - shift;
+    let race = e.is_race();
+    let mut out = PitRejoinOut {
+        ready: true,
+        in_pits: e.tel.cars[me].on_pit_road,
+        race,
+        loss: round(loss, 1),
+        lane: round(lane, 1),
+        lane_measured,
+        stop: round(stop, 1),
+        stop_from,
+        plan: plan.map(|(p, _)| crate::engine::pitservice::StopPlan {
+            fuel_l: round(p.fuel_l, 1),
+            fuel_secs: round(p.fuel_secs, 1),
+            tyre_secs: round(p.tyre_secs, 1),
+            base: round(p.base, 1),
+            stood: round(p.stood, 1),
+            ..p
+        }),
+        plan_from: plan.map(|(_, f)| f),
+        repair: round(repair, 1),
+        ..Default::default()
+    };
+    let others: Vec<usize> =
+        (0..crate::model::MAX_CARS).filter(|&i| i != me && e.static_of(i).is_some_and(|s| !s.hidden) && (e.tel.cars[i].in_world() || e.hist[i].seen)).collect();
+    if race {
+        if let Some(r) = e.order.iter().find(|r| r.idx == me) {
+            let ahead_of = |class: bool| {
+                others.iter().filter(|&&i| (!class || e.static_of(i).is_some_and(|s| s.class.id == my.class.id)) && e.progress(i) > after).count() as i32 + 1
+            };
+            out.position = Some([r.pos, ahead_of(false)]);
+            out.class_position = Some([r.class_pos, ahead_of(true)]);
+        }
+    }
+    // The cars just ahead and behind on track when you come out (any lap), out on track.
+    let mut best_ahead: Option<(f64, usize, f64)> = None;
+    let mut best_behind: Option<(f64, usize, f64)> = None;
+    for &i in &others {
+        if !e.tel.cars[i].in_world() {
+            continue;
+        }
+        let d = e.progress(i) - after;
+        let w = d - d.round();
+        if w >= 0.0 {
+            if best_ahead.is_none_or(|b| w < b.0) {
+                best_ahead = Some((w, i, d));
+            }
+        } else if best_behind.is_none_or(|b| w > b.0) {
+            best_behind = Some((w, i, d));
+        }
+    }
+    let car = |(w, i, d): (f64, usize, f64)| {
+        let s = e.static_of(i)?;
+        Some(RejoinCar {
+            idx: i,
+            number: s.number.clone(),
+            name: s.abbrev.clone(),
+            class_color: hex(s.class.color),
+            same_class: s.class.id == my.class.id,
+            gap: round((w * reference as f64) as f32, 1),
+            laps: if race { d.round() as i32 } else { 0 },
+        })
+    };
+    out.ahead = best_ahead.and_then(car);
+    out.behind = best_behind.and_then(car);
+    // Where on track: back along your best lap by the time the stop costs.
+    let pct = e.tel.cars[me].pct;
+    let lap_ref = e.laps.session.as_ref().or(e.laps.all_time.as_ref()).filter(|r| r.times.len() > 10);
+    out.ghost_pct = Some(match lap_ref {
+        Some(r) => {
+            let lap = r.lap_time as f32;
+            ref_pct(&r.times, (ref_time(&r.times, pct) - loss).rem_euclid(lap))
+        }
+        None => (pct - shift as f32).rem_euclid(1.0),
+    });
+    out
+}
+
+/// One stretch of the lap in the corner times: a corner and the straight after it.
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct CornerSeg {
+    pub number: i32,
+    pub last: i32,
+    pub name: String,
+}
+
+/// Your last lap against a best lap, stretch by stretch.
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct CornerVs {
+    /// "session" or "allTime".
+    pub source: &'static str,
+    pub lap_time: f32,
+    pub delta: f32,
+    pub deltas: Vec<f32>,
+}
+
+#[derive(Serialize, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct CornerTimesOut {
+    pub lap_time: Option<f32>,
+    pub valid: bool,
+    /// "corners", "sectors" (no corner data for the track) or "lap".
+    pub by: &'static str,
+    pub segments: Vec<CornerSeg>,
+    pub vs: Vec<CornerVs>,
+}
+
+/// Your last full lap, corner by corner (each corner with the straight after it, so the times
+/// add up to the lap), against your best this session and your all-time best.
+pub fn corner_times(e: &Engine) -> CornerTimesOut {
+    let Some(last) = &e.laps.last else { return CornerTimesOut::default() };
+    let (corners, turns) = numbered_corners(e);
+    let mut cs: Vec<crate::config::Corner> = corners.iter().chain(turns.iter()).cloned().collect();
+    cs.sort_by(|a, b| a.start.total_cmp(&b.start));
+    cs.dedup_by(|b, a| (b.start - a.start).abs() < 0.002);
+    let (by, segs): (&'static str, Vec<(f32, CornerSeg)>) = if !cs.is_empty() {
+        ("corners", cs.into_iter().map(|c| (c.start, CornerSeg { number: c.number, last: c.last, name: c.name })).collect())
+    } else if e.info.sectors.len() > 1 {
+        ("sectors", e.info.sectors.iter().enumerate().map(|(i, &s)| (s, CornerSeg { number: 0, last: 0, name: format!("S{}", i + 1) })).collect())
+    } else {
+        ("lap", vec![(0.0, CornerSeg { number: 0, last: 0, name: "Lap".into() })])
+    };
+    let starts: Vec<f32> = segs.iter().map(|s| s.0).collect();
+    // Time from one start to the next on a lap (the last stretch runs over the line).
+    let spans = |times: &[f32], lap: f32| -> Vec<f32> {
+        (0..starts.len())
+            .map(|k| {
+                let a = ref_time(times, starts[k]);
+                if k + 1 < starts.len() {
+                    ref_time(times, starts[k + 1]) - a
+                } else {
+                    lap - a + ref_time(times, starts[0])
+                }
+            })
+            .collect()
+    };
+    let mine = spans(&last.times, last.lap_time);
+    let vs = [("session", &last.session), ("allTime", &last.all_time)]
+        .into_iter()
+        .filter_map(|(source, r)| {
+            let r = r.as_ref().filter(|r| r.times.len() == last.times.len())?;
+            let theirs = spans(&r.times, r.lap_time as f32);
+            Some(CornerVs {
+                source,
+                lap_time: round(r.lap_time as f32, 3),
+                delta: round(last.lap_time - r.lap_time as f32, 3),
+                deltas: mine.iter().zip(&theirs).map(|(m, t)| round(m - t, 3)).collect(),
+            })
+        })
+        .collect();
+    CornerTimesOut { lap_time: Some(round(last.lap_time, 3)), valid: last.valid, by, segments: segs.into_iter().map(|s| s.1).collect(), vs }
 }

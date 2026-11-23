@@ -3,7 +3,7 @@ import { fitCanvas, h, show, text } from '../lib/dom';
 import type { OverlayDef } from '../lib/overlay';
 import { trackValue } from '../lib/settings';
 import { onColor } from '../lib/theme';
-import type { CarDot, Cars, SectorTimes, TrackMap } from '../lib/types';
+import type { CarDot, Cars, PitRejoin, SectorTimes, TrackMap } from '../lib/types';
 
 type Pt = [number, number];
 
@@ -13,6 +13,7 @@ export const trackmap: OverlayDef = {
   name: 'Track map',
   description: 'Every car on track. Three styles: the real circuit outline (recorded automatically from your first clean lap), a flat line and a round map.',
   topics: ['cars', 'trackmap'],
+  extraTopics: (v) => (v.showRejoin ? ['pitrejoin'] : []),
   size: [340, 340],
   settings: [
     privateQualifyingSetting('Cars'),
@@ -67,6 +68,8 @@ export const trackmap: OverlayDef = {
     { key: 'playerScale', label: 'Your car size', type: 'number', default: 1.45, min: 1, max: 3, step: 0.05, unit: '×', group: 'Cars' },
     { key: 'playerThemeColor', label: 'Your car: use the theme’s highlight colour', type: 'bool', default: true, group: 'Cars', help: 'Turn off to pick your own colour for your car’s dot (or the car you are watching)' },
     { key: 'playerColor', when: (v) => v.playerThemeColor === false, label: 'Your car colour', type: 'color', default: '#ffd84d', group: 'Cars' },
+    { key: 'showRejoin', label: 'Where you would rejoin after a stop', type: 'bool', default: false, group: 'Cars', help: 'A ring on the track where you would come out if you pitted now (from the time a stop costs here: see the Pit rejoin overlay)' },
+    { key: 'rejoinColor', when: (v) => v.showRejoin === true, label: 'Rejoin ring colour', type: 'color', default: '#ffffff', group: 'Cars' },
     { key: 'label', label: 'Label on cars', type: 'select', default: 'classPosition', options: [['none', 'None'], ['number', 'Car number'], ['position', 'Overall position'], ['classPosition', 'Class position']], group: 'Cars' },
     { key: 'colorBy', label: 'Car colour', type: 'select', default: 'class', options: [['class', 'Class colour'], ['single', 'Single colour']], group: 'Cars' },
     { key: 'carColor', when: (v) => v.colorBy === 'single', label: 'Single car colour', type: 'color', default: '#ffffff', group: 'Cars' },
@@ -356,6 +359,7 @@ export const trackmap: OverlayDef = {
     // them changes (a few times a lap), then copied under the cars each frame. Tracing the sector
     // colours point by point on every frame was most of the overlay's work and garbage.
     let deco: HTMLCanvasElement | null = null;
+    let rejoin: PitRejoin | null = null;
     const leaders = new Map<string, CarDot>();
     const list: CarDot[] = [];
     let decoKey = '';
@@ -409,6 +413,24 @@ export const trackmap: OverlayDef = {
       let curFont = '';
       g.textAlign = 'center';
       g.textBaseline = 'middle';
+      // Where you would come out after a stop: a dashed ring, under the cars.
+      if (s.showRejoin && rejoin?.ready && !rejoin.inPits && rejoin.ghostPct != null) {
+        const me = cars.cars.find((c) => c.i === focus);
+        const at = locate(rejoin.ghostPct, nl > 1 && me ? Math.max(0, laneIds.indexOf(me.cls)) : 0, nl);
+        const r = (s.dotSize as number) * dpr() * (s.playerScale as number) * 1.15;
+        g.save();
+        g.setLineDash([3 * dpr(), 2.5 * dpr()]);
+        g.lineWidth = 2 * dpr();
+        g.strokeStyle = s.rejoinColor as string;
+        g.beginPath();
+        g.arc(at[0], at[1], r, 0, Math.PI * 2);
+        g.stroke();
+        g.restore();
+        g.font = `800 ${Math.max(7, (s.dotSize as number) * 0.95) * dpr()}px ${family}`;
+        curFont = '';
+        g.fillStyle = s.rejoinColor as string;
+        g.fillText('PIT', at[0], at[1] - r - 6 * dpr());
+      }
       for (const c of list) {
         const isFocus = c.i === focus;
         const at = locate(c.p, nl > 1 ? Math.max(0, laneIds.indexOf(c.cls)) : 0, nl);
@@ -464,6 +486,9 @@ export const trackmap: OverlayDef = {
                 ? `Recording track outline… ${Math.round(map.progress * 100)}%`
                 : 'Drive a clean lap to record the track outline',
           );
+        } else if (topic === 'pitrejoin') {
+          rejoin = data as PitRejoin;
+          return;
         } else if (topic === 'cars') {
           const prev = lanes().join();
           cars = data as Cars;

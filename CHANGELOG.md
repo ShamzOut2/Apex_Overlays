@@ -4,6 +4,19 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
+## 1.5.6
+
+### New features
+- Pit rejoin (new overlay): if you pitted now, the position you would drop to (class, overall or both) and the cars you would come out between, with gaps. A stop's cost is the pit lane time lost, measured from every car driving through it here (kept per track), plus your stop: your last one, else the middle of your class's, or a time you set. The track map can show a ring where you would come out (Cars → Where you would rejoin after a stop)
+- Corner times (new overlay): after each lap, where you gained and lost time against your best (this session or ever), corner by corner with iRacing's turn numbers; each corner counts with the straight after it, so the figures add up to the lap. Every corner in order, or the worst ones first
+- Fuel save coach (fuel overlay, on by default): as you drive, this lap against the fuel per lap you can use (the target that skips a stop when saving would, else your average), green under, red over, and what the lap will use at this rate. Judged by how your last clean lap used fuel round the lap, so a straight does not read as overspending
+
+- Pit rejoin times the stop you have set in iRacing's black box: the fuel to add (no more than fits) and the tyres ticked, with how long each takes in your car, learned from your own stops (the fuel level rising while you stand gives the fill rate; the time beyond it, the tyres; and whether the crew does them together or one after the other). Mandatory repairs left are added. The overlay shows the parts ("62 L 24.8 s ‖ 4 tyres 21.5 s")
+- Shared stop times (opt-in, off unless you switch it on: General → Racing data → Pit stop times, or the Pit rejoin settings). Each stop you make is sent as six numbers: the car, tyres changed, litres added, how long the fuel took, when it started, and how long you stood. Nothing about you, your session or your track: no name, iRacing ID, key or install ID. With "Use shared stop times" on (only the car's ID is sent), others' stops time a stop in a car you have not stopped in yet; your own stops always come first
+
+### Fixes
+- Private qualifying: Le Mans Ultimate's qualifying was always taken to be private, so open qualifying (everyone on track together) also lost the other cars on the relative, track map, radar, spotter, battle box and safety alert. The game does not say which it is, so the app now tells by the cars: in private qualifying the others are not really on track with you and pass straight through each other, which cars never do in open qualifying. Qualifying shows everyone until that is seen (a few times, on track, at the same point of the lap), then leaves the others off for the rest of the session. iRacing still goes by the session: Lone Qualify private, Open Qualify open
+
 ## 1.5.5
 
 ### New features

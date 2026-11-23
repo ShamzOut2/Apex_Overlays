@@ -81,7 +81,7 @@ function onData(t: TopicName, d: unknown) {
   else if (t === 'player') player = d as Player;
   if (t === 'status' || t === 'session' || t === 'player') updateVisibility();
   if (t === 'session' && config?.units === 'auto' && key && !key.endsWith(`|${units()}`)) rebuild();
-  if (view && def?.topics.includes(t)) {
+  if (view && def && (def.topics.includes(t) || def.extraTopics?.(settings).includes(t))) {
     // A hidden overlay skips drawing; it catches up with the newest data once shown.
     if (document.body.classList.contains('hidden')) stale.add(t);
     else deliver(t, d);
@@ -145,9 +145,10 @@ function rebuild() {
     client.unsubscribe('player');
     player = null;
   }
-  for (const t of ['player', ...def.topics] as TopicName[]) client.limit(t, def.rates?.[t] ?? (t === 'player' && !def.topics.includes('player') ? 10 : 0));
-  client.subscribe(...def.topics);
-  for (const t of def.topics) {
+  const topics = [...def.topics, ...(def.extraTopics?.(settings) ?? [])];
+  for (const t of ['player', ...topics] as TopicName[]) client.limit(t, def.rates?.[t] ?? (t === 'player' && !topics.includes('player') ? 10 : 0));
+  client.subscribe(...topics);
+  for (const t of topics) {
     const d = client.latest[t];
     if (d !== undefined) view.update(t, d);
   }

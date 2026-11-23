@@ -10,6 +10,9 @@ use std::path::PathBuf;
 /// How long after the line to wait for iRacing's official lap time.
 const SETTLE: f64 = 1.0;
 
+/// A finished lap's samples, when it finished, and whether it was clean.
+type Pending = (Vec<(f32, f32)>, f64, bool);
+
 #[derive(Default)]
 pub struct LapRecorder {
     dir: Option<PathBuf>,
@@ -22,12 +25,27 @@ pub struct LapRecorder {
     /// (lap distance, seconds into the lap) of the lap in progress.
     samples: Vec<(f32, f32)>,
     valid: bool,
-    /// A finished lap waiting for its official time, and when it finished.
-    pending: Option<(Vec<(f32, f32)>, f64)>,
+    /// A finished lap waiting for its official time, when it finished, and whether it was clean.
+    pending: Option<Pending>,
     pub session: Option<Reference>,
     pub all_time: Option<Reference>,
     /// Bumped whenever a reference changes, so the topic is only re-sent then.
     pub revision: u64,
+    /// Your last full lap (clean or not) with the bests as they stood before it, for the
+    /// corner times; `last_rev` is bumped with each.
+    pub last: Option<LastLap>,
+    pub last_rev: u64,
+}
+
+/// A lap just driven, and the best laps it is measured against (before it could beat them).
+#[derive(Debug, Clone)]
+pub struct LastLap {
+    pub lap_time: f32,
+    pub valid: bool,
+    /// Seconds into the lap at each step of lap distance (as `Reference::times`).
+    pub times: Vec<f32>,
+    pub session: Option<Reference>,
+    pub all_time: Option<Reference>,
 }
 
 /// Time at each step of lap distance from a lap's samples, ending at the official lap time.
@@ -115,9 +133,9 @@ impl LapRecorder {
             }
             self.restart(t.lap);
         }
-        if self.pending.as_ref().is_some_and(|(_, at)| t.session_time - at >= SETTLE) {
-            if let Some((samples, _)) = self.pending.take() {
-                self.finish(&samples, t.lap_last_time, driver);
+        if self.pending.as_ref().is_some_and(|(_, at, _)| t.session_time - at >= SETTLE) {
+            if let Some((samples, _, valid)) = self.pending.take() {
+                self.finish(&samples, t.lap_last_time, driver, valid);
             }
         }
         if !t.driving() {
@@ -125,8 +143,8 @@ impl LapRecorder {
             return;
         }
         if t.lap != self.lap {
-            if self.valid && self.samples.len() > 20 {
-                self.pending = Some((std::mem::take(&mut self.samples), t.session_time));
+            if self.samples.len() > 20 {
+                self.pending = Some((std::mem::take(&mut self.samples), t.session_time, self.valid));
             }
             self.restart(t.lap);
             self.lap_start = t.session_time;
@@ -153,14 +171,20 @@ impl LapRecorder {
         self.valid = true;
     }
 
-    /// A clean lap: keep it if it beats the session or all-time best.
-    fn finish(&mut self, samples: &[(f32, f32)], official: f32, driver: &str) {
+    /// A full lap: kept as the last lap (for the corner times), and if clean, as the session
+    /// or all-time best when it beats them.
+    fn finish(&mut self, samples: &[(f32, f32)], official: f32, driver: &str, valid: bool) {
         let Some(&(pct, time)) = samples.last() else { return };
         let estimate = time / pct.max(0.5);
         // iRacing's time for the lap, unless it does not belong to this lap.
         let lap_time = if official > 0.0 && (official - estimate).abs() < estimate * 0.02 { official } else { estimate };
         let Some(times) = resample(samples, lap_time) else { return };
         if !plausible(&times, lap_time) {
+            return;
+        }
+        self.last = Some(LastLap { lap_time, valid, times: times.clone(), session: self.session.clone(), all_time: self.all_time.clone() });
+        self.last_rev += 1;
+        if !valid {
             return;
         }
         let r = |source: &str| Reference { driver: driver.to_string(), lap_time: lap_time as f64, source: source.into(), times: times.clone() };
