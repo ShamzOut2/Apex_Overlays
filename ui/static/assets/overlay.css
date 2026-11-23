@@ -638,6 +638,15 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .panel.fuel.fl-compact { padding: 0.7em 1.1em; gap: 0.6em; }
 .fuel.fl-compact .fl-c-line { display: flex; align-items: center; gap: 1em; }
 .fuel.fl-compact .fl-c-left { display: flex; flex-direction: column; gap: 0.25em; }
+.fl-coach { display: grid; grid-template-columns: auto auto 1fr; grid-template-rows: auto auto; align-items: center; column-gap: 0.5em; row-gap: 0.15em; }
+.fl-coach-val { font-size: 1.15em; font-weight: 800; font-variant-numeric: tabular-nums; }
+.fl-coach-meter { position: relative; height: 0.45em; border-radius: 999px; background: var(--track, rgba(255, 255, 255, 0.1)); overflow: hidden; }
+.fl-coach-fill { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; background: currentColor; }
+.fl-coach-mid { position: absolute; top: -0.1em; bottom: -0.1em; left: calc(50% - 1px); width: 2px; background: var(--text); opacity: 0.6; }
+.fl-coach-note { grid-column: 1 / -1; font-size: 0.72em; color: var(--dim); font-variant-numeric: tabular-nums; }
+.fl-coach[data-tone='under'] .fl-coach-val, .fl-coach[data-tone='under'] .fl-coach-meter { color: var(--good, #3ddc84); }
+.fl-coach[data-tone='even'] .fl-coach-val, .fl-coach[data-tone='even'] .fl-coach-meter { color: var(--text); }
+.fl-coach[data-tone='over'] .fl-coach-val, .fl-coach[data-tone='over'] .fl-coach-meter { color: var(--bad, #ff4d4d); }
 .fuel.fl-compact .fl-hero { font-size: 2.9em; line-height: 0.85; }
 .fuel.fl-compact .fl-bar { flex: 1; height: 0.95em; }
 .fuel.fl-compact .fl-at { font-size: 2.3em; font-weight: 800; color: var(--tone); min-width: 2.4em; text-align: right; }
@@ -709,6 +718,47 @@ canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
 .sl-compact.counting .sl-cell { visibility: hidden; }
 .sl-mini-label { flex: none; font-size: calc(12 * var(--px)); letter-spacing: 0.14em; text-transform: uppercase; min-width: 9.4em; padding-left: 0.33em; text-align: left; }
 .sl-mini-label[hidden] { display: none; }
+
+/* Pit rejoin: the position you would drop to, the cars around you when you come out. */
+.panel.pit-rejoin { padding: 0.5em 0.65em; gap: 0.3em; }
+.pr-head { display: flex; justify-content: space-between; }
+.pr-title { font-size: 0.72em; font-weight: 800; letter-spacing: 0.22em; color: var(--dim); }
+.pr-pos { font-family: var(--fig, inherit); font-size: 1.6em; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: pre; }
+.pr-cars { display: flex; flex-direction: column; gap: 0.15em; }
+.pr-car { display: grid; grid-template-columns: 1em auto 1fr auto auto; align-items: center; gap: 0.45em; font-size: 0.92em; }
+.pr-car[hidden] { display: none; }
+.pr-arrow { color: var(--dim); font-size: 0.8em; text-align: center; }
+.pr-num { min-width: 2.3em; padding: 0 0.3em; border-radius: 3px; background: var(--cc, #888); color: #0b0e13; font-weight: 800; text-align: center; font-size: 0.9em; }
+.pr-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pr-car.other-class .pr-name { color: var(--dim); }
+.pr-laps { font-size: 0.75em; color: var(--dim); }
+.pr-gap { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 3em; text-align: right; }
+.pr-loss { font-size: 0.85em; font-weight: 700; }
+.pr-note { font-size: 0.72em; }
+
+/* Corner times: each corner of the last lap against your best. */
+.panel.corner-times { padding: 0.4em 0.55em; gap: 0.3em; }
+.ct-head { display: flex; align-items: baseline; gap: 0.6em; white-space: nowrap; }
+.ct-title { font-size: 0.72em; font-weight: 800; letter-spacing: 0.22em; color: var(--dim); }
+.ct-lap { font-weight: 800; font-variant-numeric: tabular-nums; }
+.ct-gap { font-size: 0.85em; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ct-gap.gain { color: var(--ct-gain); }
+.ct-gap.loss { color: var(--ct-loss); }
+.ct-note { font-size: 0.72em; color: var(--warn, #ffb020); }
+.ct-cells { display: flex; flex-wrap: wrap; gap: 0.3em; }
+.ct-column .ct-cells { flex-direction: column; }
+.ct-cells[hidden] { display: none; }
+.ct-cell { position: relative; display: flex; align-items: baseline; gap: 0.4em; padding: 0.12em 0.45em 0.25em; border-radius: 0.35em; background: rgba(255, 255, 255, 0.06); white-space: nowrap; overflow: hidden; }
+.ct-column .ct-cell { justify-content: space-between; }
+.ct-label { font-size: 0.8em; font-weight: 700; color: var(--dim); }
+.ct-val { font-weight: 800; font-variant-numeric: tabular-nums; }
+.ct-cell.gain .ct-val { color: var(--ct-gain); }
+.ct-cell.loss .ct-val { color: var(--ct-loss); }
+.ct-bar { position: absolute; left: 0; bottom: 0; height: 2px; width: var(--w, 0%); background: currentColor; opacity: 0.8; }
+.ct-cell.gain .ct-bar { color: var(--ct-gain); }
+.ct-cell.loss .ct-bar { color: var(--ct-loss); }
+.ct-cell.even .ct-bar { display: none; }
+.ct-empty { font-size: 0.85em; }
 
 /* Weather forecast: frosted cards, the weather now first. */
 .panel.forecast { padding: 0.5em 0.55em 0.55em; gap: 0.4em; }

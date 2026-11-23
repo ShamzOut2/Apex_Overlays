@@ -32,7 +32,15 @@ pub struct FuelTracker {
     pub counted: u64,
     /// Average every lap, not only clean ones (FuelConfig::any_laps).
     pub any_laps: bool,
+    /// Fuel used so far this lap at each of `SHAPE` steps of lap distance (NaN: not yet).
+    cur_shape: Vec<f32>,
+    /// Share of a lap's fuel used by each step of the lap, from the last clean lap: fuel goes
+    /// on the straights, so the save coach expects more used there than a straight line would.
+    shape: Option<Vec<f32>>,
 }
+
+/// Steps of lap distance the fuel use is recorded at (the save coach's lap shape).
+const SHAPE: usize = 50;
 
 impl FuelTracker {
     pub fn new_session(&mut self) {
@@ -53,6 +61,16 @@ impl FuelTracker {
         }
         self.pit |= t.on_pit_road;
         self.caution |= caution;
+        // Fuel used by this point of the lap, once per step.
+        if let Some(start) = self.lap_start_fuel.filter(|_| t.lap_completed == self.lap_start_completed && (0.0..1.0).contains(&t.lap_dist_pct)) {
+            if self.cur_shape.len() != SHAPE + 1 {
+                self.cur_shape = vec![f32::NAN; SHAPE + 1];
+            }
+            let k = ((t.lap_dist_pct * SHAPE as f32) as usize).min(SHAPE);
+            if self.cur_shape[k].is_nan() {
+                self.cur_shape[k] = (start - fuel).max(0.0);
+            }
+        }
         if t.lap_completed != self.lap_start_completed {
             if let Some(start) = self.lap_start_fuel {
                 if t.lap_completed == self.lap_start_completed + 1 {
@@ -70,6 +88,11 @@ impl FuelTracker {
                     } else {
                         ""
                     };
+                    if why.is_empty() {
+                        if let Some(shape) = lap_shape(&self.cur_shape, used) {
+                            self.shape = Some(shape);
+                        }
+                    }
                     self.laps.push_back(FuelLap { used, time: self.prev_lap_time, valid: why.is_empty(), start, end: fuel, why });
                     self.counted += 1;
                     if self.laps.len() > 50 {
@@ -79,12 +102,32 @@ impl FuelTracker {
             }
             self.lap_start_fuel = t.is_on_track.then_some(fuel);
             self.lap_start_completed = t.lap_completed;
+            self.cur_shape = vec![f32::NAN; SHAPE + 1];
             self.pit = t.on_pit_road;
             self.caution = caution;
             self.refuel = false;
         }
         self.prev_fuel = fuel;
         self.prev_lap_time = t.lap_current_time;
+    }
+
+    /// Fuel used since the line this lap, while on track.
+    pub fn lap_used(&self) -> Option<f32> {
+        self.lap_start_fuel.map(|s| (s - self.prev_fuel).max(0.0))
+    }
+
+    /// Share of a lap's fuel normally used by this point of the lap (0..1): from the last
+    /// clean lap's shape, else in proportion to the distance.
+    pub fn share_at(&self, pct: f32) -> f32 {
+        let pct = pct.clamp(0.0, 1.0);
+        match &self.shape {
+            Some(s) => {
+                let x = pct * SHAPE as f32;
+                let k = (x as usize).min(SHAPE - 1);
+                s[k] + (s[k + 1] - s[k]) * (x - k as f32)
+            }
+            None => pct,
+        }
     }
 
     /// Forget the laps (another car or track: their consumption does not apply).
@@ -116,6 +159,33 @@ impl FuelTracker {
         let v: Vec<f32> = self.valid(n).map(|l| l.time).filter(|&t| t > 0.0).collect();
         (!v.is_empty()).then(|| v.iter().sum::<f32>() / v.len() as f32)
     }
+}
+
+/// A lap's fuel use as shares of the whole at each step (0 at the line, 1 at the end), from
+/// what was used by each step; steps not seen are filled in between. None for a lap with too
+/// few steps seen (a tow, a reset).
+fn lap_shape(used_at: &[f32], total: f32) -> Option<Vec<f32>> {
+    if total <= 0.0 || used_at.len() != SHAPE + 1 || used_at.iter().filter(|v| !v.is_nan()).count() < SHAPE * 8 / 10 {
+        return None;
+    }
+    let mut s: Vec<f32> = used_at.iter().map(|v| v / total).collect();
+    s[0] = 0.0;
+    s[SHAPE] = 1.0;
+    // Fill the gaps between known steps, and keep it rising from 0 to 1.
+    let mut last = 0;
+    for k in 1..=SHAPE {
+        if s[k].is_nan() {
+            continue;
+        }
+        for j in last + 1..k {
+            s[j] = s[last] + (s[k] - s[last]) * (j - last) as f32 / (k - last) as f32;
+        }
+        last = k;
+    }
+    for k in 1..=SHAPE {
+        s[k] = s[k].clamp(s[k - 1], 1.0);
+    }
+    Some(s)
 }
 
 /// What a car used per lap at a track in earlier sessions. Small on purpose: a running
@@ -280,6 +350,32 @@ pub fn plan(level: f32, capacity: f32, per_lap: f32, laps_left: f32, margin_laps
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lap_shape_for_the_save_coach() {
+        // Half the fuel goes in the first fifth of the lap (a long straight); some steps missed.
+        let used: Vec<f32> = (0..=SHAPE)
+            .map(|k| {
+                if k % 7 == 3 {
+                    f32::NAN
+                } else {
+                    let x = k as f32 / SHAPE as f32;
+                    if x < 0.2 {
+                        x / 0.2 * 1.5
+                    } else {
+                        1.5 + (x - 0.2) / 0.8 * 1.5
+                    }
+                }
+            })
+            .collect();
+        let s = lap_shape(&used, 3.0).unwrap();
+        let mut f = FuelTracker::default();
+        assert!((f.share_at(0.2) - 0.2).abs() < 1e-6, "no shape yet: by distance");
+        f.shape = Some(s);
+        assert!((f.share_at(0.2) - 0.5).abs() < 0.02 && (f.share_at(1.0) - 1.0).abs() < 1e-6 && f.share_at(0.0) == 0.0);
+        // Too few steps seen: no shape.
+        assert!(lap_shape(&vec![f32::NAN; SHAPE + 1], 3.0).is_none());
+    }
 
     #[test]
     fn history_keeps_a_running_average() {

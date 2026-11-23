@@ -31,6 +31,8 @@ export interface OverlayDef {
   name: string;
   description: string;
   topics: TopicName[];
+  /** Topics wanted only with some settings on (e.g. the track map's pit rejoin marker). */
+  extraTopics?: (settings: Values) => TopicName[];
   /** Default window size in CSS pixels. */
   size: [number, number];
   settings: SettingDef[];

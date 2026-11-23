@@ -419,6 +419,7 @@ struct Keys {
     map: Option<(u64, i32, i64)>,
     car: Option<(u64, i64, i32, i32)>,
     delta: Option<u64>,
+    corners: Option<(u64, usize, u64, i64)>,
     drivers: Option<u64>,
     /// Ticks published, for topics sent at a lower rate.
     tick: u64,
@@ -453,6 +454,14 @@ fn publish(e: &Engine, hub: &Hub, keys: &mut Keys, force: bool) {
                 continue;
             }
             keys.delta = Some(e.laps.revision);
+        }
+        if t == Topic::CornerTimes {
+            // A new lap, or the track's corners or map changing.
+            let key = (e.laps.last_rev, e.corners.len(), e.map.revision, e.info.track_id);
+            if keys.corners == Some(key) && !force {
+                continue;
+            }
+            keys.corners = Some(key);
         }
         if t == Topic::Drivers {
             // Rebuilt only when the drivers' details are (each session info update).

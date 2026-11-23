@@ -6,6 +6,11 @@ Each version groups its changes under `### New features`, `### Improvements` and
 
 ## Unreleased
 
+### New features
+- Pit rejoin (new overlay): if you pitted now, the position you would drop to (class, overall or both) and the cars you would come out between, with gaps. A stop's cost is the pit lane time lost, measured from every car driving through it here (kept per track), plus your stop: your last one, else the middle of your class's, or a time you set. The track map can show a ring where you would come out (Cars → Where you would rejoin after a stop)
+- Corner times (new overlay): after each lap, where you gained and lost time against your best (this session or ever), corner by corner with iRacing's turn numbers; each corner counts with the straight after it, so the figures add up to the lap. Every corner in order, or the worst ones first
+- Fuel save coach (fuel overlay, on by default): as you drive, this lap against the fuel per lap you can use (the target that skips a stop when saving would, else your average), green under, red over, and what the lap will use at this rate. Judged by how your last clean lap used fuel round the lap, so a straight does not read as overspending
+
 ### Fixes
 - Private qualifying: Le Mans Ultimate's qualifying was always taken to be private, so open qualifying (everyone on track together) also lost the other cars on the relative, track map, radar, spotter, battle box and safety alert. The game does not say which it is, so the app now tells by the cars: in private qualifying the others are not really on track with you and pass straight through each other, which cars never do in open qualifying. Qualifying shows everyone until that is seen (a few times, on track, at the same point of the lap), then leaves the others off for the rest of the session. iRacing still goes by the session: Lone Qualify private, Open Qualify open
 

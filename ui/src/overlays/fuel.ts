@@ -71,6 +71,16 @@ export const fuel: OverlayDef = {
     ...EXTRAS.map(([key, label, , on]) => ({ key: `show_${key}`, when: details, label, type: 'bool' as const, default: on, group: 'Extra details' })),
     { key: 'estDecimals', when: (v) => details(v) && !!v.show_estLaps, label: 'Estimated laps: decimals', type: 'number', default: 1, min: 0, max: 3, group: 'Extra details' },
     { key: 'showHistory', when: full, label: 'Per-lap history bars', type: 'bool', default: false, group: 'Extra details' },
+    {
+      key: 'showCoach',
+      label: 'Fuel save coach (this lap)',
+      type: 'bool',
+      default: true,
+      group: 'Save coach',
+      help: 'As you drive: how this lap stands against the fuel per lap you can use (to skip a stop when saving would, else your average). Green: under it; red: over. Judged by how your last clean lap used fuel round the lap, so straights and corners count as they should',
+    },
+    { key: 'coachTolerance', when: (v) => v.showCoach !== false, label: 'Counts as on target within', type: 'number', default: 0.02, min: 0, max: 0.5, step: 0.01, unit: 'L', group: 'Save coach' },
+    { key: 'coachProjected', when: (v) => v.showCoach !== false, label: 'What the lap will use at this rate', type: 'bool', default: true, group: 'Save coach' },
     { key: 'marginalLaps', label: 'Amber when the spare is under', type: 'number', default: 0.5, min: 0, max: 5, step: 0.1, unit: 'laps', group: 'Status', help: 'Fuel left at the finish, in laps, below which it shows as marginal' },
     { key: 'warnLaps', label: 'Outside races, red when fuel is under', type: 'number', default: 2, min: 0, max: 10, step: 0.5, unit: 'laps', group: 'Status', help: 'Practice and sessions without a set length' },
     { key: 'okColor', label: 'Makes the finish', type: 'color', default: '#3dd6f5', group: 'Colours' },
@@ -135,6 +145,16 @@ export const fuel: OverlayDef = {
     const raceStops = raceStat('RACE STOPS');
     show(raceRow, false);
     const atFinishC = h('span', 'fl-num fl-at');
+    // Save coach: this lap against the per lap you can use.
+    const coach = h('div', 'fl-coach');
+    const coachLabel = h('span', 'fl-label', 'THIS LAP');
+    const coachVal = h('span', 'fl-num fl-coach-val');
+    const coachMeter = h('div', 'fl-coach-meter');
+    const coachFill = h('div', 'fl-coach-fill');
+    coachMeter.append(coachFill, h('div', 'fl-coach-mid'));
+    const coachNote = h('span', 'fl-coach-note');
+    coach.append(coachLabel, coachVal, coachMeter, coachNote);
+    show(coach, false);
 
     /** The rows of figures: the average, laps to go and fuel at the finish, then the extras. */
     const detailRows = (withAtFinish: boolean) => {
@@ -168,7 +188,7 @@ export const fuel: OverlayDef = {
       show(atFinishC, s.show_atFinish !== false);
       // Fuel at the finish is already on the line.
       if (s.compactDetails) root.append(...detailRows(false));
-      root.append(raceRow);
+      root.append(coach, raceRow);
     } else {
       const top = h('div', 'fl-top');
       pill = h('span', 'fl-pill');
@@ -180,7 +200,7 @@ export const fuel: OverlayDef = {
       show(tank.el, s.show_level !== false);
       const [row, more] = detailRows(true);
       show(hist, !!s.showHistory);
-      root.append(top, main, bar, row, more, raceRow, hist);
+      root.append(top, main, bar, coach, row, more, raceRow, hist);
     }
 
     const vol = (l: number | null | undefined, d = dec) => (l == null ? '–' : `${f.fuel(l, u()).toFixed(d)} ${f.fuelUnit(u())}`);
@@ -234,6 +254,23 @@ export const fuel: OverlayDef = {
           show(finish, line != null);
           // On a segment boundary: the gaps between segments count too.
           if (line != null) finish.style.left = `calc((100% + var(--fl-gap)) * ${(line / nSeg).toFixed(4)} - var(--fl-gap) / 2)`;
+        }
+
+        // Save coach: green under the per lap you can use, red over it.
+        const c = s.showCoach !== false ? d.coach : null;
+        show(coach, !!c);
+        if (c) {
+          const tol = s.coachTolerance as number;
+          const tone = c.delta >= -tol ? (c.delta > tol ? 'under' : 'even') : 'over';
+          coach.dataset.tone = tone;
+          text(coachVal, signed(c.delta, true));
+          // A tenth of a lap's fuel either way fills the meter.
+          const span = Math.max(0.05, c.perLap * 0.1);
+          const p = Math.max(-1, Math.min(1, c.delta / span));
+          coachFill.style.left = p >= 0 ? '50%' : `${50 + p * 50}%`;
+          coachFill.style.width = `${Math.abs(p) * 50}%`;
+          const against = c.against === 'save' ? 'save target' : 'average';
+          text(coachNote, s.coachProjected !== false && c.projected != null ? `→ ${vol(c.projected, 2)} vs ${vol(c.perLap, 2)} ${against}` : `vs ${vol(c.perLap, 2)} ${against}`);
         }
 
         const r = s.show_race !== false ? d.race : null;

@@ -303,6 +303,10 @@ export interface Fuel {
     startFuel: number | null;
     from: 'session' | 'settings';
   } | null;
+  /** This lap against the fuel per lap you can use: "save" (the per lap that makes the finish
+   *  on fewer stops) or "average"; what this point of the lap should have used and what it
+   *  has (delta = expected - used, above 0 under it), and the lap if the rest goes the same. */
+  coach: { against: 'save' | 'average'; perLap: number; used: number; expected: number; delta: number; projected: number | null } | null;
 }
 
 export interface BattleCar extends Driver {
@@ -600,6 +604,8 @@ export interface Config {
   layoutGame?: string;
   gameSets?: Record<string, { overlays: OverlayInstance[]; layouts: SavedLayout[]; activeLayout: string }>;
   fuel: { avgLaps: number; marginLaps: number; includeCautionLaps: boolean; includePitLaps: boolean; anyLaps: boolean; raceMinutes: number; raceLaps: number };
+  /** Pit rejoin: your stop (0 = from the stops seen) and the pit lane time until measured. */
+  pitRejoin?: { stopSeconds: number; laneSeconds: number };
   tyres: { wetThreshold: number; dryThreshold: number; useField: boolean; useCrossover: boolean; crossoverMargin: number };
   battle: { maxGap: number };
   leagues: League[];
@@ -937,7 +943,50 @@ export interface ScreenMonitor {
   primary: boolean;
 }
 
+/** A car you would come out near after a stop. */
+export interface RejoinCar {
+  idx: number;
+  number: string;
+  name: string;
+  classColor: string;
+  sameClass: boolean;
+  /** Seconds from you on track after the stop (ahead positive). */
+  gap: number;
+  /** Laps ahead (+1) or behind (-1) of you in the race. */
+  laps: number;
+}
+
+/** Where you would rejoin if you pitted now. */
+export interface PitRejoin {
+  ready: boolean;
+  inPits: boolean;
+  race: boolean;
+  loss: number;
+  lane: number;
+  /** Stops the pit lane time was measured from (0: the time set in the settings). */
+  laneMeasured: number;
+  stop: number;
+  stopFrom: 'set' | 'you' | 'class' | 'none';
+  /** [now, after]. */
+  position: [number, number] | null;
+  classPosition: [number, number] | null;
+  ahead: RejoinCar | null;
+  behind: RejoinCar | null;
+  ghostPct: number | null;
+}
+
+/** Your last lap, corner by corner (each corner with the straight after it). */
+export interface CornerTimes {
+  lapTime: number | null;
+  valid: boolean;
+  by: 'corners' | 'sectors' | 'lap' | '';
+  segments: { number: number; last: number; name: string }[];
+  vs: { source: 'session' | 'allTime'; lapTime: number; delta: number; deltas: number[] }[];
+}
+
 export interface TopicMap {
+  pitrejoin: PitRejoin;
+  cornertimes: CornerTimes;
   monitors: ScreenMonitor[];
   laptimes: LapTimes;
   energy: Energy;

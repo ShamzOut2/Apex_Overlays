@@ -127,6 +127,9 @@ pub struct CarHist {
     still_pct: f32,
     still_at: f64,
     still_counted: Option<f64>,
+    /// On pit road (and in the world) last tick, and where and when the car drove onto it.
+    lane_on: bool,
+    lane_in: Option<(f64, f32)>,
 }
 
 /// Le Mans Ultimate: cars closer than this (metres, centre to centre) are in each other.
@@ -1133,6 +1136,10 @@ impl Engine {
         let checkered_at = self.checkered_at;
         // The player's own fuel in litres where the game only tells it for the player (iRacing).
         let player = usize::try_from(self.tel.player_idx).ok();
+        // Each car's lap time, to work out what a pass through the pit lane cost it.
+        let refs: Vec<f32> = (0..MAX_CARS).map(|i| self.ref_lap(i)).collect();
+        let lap_m = self.info.track_length_km.max(0.5) * 1000.0;
+        let mut lane_losses: Vec<f32> = vec![];
         let my_fuel = (self.tel.fuel_level > 0.0).then_some(self.tel.fuel_level);
         for i in 0..MAX_CARS {
             let c = &self.tel.cars[i];
@@ -1144,12 +1151,32 @@ impl Engine {
                 None => None,
             };
             h.track_fuel(fuel, c.on_pit_road && c.in_world());
-            if !(c.on_pit_road && c.in_world()) {
-                if let Some(p) = h.end_pit_stop() {
+            let on_pit = c.on_pit_road && c.in_world();
+            // Drove onto pit road (at speed, not starting in its box or towed there).
+            if on_pit && !h.lane_on && h.seen && h.speed > 5.0 {
+                h.lane_in = Some((now, c.pct));
+            }
+            if !on_pit {
+                let stop = h.end_pit_stop();
+                if let Some(p) = stop {
                     let number = self.statics[i].as_ref().map_or("?", |s| s.number.as_str());
                     log::info!("pit: car #{number} stood {:.1} s in its box ({:.1} s serving a penalty)", p.service + p.penalty, p.penalty);
                 }
+                // Drove off pit road: the time the lane cost (over the same stretch at the car's
+                // pace), the stop itself left out.
+                if let Some((t0, p0)) = h.lane_in.take().filter(|_| h.lane_on && c.in_world()) {
+                    let frac = (c.pct - p0).rem_euclid(1.0);
+                    let lane = (now - t0) as f32;
+                    let stood = stop.map_or(0.0, |p| p.service + p.penalty);
+                    let loss = lane - stood - frac * refs[i];
+                    if frac * lap_m > 100.0 && frac < 0.4 && (5.0..400.0).contains(&lane) && (2.0..120.0).contains(&loss) {
+                        let number = self.statics[i].as_ref().map_or("?", |s| s.number.as_str());
+                        log::info!("pit lane: car #{number} lost {loss:.1} s driving through ({lane:.1} s on pit road, {stood:.1} s stood)");
+                        lane_losses.push(loss);
+                    }
+                }
             }
+            h.lane_on = on_pit;
             if !c.in_world() {
                 continue;
             }
@@ -1192,6 +1219,9 @@ impl Engine {
                     h.laps.pop_front();
                 }
             }
+        }
+        for v in lane_losses {
+            self.pit.add_lane_loss(v);
         }
     }
 

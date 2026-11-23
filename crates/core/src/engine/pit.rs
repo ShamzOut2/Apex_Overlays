@@ -22,6 +22,10 @@ const LIMITER: u32 = 0x10;
 pub struct Lines {
     entry: Vec<f32>,
     exit: Vec<f32>,
+    /// Time lost driving through the pit lane (seconds over the same stretch at racing
+    /// pace, the stop itself not counted), measured from cars' stops.
+    #[serde(default)]
+    lane: Vec<f32>,
 }
 
 fn median(v: &[f32]) -> Option<f32> {
@@ -88,6 +92,20 @@ impl PitTracker {
     /// Learned entry and exit lines (lap fractions).
     pub fn learned(&self) -> (Option<f32>, Option<f32>) {
         (median(&self.lines.entry), median(&self.lines.exit))
+    }
+
+    /// Time lost driving through the pit lane: the middle of the stops measured, and how many.
+    pub fn lane_loss(&self) -> Option<(f32, usize)> {
+        median(&self.lines.lane).map(|m| (m, self.lines.lane.len()))
+    }
+
+    /// One car's pass through the pit lane: seconds lost over the stretch, stop not counted.
+    pub fn add_lane_loss(&mut self, secs: f32) {
+        self.lines.lane.push(secs);
+        if self.lines.lane.len() > SAMPLES {
+            self.lines.lane.drain(..self.lines.lane.len() - SAMPLES);
+        }
+        self.save();
     }
 
     fn save(&mut self) {

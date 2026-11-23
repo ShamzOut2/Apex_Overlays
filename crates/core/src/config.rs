@@ -39,6 +39,8 @@ pub struct Config {
     pub hotkeys: Hotkeys,
     pub vr: VrConfig,
     pub fuel: FuelConfig,
+    /// The pit rejoin overlay's stop time and pit lane loss (until one is measured).
+    pub pit_rejoin: PitRejoinConfig,
     pub tyres: TyreConfig,
     pub battle: BattleConfig,
     pub leagues: Vec<League>,
@@ -151,6 +153,8 @@ pub fn catalogue() -> Vec<OverlayInstance> {
         OverlayInstance { enabled: false, ..o("radar", "radar", 1220, 420, 220, 260) },
         OverlayInstance { enabled: false, ..o("carsettings", "carsettings", 760, 770, 420, 72) },
         OverlayInstance { enabled: false, ..o("tyredata", "tyredata", 1200, 600, 470, 280) },
+        OverlayInstance { enabled: false, ..o("pitRejoin", "pitRejoin", 1540, 300, 300, 150) },
+        OverlayInstance { enabled: false, ..o("cornerTimes", "cornerTimes", 560, 880, 800, 70) },
         o("spotter", "spotter", 850, 520, 220, 200),
         o("pit", "pit", 845, 300, 230, 200),
         o("safety", "safety", 760, 160, 400, 230),
@@ -178,6 +182,7 @@ impl Default for Config {
             hotkeys: Hotkeys::default(),
             vr: VrConfig::default(),
             fuel: FuelConfig::default(),
+            pit_rejoin: PitRejoinConfig::default(),
             tyres: TyreConfig::default(),
             battle: BattleConfig::default(),
             leagues: vec![],
@@ -378,6 +383,21 @@ pub struct FuelConfig {
 impl Default for FuelConfig {
     fn default() -> Self {
         Self { avg_laps: 5, margin_laps: 1.0, include_caution_laps: false, include_pit_laps: false, any_laps: false, race_minutes: 0.0, race_laps: 0 }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct PitRejoinConfig {
+    /// Seconds stood in the box at your stop; 0 = from the stops seen (yours, else your class's).
+    pub stop_seconds: f32,
+    /// Seconds the pit lane costs until it has been measured from cars driving through it.
+    pub lane_seconds: f32,
+}
+
+impl Default for PitRejoinConfig {
+    fn default() -> Self {
+        Self { stop_seconds: 0.0, lane_seconds: 25.0 }
     }
 }
 
@@ -748,7 +768,21 @@ impl Config {
     /// they appear in the overlay list and the hotkeys straight away.
     pub fn add_new_kinds(&mut self) {
         let defaults = catalogue();
-        for kind in ["safety", "delta", "inputGraph", "startLights", "forecast", "laptimes", "energy", "radar", "carsettings", "tyredata", "shiftlights"] {
+        for kind in [
+            "safety",
+            "delta",
+            "inputGraph",
+            "startLights",
+            "forecast",
+            "laptimes",
+            "energy",
+            "radar",
+            "carsettings",
+            "tyredata",
+            "shiftlights",
+            "pitRejoin",
+            "cornerTimes",
+        ] {
             if self.known_kinds.iter().any(|k| k == kind) {
                 continue;
             }
@@ -1130,10 +1164,12 @@ mod tests {
                 ("radar", "radar", false),
                 ("carsettings", "carsettings", false),
                 ("tyredata", "tyredata", false),
-                ("shiftlights", "shiftlights", false)
+                ("shiftlights", "shiftlights", false),
+                ("pitRejoin", "pitRejoin", false),
+                ("cornerTimes", "cornerTimes", false)
             ]
         );
         c.add_new_kinds();
-        assert_eq!(c.overlays.len(), 12);
+        assert_eq!(c.overlays.len(), 14);
     }
 }
