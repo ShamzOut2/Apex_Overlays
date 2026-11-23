@@ -1151,6 +1151,7 @@ impl Engine {
                 None => None,
             };
             h.track_fuel(fuel, c.on_pit_road && c.in_world());
+            let pace = refs[i];
             let on_pit = c.on_pit_road && c.in_world();
             // Drove onto pit road (at speed, not starting in its box or towed there).
             if on_pit && !h.lane_on && h.seen && h.speed > 5.0 {
@@ -1168,7 +1169,7 @@ impl Engine {
                     let frac = (c.pct - p0).rem_euclid(1.0);
                     let lane = (now - t0) as f32;
                     let stood = stop.map_or(0.0, |p| p.service + p.penalty);
-                    let loss = lane - stood - frac * refs[i];
+                    let loss = lane - stood - frac * pace;
                     if frac * lap_m > 100.0 && frac < 0.4 && (5.0..400.0).contains(&lane) && (2.0..120.0).contains(&loss) {
                         let number = self.statics[i].as_ref().map_or("?", |s| s.number.as_str());
                         log::info!("pit lane: car #{number} lost {loss:.1} s driving through ({lane:.1} s on pit road, {stood:.1} s stood)");

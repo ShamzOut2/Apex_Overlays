@@ -10,6 +10,9 @@ use std::path::PathBuf;
 /// How long after the line to wait for iRacing's official lap time.
 const SETTLE: f64 = 1.0;
 
+/// A finished lap's samples, when it finished, and whether it was clean.
+type Pending = (Vec<(f32, f32)>, f64, bool);
+
 #[derive(Default)]
 pub struct LapRecorder {
     dir: Option<PathBuf>,
@@ -23,7 +26,7 @@ pub struct LapRecorder {
     samples: Vec<(f32, f32)>,
     valid: bool,
     /// A finished lap waiting for its official time, when it finished, and whether it was clean.
-    pending: Option<(Vec<(f32, f32)>, f64, bool)>,
+    pending: Option<Pending>,
     pub session: Option<Reference>,
     pub all_time: Option<Reference>,
     /// Bumped whenever a reference changes, so the topic is only re-sent then.
