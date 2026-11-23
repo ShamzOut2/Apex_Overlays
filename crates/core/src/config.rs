@@ -393,11 +393,16 @@ pub struct PitRejoinConfig {
     pub stop_seconds: f32,
     /// Seconds the pit lane costs until it has been measured from cars driving through it.
     pub lane_seconds: f32,
+    /// Opt-in: send your measured stops (car, tyres, litres and seconds only) to the shared
+    /// pool, so others get stop times for cars they have not stopped in yet.
+    pub share: bool,
+    /// Use the shared pool's stop times for cars you have not stopped in yet.
+    pub use_shared: bool,
 }
 
 impl Default for PitRejoinConfig {
     fn default() -> Self {
-        Self { stop_seconds: 0.0, lane_seconds: 25.0 }
+        Self { stop_seconds: 0.0, lane_seconds: 25.0, share: false, use_shared: true }
     }
 }
 

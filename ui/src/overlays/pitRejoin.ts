@@ -15,7 +15,10 @@ const SAMPLE: PitRejoin = {
   lane: 24.1,
   laneMeasured: 6,
   stop: 28.3,
-  stopFrom: 'you',
+  stopFrom: 'plan',
+  plan: { fuelL: 62.0, fuelSecs: 24.8, tyres: 4, tyreSecs: 21.5, parallel: true, base: 3.5, stood: 28.3 },
+  planFrom: 'you',
+  repair: 0,
   position: [5, 9],
   classPosition: [3, 6],
   ahead: { idx: 12, number: '12', name: 'Hartmann, L', classColor: '#ffda59', sameClass: true, gap: 1.4, laps: 0 },
@@ -23,7 +26,7 @@ const SAMPLE: PitRejoin = {
   ghostPct: 0.42,
 };
 
-const FROM: Record<PitRejoin['stopFrom'], string> = { set: 'set', you: 'your last', class: 'class', none: 'no stop seen' };
+const FROM: Record<PitRejoin['stopFrom'], string> = { plan: 'black box', set: 'set', you: 'your last', class: 'class', none: 'no stop seen' };
 
 export const pitRejoin: OverlayDef = {
   kind: 'pitRejoin',
@@ -45,7 +48,7 @@ export const pitRejoin: OverlayDef = {
       step: 0.5,
       unit: 's',
       group: 'The stop',
-      help: '0: worked out from the stops seen: your last one, else the middle of your class’s',
+      help: '0: what your black box is set to do (fuel and tyres), timed from your stops in this car (or shared ones); else your last stop, else the middle of your class’s',
     },
     {
       key: 'laneSeconds',
@@ -75,6 +78,8 @@ export const pitRejoin: OverlayDef = {
     { key: 'showCars', label: 'The cars you would come out between', type: 'bool', default: true, group: 'What to show' },
     { key: 'showLoss', label: 'What the stop costs', type: 'bool', default: true, group: 'What to show' },
     { key: 'raceOnly', label: 'Only in races', type: 'bool', default: false, group: 'Behaviour' },
+    { key: 'share', shared: 'pitRejoin.share', label: 'Share your stop times', type: 'bool', default: false, group: 'Shared stop times', help: 'Opt-in. Each stop you make (iRacing) is sent as six numbers: the car, tyres changed, litres added, how long the fuel took, when it started, and how long you stood. Nothing about you, your session or your track: no name, iRacing ID, key or install ID. It lets others time a stop in a car before they have stopped in it. Also under General → Racing data' },
+    { key: 'useShared', shared: 'pitRejoin.useShared', label: 'Use shared stop times', type: 'bool', default: true, group: 'Shared stop times', help: 'Stop times from other drivers’ shared stops, for a car you have not stopped in yet (your own stops always come first). Only the car’s ID is sent to get them' },
   ],
   create(root, ctx) {
     const s = ctx.settings;
@@ -135,10 +140,15 @@ export const pitRejoin: OverlayDef = {
         fill(behind, d.behind);
       }
       text(loss, `Stop costs ${d.loss.toFixed(1)} s`);
-      text(
-        note,
-        `lane ${d.lane.toFixed(1)} s ${d.laneMeasured ? `(${d.laneMeasured} measured)` : '(set)'} + stop ${d.stop.toFixed(1)} s (${FROM[d.stopFrom]})`,
-      );
+      const lane = `lane ${d.lane.toFixed(1)} s ${d.laneMeasured ? `(${d.laneMeasured} measured)` : '(set)'}`;
+      const p = d.stopFrom === 'plan' ? d.plan : null;
+      const parts = p
+        ? [
+            p.fuelL > 0 ? `${p.fuelL.toFixed(1)} L ${p.fuelSecs.toFixed(1)} s` : 'no fuel',
+            p.tyres > 0 ? `${p.tyres} tyre${p.tyres > 1 ? 's' : ''} ${p.tyreSecs.toFixed(1)} s` : 'no tyres',
+          ].join(p.parallel ? ' ‖ ' : ' + ') + (d.repair > 0 ? ` + repairs ${d.repair.toFixed(0)} s` : '') + ` (${d.planFrom === 'community' ? 'shared stops' : 'your stops'})`
+        : `stop ${d.stop.toFixed(1)} s (${FROM[d.stopFrom]})`;
+      text(note, `${lane} + ${p ? `stop ${d.stop.toFixed(1)} s: ` : ''}${parts}`);
       show(note, s.showLoss !== false);
     };
     draw();

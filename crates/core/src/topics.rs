@@ -2059,8 +2059,15 @@ pub struct PitRejoinOut {
     /// Stops the lane time was measured from (0: the time set in the settings).
     pub lane_measured: usize,
     pub stop: f32,
-    /// "set" (the settings), "you" (your last stop), "class" (your class's stops), "none".
+    /// "plan" (what you set in the black box, timed from the car's measured stops), "set"
+    /// (the settings), "you" (your last stop), "class" (your class's stops), "none".
     pub stop_from: &'static str,
+    /// The black box stop worked out: fuel and tyres and how long each takes.
+    pub plan: Option<crate::engine::pitservice::StopPlan>,
+    /// Where the timings come from: "you" (your stops in this car) or "community" (shared).
+    pub plan_from: Option<&'static str>,
+    /// Mandatory repairs still to do (s), included in the stop.
+    pub repair: f32,
     /// [now, after], in the race.
     pub position: Option<[i32; 2]>,
     pub class_position: Option<[i32; 2]>,
@@ -2094,8 +2101,17 @@ pub fn pit_rejoin(e: &Engine) -> PitRejoinOut {
     let (lane, lane_measured) = e.pit.lane_loss().unwrap_or((cfg.lane_seconds, 0));
     // The stop: as set, else your last one, else the middle of your class's.
     let served = |i: usize| e.hist[i].pit_last.map(|p| p.service).filter(|s| *s >= 3.0);
+    // Your own car in iRacing: what the black box is set to do, timed per car.
+    let player = usize::try_from(e.tel.player_idx).ok() == Some(me) && matches!(e.source, "iracing" | "mock");
+    let plan = player.then(|| e.pit_service.model(my.car_id)).flatten().and_then(|(m, from)| {
+        let (fuel, tyres) = crate::engine::pitservice::planned(&e.tel, e.info.fuel_capacity());
+        m.predict(fuel, tyres).map(|p| (p, from))
+    });
+    let repair = if player { e.tel.pit_repair_left.max(0.0) } else { 0.0 };
     let (stop, stop_from) = if cfg.stop_seconds > 0.0 {
         (cfg.stop_seconds, "set")
+    } else if let Some((p, _)) = plan {
+        (p.stood + repair, "plan")
     } else if let Some(s) = served(me) {
         (s, "you")
     } else {
@@ -2122,6 +2138,16 @@ pub fn pit_rejoin(e: &Engine) -> PitRejoinOut {
         lane_measured,
         stop: round(stop, 1),
         stop_from,
+        plan: plan.map(|(p, _)| crate::engine::pitservice::StopPlan {
+            fuel_l: round(p.fuel_l, 1),
+            fuel_secs: round(p.fuel_secs, 1),
+            tyre_secs: round(p.tyre_secs, 1),
+            base: round(p.base, 1),
+            stood: round(p.stood, 1),
+            ..p
+        }),
+        plan_from: plan.map(|(_, f)| f),
+        repair: round(repair, 1),
         ..Default::default()
     };
     let others: Vec<usize> =

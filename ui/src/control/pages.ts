@@ -2002,8 +2002,12 @@ const generalPage: Page = {
       trayOnPitExit: cfg.trayOnPitExit ?? true,
       lmuPrivateQualifying: cfg.lmuPrivateQualifying ?? true,
       uiAnimations: cfg.uiAnimations ?? true,
+      pitShare: cfg.pitRejoin?.share ?? false,
+      pitUseShared: cfg.pitRejoin?.useShared ?? true,
     };
     const SCHEMA: SettingDef[] = [
+            { key: 'pitShare', label: 'Share your stop times', type: 'bool', default: false, group: 'Display', help: 'Opt-in. Each stop you make (iRacing) is sent as six numbers: the car, tyres changed, litres added, how long the fuel took, when it started, and how long you stood. Nothing about you, your session or your track: no name, iRacing ID, key or install ID. It lets others time a stop in a car before they have stopped in it' },
+            { key: 'pitUseShared', label: 'Use shared stop times', type: 'bool', default: true, group: 'Display', help: 'Stop times from other drivers’ shared stops, for a car you have not stopped in yet (your own stops always come first). Only the car’s ID is sent to get them' },
             { key: 'units', label: 'Units', type: 'select', default: 'auto', options: [['auto', 'Same as the game'], ['metric', 'Metric'], ['imperial', 'Imperial']], group: 'Display' },
             {
               key: 'ratingsOfficialOnly',
@@ -2091,6 +2095,11 @@ const generalPage: Page = {
         document.body.classList.toggle('no-motion', v === false);
       }
       if (k === 'lmuPrivateQualifying') cfg.lmuPrivateQualifying = v as boolean;
+      if (k === 'pitShare' || k === 'pitUseShared') {
+        cfg.pitRejoin ??= { stopSeconds: 0, laneSeconds: 25, share: false, useShared: true };
+        if (k === 'pitShare') cfg.pitRejoin.share = v as boolean;
+        else cfg.pitRejoin.useShared = v as boolean;
+      }
       save();
       if (TWICE.has(k)) rerender();
       else refresh();
@@ -2347,6 +2356,7 @@ const generalPage: Page = {
       master: masterSwitch(() => opts.lmuPrivateQualifying, (v) => (opts.lmuPrivateQualifying = cfg.lmuPrivateQualifying = v), true, pqDef.help ?? ''),
       fold: false,
     });
+    section('Racing data', 'pitdata', 'Pit stop times', [settingRow('pitShare'), settingRow('pitUseShared')]);
     section('Racing data', 'game', 'Game', [gameRow()], cardBody(gameCard(), (x) => x.classList.contains('form')));
     section('Racing data', 'corners', 'Track map & corners', [], cardBody(cornersCard(rerender)));
 

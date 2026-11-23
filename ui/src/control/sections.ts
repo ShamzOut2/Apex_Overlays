@@ -55,7 +55,7 @@ const ESSENTIALS: Record<string, string[]> = {
   inputGraph: ['traceSeconds', 'traceSteering', 'showClutch', 'traceGrid'],
   laptimes: ['laps', 'showSectors', 'showDelta', 'showFooter'],
   fuel: ['mode', 'show_atFinish', 'show_race', 'show_fuelToAdd', 'showCoach', 'showHistory', 'avgLaps'],
-  pitRejoin: ['stopSeconds', 'laneSeconds', 'positions', 'showCars', 'showLoss'],
+  pitRejoin: ['stopSeconds', 'laneSeconds', 'positions', 'showCars', 'showLoss', 'share'],
   cornerTimes: ['reference', 'show', 'count', 'label', 'layout'],
   energy: ['showBar', 'showBattery', 'showPlan', 'hideWithout'],
   battle: ['mode', 'showAhead', 'showBehind', 'showGapBar', 'onlyInBattle'],

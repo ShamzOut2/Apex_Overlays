@@ -263,6 +263,10 @@ pub struct Telemetry {
     /// Mandatory and optional repair time left (s).
     pub pit_repair_left: f32,
     pub pit_opt_repair_left: f32,
+    /// Your pit stop as set in the black box: irsdk_PitSvFlags (0x01-0x08 the tyres LF, RF, LR,
+    /// RR; 0x10 fuel; 0x20 tear-off; 0x40 fast repair) and the fuel to add (litres).
+    pub pit_sv_flags: u32,
+    pub pit_sv_fuel: f32,
     /// Camera group and camera in use (for replays).
     pub cam_group: i32,
     pub cam_camera: i32,
@@ -339,6 +343,8 @@ impl Default for Telemetry {
             pit_sv_status: 0,
             pit_repair_left: 0.0,
             pit_opt_repair_left: 0.0,
+            pit_sv_flags: 0,
+            pit_sv_fuel: 0.0,
             cam_group: 0,
             cam_camera: 0,
             cars: vec![CarTel { surface: surface::NOT_IN_WORLD, pct: -1.0, ..Default::default() }; MAX_CARS],

@@ -19,6 +19,7 @@ pub mod market;
 pub mod model;
 pub mod monitor;
 pub mod net;
+pub mod pitshare;
 pub mod safety;
 pub mod server;
 pub mod source;
@@ -124,6 +125,11 @@ pub fn start(opts: Options) -> std::io::Result<App> {
     if !opts.mock {
         source::lmu::extras::spawn(hub.clone(), opts.data_dir.clone(), lmu_track.clone());
     }
+    // The shared pool of pit stop times (sending only with the opt-in on).
+    let pit_link = Arc::new(Mutex::new(pitshare::Link::default()));
+    if !opts.mock {
+        pitshare::spawn(config.clone(), opts.data_dir.clone(), pit_link.clone());
+    }
     let mut source: Box<dyn Source> = if opts.mock { Box::new(source::mock::Mock::new()) } else { Box::new(source::games::Games::new()) };
     source.set_game(&config.read(|c| c.game.clone()));
     *hub.source.lock().unwrap() = source.active();
@@ -131,7 +137,9 @@ pub fn start(opts: Options) -> std::io::Result<App> {
     hub.publish("update", &serde_json::json!({ "status": "unsupported", "current": env!("CARGO_PKG_VERSION") }).to_string());
     let (h, c, d) = (hub.clone(), config.clone(), opts.data_dir.clone());
     let mock = opts.mock;
-    std::thread::Builder::new().name("telemetry".into()).spawn(move || run(source, h, c, combo, track, lmu_track, wanted, wanted_cars, cmd_rx, d, mock))?;
+    std::thread::Builder::new()
+        .name("telemetry".into())
+        .spawn(move || run(source, h, c, combo, track, lmu_track, wanted, wanted_cars, cmd_rx, d, mock, pit_link))?;
 
     Ok(App { hub, config, addr, data_dir: opts.data_dir })
 }
@@ -149,6 +157,7 @@ fn run(
     cmds: mpsc::Receiver<Command>,
     data_dir: PathBuf,
     mock: bool,
+    pit_link: Arc<Mutex<pitshare::Link>>,
 ) {
     log::info!("overlays: {}", config.read(|c| c.overlay_summary()));
     // Now and then, a line saying what the app is doing, so a log shows it was running.
@@ -170,6 +179,29 @@ fn run(
             let cfg = config.get();
             source.set_game(&cfg.game);
             e.set_config(cfg);
+        }
+        // Pit stop times: your measured stops out (with sharing on), the pool's in.
+        {
+            let shared = &e.cfg.pit_rejoin;
+            let (share, use_shared) = (shared.share, shared.use_shared);
+            let car = usize::try_from(e.tel.player_idx).ok().filter(|_| e.source == "iracing").and_then(|i| e.static_of(i)).map_or(0, |s| s.car_id);
+            let mut l = pit_link.lock().unwrap();
+            l.car_id = car;
+            if share {
+                l.outbox.append(&mut e.pit_service.outbox);
+                let n = l.outbox.len();
+                if n > 100 {
+                    l.outbox.drain(..n - 100);
+                }
+            } else {
+                e.pit_service.outbox.clear();
+            }
+            for (c, m) in l.inbox.drain(..) {
+                e.pit_service.community.insert(c, m);
+            }
+            if !use_shared {
+                e.pit_service.community.clear();
+            }
         }
         while let Ok(cmd) = cmds.try_recv() {
             match cmd {

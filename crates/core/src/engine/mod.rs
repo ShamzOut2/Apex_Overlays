@@ -5,6 +5,7 @@ pub mod fuel;
 pub mod incidents;
 pub mod laps;
 pub mod pit;
+pub mod pitservice;
 pub mod radar;
 pub mod ratings;
 pub mod sectors;
@@ -296,6 +297,8 @@ pub struct Engine {
     pub sectors: sectors::SectorTracker,
     pub incidents: incidents::IncidentTracker,
     pub pit: pit::PitTracker,
+    /// How long your stops take for fuel and tyres, learned per car.
+    pub pit_service: pitservice::PitService,
     /// The player's pit lane state this tick.
     pub pit_out: pit::PitOut,
     /// Corners of the current track (custom > downloaded > source-provided).
@@ -350,6 +353,7 @@ impl Engine {
             laps: laps::LapRecorder::new(data_dir.as_ref().map(|d| d.join("laps"))),
             incidents: Default::default(),
             pit: pit::PitTracker::new(data_dir.as_ref().map(|d| d.join("pit-lines.json"))),
+            pit_service: pitservice::PitService::new(data_dir.as_ref().map(|d| d.join("pit-service.json"))),
             pit_out: Default::default(),
             grid: vec![],
             grid_dir: data_dir.map(|d| d.join("grids")),
@@ -974,6 +978,13 @@ impl Engine {
         self.sectors.update(&self.tel, &self.info.sectors);
         self.incidents.update(&self.tel, &self.info);
         self.pit.update(&self.tel, self.info.track_id);
+        // iRacing's black box (and the simulator's, to try it).
+        if matches!(self.source, "iracing" | "mock") && self.tel.driving() {
+            let me = usize::try_from(self.tel.player_idx).ok();
+            let car_id = me.and_then(|i| self.static_of(i)).map_or(0, |s| s.car_id);
+            let black = me.is_some_and(|i| self.tel.cars[i].session_flags & flags::BLACK != 0);
+            self.pit_service.update(&self.tel, car_id, black);
+        }
         let (entry, exit) = self.pit_lines();
         self.pit_out = self.pit.player(&self.tel, entry, exit, self.info.track_length_km * 1000.0, self.info.pit_speed_limit_kph);
         battle::update(self);

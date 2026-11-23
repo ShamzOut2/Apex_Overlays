@@ -605,7 +605,7 @@ export interface Config {
   gameSets?: Record<string, { overlays: OverlayInstance[]; layouts: SavedLayout[]; activeLayout: string }>;
   fuel: { avgLaps: number; marginLaps: number; includeCautionLaps: boolean; includePitLaps: boolean; anyLaps: boolean; raceMinutes: number; raceLaps: number };
   /** Pit rejoin: your stop (0 = from the stops seen) and the pit lane time until measured. */
-  pitRejoin?: { stopSeconds: number; laneSeconds: number };
+  pitRejoin?: { stopSeconds: number; laneSeconds: number; share: boolean; useShared: boolean };
   tyres: { wetThreshold: number; dryThreshold: number; useField: boolean; useCrossover: boolean; crossoverMargin: number };
   battle: { maxGap: number };
   leagues: League[];
@@ -966,7 +966,13 @@ export interface PitRejoin {
   /** Stops the pit lane time was measured from (0: the time set in the settings). */
   laneMeasured: number;
   stop: number;
-  stopFrom: 'set' | 'you' | 'class' | 'none';
+  stopFrom: 'plan' | 'set' | 'you' | 'class' | 'none';
+  /** The stop set in the black box, timed from the car's measured stops. */
+  plan: { fuelL: number; fuelSecs: number; tyres: number; tyreSecs: number; parallel: boolean; base: number; stood: number } | null;
+  /** "you": your own stops in this car; "community": shared stops. */
+  planFrom: 'you' | 'community' | null;
+  /** Mandatory repairs left (s), included in the stop. */
+  repair: number;
   /** [now, after]. */
   position: [number, number] | null;
   classPosition: [number, number] | null;

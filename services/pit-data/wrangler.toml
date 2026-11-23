@@ -1,0 +1,9 @@
+name = "apex-pit-data"
+main = "worker.js"
+compatibility_date = "2025-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "apex-pit-data"
+# Set by `wrangler d1 create apex-pit-data` (see README.md).
+database_id = "REPLACE_WITH_DATABASE_ID"
