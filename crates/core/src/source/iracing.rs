@@ -34,7 +34,8 @@ vars! {
     fog = "FogLevel", skies = "Skies", air_pressure = "AirPressure", display_units = "DisplayUnits", car_left_right = "CarLeftRight",
     engine_warnings = "EngineWarnings", in_pit_stall = "PlayerCarInPitStall", pitstop_active = "PitstopActive",
     pit_sv_status = "PlayerCarPitSvStatus", pit_repair_left = "PitRepairLeft", pit_opt_repair_left = "PitOptRepairLeft",
-    pit_sv_flags = "PitSvFlags", pit_sv_fuel = "PitSvFuel",
+    pit_sv_flags = "PitSvFlags", pit_sv_fuel = "PitSvFuel", pit_sv_lfp = "PitSvLFP", pit_sv_rfp = "PitSvRFP",
+    pit_sv_lrp = "PitSvLRP", pit_sv_rrp = "PitSvRRP", pit_sv_compound = "PitSvTireCompound", fast_repairs_used = "PlayerFastRepairsUsed",
     cam_group = "CamGroupNumber", cam_camera = "CamCameraNumber",
     car_lap = "CarIdxLap", car_lap_completed = "CarIdxLapCompleted", car_pct = "CarIdxLapDistPct",
     car_est = "CarIdxEstTime", car_f2 = "CarIdxF2Time", car_pos = "CarIdxPosition", car_class_pos = "CarIdxClassPosition",
@@ -161,6 +162,9 @@ pub fn fill(v: &Vars, r: Row, t: &mut Telemetry) {
     t.pit_repair_left = r.f32(v.pit_repair_left);
     t.pit_sv_flags = r.u32(v.pit_sv_flags);
     t.pit_sv_fuel = r.f32(v.pit_sv_fuel);
+    t.pit_sv_pressures = [r.f32(v.pit_sv_lfp), r.f32(v.pit_sv_rfp), r.f32(v.pit_sv_lrp), r.f32(v.pit_sv_rrp)];
+    t.pit_sv_compound = r.i32(v.pit_sv_compound);
+    t.fast_repairs_used = r.i32(v.fast_repairs_used);
     t.pit_opt_repair_left = r.f32(v.pit_opt_repair_left);
     t.cam_group = r.i32(v.cam_group);
     t.cam_camera = r.i32(v.cam_camera);

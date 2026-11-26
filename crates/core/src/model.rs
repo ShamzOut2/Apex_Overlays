@@ -267,6 +267,11 @@ pub struct Telemetry {
     /// RR; 0x10 fuel; 0x20 tear-off; 0x40 fast repair) and the fuel to add (litres).
     pub pit_sv_flags: u32,
     pub pit_sv_fuel: f32,
+    /// Tyre pressures set for the stop (kPa; LF, RF, LR, RR), the compound to fit, and the
+    /// fast repairs you have used.
+    pub pit_sv_pressures: [f32; 4],
+    pub pit_sv_compound: i32,
+    pub fast_repairs_used: i32,
     /// Camera group and camera in use (for replays).
     pub cam_group: i32,
     pub cam_camera: i32,
@@ -345,6 +350,9 @@ impl Default for Telemetry {
             pit_opt_repair_left: 0.0,
             pit_sv_flags: 0,
             pit_sv_fuel: 0.0,
+            pit_sv_pressures: [0.0; 4],
+            pit_sv_compound: -1,
+            fast_repairs_used: 0,
             cam_group: 0,
             cam_camera: 0,
             cars: vec![CarTel { surface: surface::NOT_IN_WORLD, pct: -1.0, ..Default::default() }; MAX_CARS],
@@ -469,6 +477,8 @@ pub struct SessionInfo {
     pub league_id: i64,
     pub event_type: String,
     pub incident_limit: Option<i32>,
+    /// Fast repairs allowed per driver: Some(n), Some(-1) unlimited, None not stated.
+    pub fast_repairs_limit: Option<i32>,
     /// The player's brake bias (front %) as the car's setup states it (iRacing's CarSetup,
     /// updated when it is changed from the wheel), where the setup lists one.
     pub setup_brake_bias: Option<f32>,
@@ -623,6 +633,10 @@ impl SessionInfo {
             league_id: wi.get("LeagueID").i64().unwrap_or(0),
             event_type: wi.get("EventType").string(),
             incident_limit: wi.path("WeekendOptions.IncidentLimit").i64().map(|v| v as i32),
+            fast_repairs_limit: {
+                let v = wi.path("WeekendOptions.FastRepairs");
+                v.i64().map(|n| n as i32).or_else(|| v.string().to_lowercase().contains("unlimited").then_some(-1))
+            },
             setup_brake_bias: setup_brake_bias(y.get("CarSetup")),
             incident_warning: wi.path("WeekendOptions.IncidentWarningInitialLimit").i64().map(|v| v as i32).filter(|v| *v > 0),
             incident_warning_every: wi.path("WeekendOptions.IncidentWarningSubsequentLimit").i64().map(|v| v as i32).filter(|v| *v > 0),
@@ -819,6 +833,14 @@ mod tests {
         assert_eq!(start_lights(flags::START_READY | flags::START_SET), "set");
         assert_eq!(start_lights(flags::START_SET | flags::START_GO), "go");
         assert_eq!(start_lights(flags::START_HIDDEN | flags::START_READY), "", "hidden (rolling start)");
+    }
+
+    #[test]
+    fn fast_repairs_limit() {
+        let y = |v: &str| SessionInfo::parse(&format!("WeekendInfo:\n WeekendOptions:\n  FastRepairs: {v}\n"));
+        assert_eq!(y("2").fast_repairs_limit, Some(2));
+        assert_eq!(y("unlimited").fast_repairs_limit, Some(-1));
+        assert_eq!(SessionInfo::parse("WeekendInfo:\n TrackID: 1\n").fast_repairs_limit, None);
     }
 
     #[test]

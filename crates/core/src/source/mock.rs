@@ -683,8 +683,9 @@ impl Mock {
             t.on_pit_road || self.time < self.limiter_until.get() || matches!(me.pit, Pit::Requested) && (PIT_ENTRY - 0.003..PIT_ENTRY).contains(&pct);
         t.engine_warnings = if limiter { 0x10 } else { 0 };
         t.in_pit_stall = matches!(me.pit, Pit::Stopped(_));
-        // The black box: fill up, no tyres.
-        t.pit_sv_flags = 0x10;
+        // The black box: fill up and a tear-off, no tyres.
+        t.pit_sv_flags = 0x30;
+        t.fast_repairs_used = 0;
         t.pit_sv_fuel = CLASSES[me.class].4 as f32;
         t.pitstop_active = matches!(me.pit, Pit::Stopped(until) if self.time < until - 0.5);
         t.pit_sv_status = match me.pit {
