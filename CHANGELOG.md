@@ -4,7 +4,7 @@ The section for each version is shown in the in-app update pop-up and on the Git
 Each version groups its changes under `### New features`, `### Improvements` and `### Fixes`
 (plus `### Performance` or `### Removed` when needed).
 
-## Unreleased
+## 1.5.7
 
 ### New features
 - Pit strategy (new overlay, iRacing): your next stop as set in the black box. Fuel to add (and the tank after it; what fits when you ask for more), the four tyres, lit when ticked (LF, RF, LR, RR, or NSF, OSF, NSR, OSR), in blue for wets, with the pressures set if you like, the compound, windscreen tear-off, and fast repair with how many you have left of the limit. Repair time still to do shows in the corner. Only what the black box says, nothing worked out
