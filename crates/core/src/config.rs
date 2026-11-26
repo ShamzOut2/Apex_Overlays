@@ -155,6 +155,7 @@ pub fn catalogue() -> Vec<OverlayInstance> {
         OverlayInstance { enabled: false, ..o("tyredata", "tyredata", 1200, 600, 470, 280) },
         OverlayInstance { enabled: false, ..o("pitRejoin", "pitRejoin", 1540, 300, 300, 150) },
         OverlayInstance { enabled: false, ..o("cornerTimes", "cornerTimes", 560, 880, 800, 70) },
+        OverlayInstance { enabled: false, ..o("pitStrategy", "pitStrategy", 1540, 480, 360, 190) },
         o("spotter", "spotter", 850, 520, 220, 200),
         o("pit", "pit", 845, 300, 230, 200),
         o("safety", "safety", 760, 160, 400, 230),
@@ -787,6 +788,7 @@ impl Config {
             "shiftlights",
             "pitRejoin",
             "cornerTimes",
+            "pitStrategy",
         ] {
             if self.known_kinds.iter().any(|k| k == kind) {
                 continue;
@@ -1171,10 +1173,11 @@ mod tests {
                 ("tyredata", "tyredata", false),
                 ("shiftlights", "shiftlights", false),
                 ("pitRejoin", "pitRejoin", false),
-                ("cornerTimes", "cornerTimes", false)
+                ("cornerTimes", "cornerTimes", false),
+                ("pitStrategy", "pitStrategy", false)
             ]
         );
         c.add_new_kinds();
-        assert_eq!(c.overlays.len(), 14);
+        assert_eq!(c.overlays.len(), 15);
     }
 }

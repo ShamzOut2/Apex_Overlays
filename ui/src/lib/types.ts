@@ -990,7 +990,32 @@ export interface CornerTimes {
   vs: { source: 'session' | 'allTime'; lapTime: number; delta: number; deltas: number[] }[];
 }
 
+/** Your next pit stop as set in iRacing's black box. */
+export interface PitPlan {
+  available: boolean;
+  fuel: boolean;
+  /** Litres asked for, and what will go in (no more than fits). */
+  fuelAdd: number;
+  fuelFits: number;
+  level: number;
+  capacity: number;
+  /** LF, RF, LR, RR. */
+  tyres: [boolean, boolean, boolean, boolean];
+  /** kPa, where the car has them. */
+  pressures: (number | null)[];
+  compound: string | null;
+  compoundWet: boolean;
+  tearoff: boolean;
+  fastRepair: boolean;
+  fastRepairsUsed: number;
+  /** -1 unlimited, null not stated. */
+  fastRepairsLimit: number | null;
+  repair: number;
+  optRepair: number;
+}
+
 export interface TopicMap {
+  pitplan: PitPlan;
   pitrejoin: PitRejoin;
   cornertimes: CornerTimes;
   monitors: ScreenMonitor[];

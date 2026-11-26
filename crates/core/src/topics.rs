@@ -41,11 +41,13 @@ pub enum Topic {
     PitRejoin,
     /// Your last lap, corner by corner, against your best.
     CornerTimes,
+    /// Your next pit stop as set in iRacing's black box.
+    PitPlan,
 }
 
 impl Topic {
     // Drivers first: when they change, they reach the clients before the rows that use them.
-    pub const ALL: [Topic; 24] = [
+    pub const ALL: [Topic; 25] = [
         Topic::Drivers,
         Topic::Session,
         Topic::Player,
@@ -70,6 +72,7 @@ impl Topic {
         Topic::TyreData,
         Topic::PitRejoin,
         Topic::CornerTimes,
+        Topic::PitPlan,
     ];
 
     pub fn name(self) -> &'static str {
@@ -98,6 +101,7 @@ impl Topic {
             Topic::TyreData => "tyredata",
             Topic::PitRejoin => "pitrejoin",
             Topic::CornerTimes => "cornertimes",
+            Topic::PitPlan => "pitplan",
         }
     }
 
@@ -119,6 +123,8 @@ impl Topic {
             Topic::TyreData => 15,
             // Four times a second: it moves with you round the lap.
             Topic::PitRejoin => 15,
+            // A click in the black box shows within a tenth of a second.
+            Topic::PitPlan => 6,
             // Weather changes slowly: once a second.
             Topic::Forecast => 60,
             // Only re-sent when they change (see `publish`).
@@ -178,6 +184,7 @@ impl Topic {
             Topic::TyreData => serde_json::to_string(&tyre_data(e)),
             Topic::PitRejoin => serde_json::to_string(&pit_rejoin(e)),
             Topic::CornerTimes => serde_json::to_string(&corner_times(e)),
+            Topic::PitPlan => serde_json::to_string(&pit_plan(e)),
         };
         r.unwrap_or_else(|_| "null".into())
     }
@@ -1514,6 +1521,28 @@ mod tests {
     use crate::engine::tests::{engine, place};
 
     #[test]
+    fn pit_plan_from_the_black_box() {
+        let mut e = engine(1, true);
+        e.source = "iracing";
+        e.connected = true;
+        e.info.fast_repairs_limit = Some(2);
+        e.tel.fuel_level = 70.0;
+        // Fuel (asked 50 L), LF and RR, tear-off, fast repair; one fast repair used.
+        e.tel.pit_sv_flags = 0x10 | 0x01 | 0x08 | 0x20 | 0x40;
+        e.tel.pit_sv_fuel = 50.0;
+        e.tel.fast_repairs_used = 1;
+        let p = pit_plan(&e);
+        assert!(p.available && p.fuel && p.tearoff && p.fast_repair);
+        assert_eq!(p.tyres, [true, false, false, true]);
+        assert_eq!((p.fast_repairs_used, p.fast_repairs_limit), (1, Some(2)));
+        assert_eq!(p.fuel_add, 50.0);
+        assert!(p.fuel_fits <= 50.0);
+        // Not iRacing: nothing.
+        e.source = "lmu";
+        assert!(!pit_plan(&e).available);
+    }
+
+    #[test]
     fn pit_rejoin_positions_and_neighbours() {
         let mut e = engine(5, true);
         // You (class 1) mid-lap; laps of 100 s, so 0.1 of a lap is 10 s.
@@ -2280,4 +2309,62 @@ pub fn corner_times(e: &Engine) -> CornerTimesOut {
         })
         .collect();
     CornerTimesOut { lap_time: Some(round(last.lap_time, 3)), valid: last.valid, by, segments: segs.into_iter().map(|s| s.1).collect(), vs }
+}
+
+/// Your next pit stop as set in iRacing's black box (Pit strategy overlay).
+#[derive(Serialize, Debug, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PitPlanOut {
+    /// iRacing, in your car (the black box only exists there).
+    pub available: bool,
+    pub fuel: bool,
+    /// Litres asked for, and what will go in (no more than the tank takes).
+    pub fuel_add: f32,
+    pub fuel_fits: f32,
+    pub level: f32,
+    pub capacity: f32,
+    /// LF, RF, LR, RR: to be changed.
+    pub tyres: [bool; 4],
+    /// Pressures set for the new tyres (kPa), where the car has them.
+    pub pressures: [Option<f32>; 4],
+    /// The compound to fit, when the car has more than one.
+    pub compound: Option<String>,
+    pub compound_wet: bool,
+    pub tearoff: bool,
+    pub fast_repair: bool,
+    pub fast_repairs_used: i32,
+    /// Fast repairs allowed: -1 unlimited, None not stated.
+    pub fast_repairs_limit: Option<i32>,
+    /// Repairs still to do (s).
+    pub repair: f32,
+    pub opt_repair: f32,
+}
+
+pub fn pit_plan(e: &Engine) -> PitPlanOut {
+    let t = &e.tel;
+    if !matches!(e.source, "iracing" | "mock") || !e.connected {
+        return PitPlanOut::default();
+    }
+    let f = t.pit_sv_flags;
+    let capacity = e.info.fuel_capacity();
+    let fuel = f & crate::engine::pitservice::FUEL_FILL != 0;
+    let compound = (e.info.tires.len() > 1).then(|| e.info.tires.iter().find(|c| c.index == t.pit_sv_compound)).flatten();
+    PitPlanOut {
+        available: true,
+        fuel,
+        fuel_add: round(t.pit_sv_fuel.max(0.0), 1),
+        fuel_fits: round(if fuel { t.pit_sv_fuel.max(0.0).min((capacity - t.fuel_level).max(0.0)) } else { 0.0 }, 1),
+        level: round(t.fuel_level, 1),
+        capacity: round(capacity, 1),
+        tyres: [f & 0x01 != 0, f & 0x02 != 0, f & 0x04 != 0, f & 0x08 != 0],
+        pressures: t.pit_sv_pressures.map(|p| (p > 0.0).then(|| round(p, 1))),
+        compound: compound.map(|c| c.kind.clone()),
+        compound_wet: compound.is_some_and(|c| c.is_wet()),
+        tearoff: f & 0x20 != 0,
+        fast_repair: f & 0x40 != 0,
+        fast_repairs_used: t.fast_repairs_used.max(0),
+        fast_repairs_limit: e.info.fast_repairs_limit,
+        repair: round(t.pit_repair_left.max(0.0), 0),
+        opt_repair: round(t.pit_opt_repair_left.max(0.0), 0),
+    }
 }
